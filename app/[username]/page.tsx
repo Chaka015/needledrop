@@ -115,7 +115,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 <p className="mt-2 text-sm max-w-xl" style={{ color: C.muted }}>{user.bio}</p>
               )}
 
-              {/* Listen counts */}
               <div className="mt-4 flex flex-wrap gap-6 text-sm font-mono" style={{ color: C.muted }}>
                 {[
                   { value: totalListens, label: "TOTAL" },
@@ -131,7 +130,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 ))}
               </div>
 
-              {/* Stats strip */}
               <div className="mt-5 flex flex-wrap gap-3">
                 {[
                   { label: "COLLECTED", value: user.collection.length },
@@ -157,7 +155,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col lg:flex-row gap-10">
         <div className="flex-1 min-w-0 space-y-12">
 
-          {/* Add to Collection */}
           {isOwnProfile && (
             <section>
               <SectionLabel>Add to Collection</SectionLabel>
@@ -165,7 +162,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </section>
           )}
 
-          {/* My Collection */}
           {isOwnProfile && (
             <section>
               <SectionLabel>My Collection</SectionLabel>
@@ -186,7 +182,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </section>
           )}
 
-          {/* Featured */}
           <section>
             <SectionLabel>Featured</SectionLabel>
             {featured.length > 0 ? (
@@ -198,7 +193,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             )}
           </section>
 
-          {/* Latest Added */}
           <section>
             <SectionLabel>Latest Added</SectionLabel>
             {latestAdded.length > 0 ? (
@@ -210,7 +204,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             )}
           </section>
 
-          {/* Recent Listens */}
           <section>
             <SectionLabel>Recent Listens</SectionLabel>
             {user.logs.length > 0 ? (
@@ -247,34 +240,30 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
         {/* SIDEBAR */}
         <aside className="w-full lg:w-64 shrink-0 space-y-8">
-          // in the sidebar:
-        <section>
-          <SectionLabel>The Setup</SectionLabel>
-          {isOwnProfile ? (
-            <AudioSetupEditor initial={user.audioSetup} />
-          ) : (
-            <div className="p-5 space-y-4 text-sm" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-              {user.audioSetup?.turntable && <SetupItem icon="💿" label="TURNTABLE" value={user.audioSetup.turntable} />}
-              {user.audioSetup?.preamp && <SetupItem icon="🎚️" label="PRE-AMP" value={user.audioSetup.preamp} />}
-              {user.audioSetup?.speakers && <SetupItem icon="🔊" label="SPEAKERS" value={user.audioSetup.speakers} />}
-              {!user.audioSetup?.turntable && !user.audioSetup?.preamp && !user.audioSetup?.speakers && (
-                <p className="text-xs font-mono" style={{ color: C.subtle }}>No setup listed yet.</p>
-              )}
-            </div>
-          )}
-        </section>
-                </aside>
+          <section>
+            <SectionLabel>The Setup</SectionLabel>
+            {isOwnProfile ? (
+              <AudioSetupEditor initial={user.audioSetup} />
+            ) : (
+              <div className="p-5 space-y-4 text-sm" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
+                {user.audioSetup?.turntable && <SetupItem icon="💿" label="TURNTABLE" value={user.audioSetup.turntable} />}
+                {user.audioSetup?.preamp && <SetupItem icon="🎚️" label="PRE-AMP" value={user.audioSetup.preamp} />}
+                {user.audioSetup?.speakers && <SetupItem icon="🔊" label="SPEAKERS" value={user.audioSetup.speakers} />}
+                {!user.audioSetup?.turntable && !user.audioSetup?.preamp && !user.audioSetup?.speakers && (
+                  <p className="text-xs font-mono" style={{ color: C.subtle }}>No setup listed yet.</p>
+                )}
               </div>
-            </div>
-          );
+            )}
+          </section>
+        </aside>
+      </div>
+    </div>
+  );
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h2
-      className="text-xs font-mono uppercase tracking-widest mb-4"
-      style={{ color: "#6B6560" }}
-    >
+    <h2 className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: "#6B6560" }}>
       {children}
     </h2>
   );
@@ -295,15 +284,7 @@ function AlbumTile({ album, size }: { album: { title: string; artist: string; co
   ) : (
     <div
       className="flex items-center justify-center text-xs"
-      style={{
-        width: size === "lg" ? "100%" : 48,
-        height: size === "lg" ? "auto" : 48,
-        aspectRatio: "1",
-        backgroundColor: "#3D3834",
-        borderRadius: 4,
-        color: "#6B6560",
-        flexShrink: 0,
-      }}
+      style={{ width: size === "lg" ? "100%" : 48, height: size === "lg" ? "auto" : 48, aspectRatio: "1", backgroundColor: "#3D3834", borderRadius: 4, color: "#6B6560", flexShrink: 0 }}
     >
       No art
     </div>
@@ -316,15 +297,7 @@ function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex gap-0.5 mt-1">
       {Array.from({ length: 5 }).map((_, i) => (
-        <span
-          key={i}
-          className="text-xs"
-          style={{
-            color: i < full ? "#E67E22" : i === full && half ? "#E67E2280" : "#524D48",
-          }}
-        >
-          ★
-        </span>
+        <span key={i} className="text-xs" style={{ color: i < full ? "#E67E22" : i === full && half ? "#E67E2280" : "#524D48" }}>★</span>
       ))}
     </div>
   );
@@ -341,10 +314,7 @@ function SetupItem({ icon, label, value }: { icon: string; label: string; value:
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <div
-      className="p-8 text-center text-sm font-mono"
-      style={{ border: `1px dashed #524D48`, color: "#6B6560" }}
-    >
+    <div className="p-8 text-center text-sm font-mono" style={{ border: `1px dashed #524D48`, color: "#6B6560" }}>
       {text}
     </div>
   );

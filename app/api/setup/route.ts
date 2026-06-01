@@ -13,12 +13,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const { turntable, preamp, speakers } = await req.json();
+  const { turntable, preamp, speakers, photoUrl } = await req.json();
 
   await prisma.audioSetup.upsert({
     where: { userId: user.id },
-    update: { turntable, preamp, speakers },
-    create: { userId: user.id, turntable, preamp, speakers },
+    update: { turntable, preamp, speakers, photoUrl },
+    create: { userId: user.id, turntable, preamp, speakers, photoUrl },
   });
 
   return NextResponse.json({ ok: true });

@@ -97,6 +97,7 @@ model AudioSetup {
   turntable String?
   preamp    String?
   speakers  String?
+  photoUrl  String? 
 
   user      User @relation(fields: [userId], references: [id])
 }
