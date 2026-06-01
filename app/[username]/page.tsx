@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import AddToCollection from "@/components/AddToCollection";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -29,7 +30,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       wantlist: true,
     },
   });
-
+{isOwnProfile && (
+  <section>
+    <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">
+      Add to Collection
+    </h2>
+    <AddToCollection />
+  </section>
+)}
   if (!user) notFound();
 
   // Stats
