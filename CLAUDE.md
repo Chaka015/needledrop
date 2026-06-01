@@ -155,3 +155,41 @@ No decorative lines, no icons in headers — the label alone is sufficient.
 | Use sharp corners on all containers | Round cards or modals |
 | Stack surfaces using the palette steps | Use drop shadows for depth |
 | Keep accent color for interactive elements only | Use accent as a decorative color |
+
+---
+
+## Vision — The Stereo Tower
+
+The profile page should feel like the face of a classic stereo tower — each section is its own component in a rack system:
+
+- **Header** → the display panel (username, stats, now spinning)
+- **Collection / Featured** → the tuner face (dial, presets)
+- **Recent Listens** → the VU meter / tape deck
+- **The Setup** → the back panel or spec plate
+- **Sidebar** → the right rack unit
+
+This metaphor should inform layout decisions: sections feel modular, self-contained, with clear borders between them like physical units stacked in a rack.
+
+---
+
+## Planned Feature — User Skins
+
+Users will be able to choose a "skin" that changes the visual language of their entire profile. The skin is stored on the `User` model as a `skin` field.
+
+Each skin maps to a set of CSS variable overrides. The current default is **Analog Warmth**.
+
+### Planned Skins
+
+| Skin | Vibe | Key Colors |
+|---|---|---|
+| **Analog Warmth** *(default)* | Espresso, terracotta, warm | `#2D2926` bg, `#E67E22` accent |
+| **Silver Face** | Brushed aluminum, 70s Marantz/Sansui | Silver, black, warm white |
+| **Midnight Black** | Matte black, cool grey, red VU meters | `#0D0D0D` bg, `#FF3E3E` accent |
+| **Wood Grain** | Warm oak, cream fascia, vintage Technics | Tan, oak, cream |
+| **Studio Console** | Dark green, cream labels, SSL/Neve vibe | Forest green, cream |
+
+### Implementation Notes
+- Skin config lives in `lib/skins.ts` — a map of skin name → CSS variable overrides
+- Profile page reads `user.skin` and applies the correct variable set
+- Skin picker lives in a settings page or inline on the profile (own profile only)
+- All components use CSS variables, never hardcoded colors, so skins work automatically

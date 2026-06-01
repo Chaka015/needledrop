@@ -73,48 +73,32 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       <div style={{ borderBottom: `1px solid ${C.border}` }}>
         <div className="max-w-6xl mx-auto px-6 py-10">
           <div className="flex flex-col md:flex-row gap-8 items-start">
-
-            {/* Avatar */}
             <div className="shrink-0">
               {user.avatarUrl ? (
-                <Image
-                  src={user.avatarUrl}
-                  alt={user.username}
-                  width={96}
-                  height={96}
+                <Image src={user.avatarUrl} alt={user.username} width={96} height={96}
                   className="object-cover"
-                  style={{ width: 96, height: 96, borderRadius: "50%", border: `2px solid ${C.border}` }}
-                />
+                  style={{ width: 96, height: 96, borderRadius: "50%", border: `2px solid ${C.border}` }} />
               ) : (
-                <div
-                  className="flex items-center justify-center text-3xl font-bold"
-                  style={{ width: 96, height: 96, borderRadius: "50%", backgroundColor: C.surface, color: C.subtle, border: `2px solid ${C.border}` }}
-                >
+                <div className="flex items-center justify-center text-3xl font-bold"
+                  style={{ width: 96, height: 96, borderRadius: "50%", backgroundColor: C.surface, color: C.subtle, border: `2px solid ${C.border}` }}>
                   {user.username[0].toUpperCase()}
                 </div>
               )}
             </div>
 
-            {/* Identity */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold tracking-tight" style={{ color: C.text }}>
-                  {user.username}
-                </h1>
+                <h1 className="text-2xl font-bold tracking-tight" style={{ color: C.text }}>{user.username}</h1>
                 {nowSpinningAlbum && (
-                  <span
-                    className="flex items-center gap-2 text-xs font-mono px-3 py-1"
-                    style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, color: C.accent, borderRadius: 4 }}
-                  >
+                  <span className="flex items-center gap-2 text-xs font-mono px-3 py-1"
+                    style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, color: C.accent, borderRadius: 4 }}>
                     <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: C.accent }} />
                     NOW SPINNING: {nowSpinningAlbum.artist} — {nowSpinningAlbum.title}
                   </span>
                 )}
               </div>
 
-              {user.bio && (
-                <p className="mt-2 text-sm max-w-xl" style={{ color: C.muted }}>{user.bio}</p>
-              )}
+              {user.bio && <p className="mt-2 text-sm max-w-xl" style={{ color: C.muted }}>{user.bio}</p>}
 
               <div className="mt-4 flex flex-wrap gap-6 text-sm font-mono" style={{ color: C.muted }}>
                 {[
@@ -137,11 +121,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   { label: "LOGGED", value: user.logs.length },
                   { label: "WANTLIST", value: user.wantlist.length },
                 ].map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="px-5 py-3 text-center"
-                    style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
-                  >
+                  <div key={stat.label} className="px-5 py-3 text-center"
+                    style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
                     <div className="text-xl font-bold font-mono" style={{ color: C.text }}>{stat.value}</div>
                     <div className="text-xs font-mono mt-0.5" style={{ color: C.subtle }}>{stat.label}</div>
                   </div>
@@ -154,23 +135,27 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
       {/* MAIN + SIDEBAR */}
       <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col lg:flex-row gap-10">
+
+        {/* MAIN */}
         <div className="flex-1 min-w-0 space-y-12">
 
-            {isOwnProfile && (
-              <section>
-                <SectionLabel>Add to Collection</SectionLabel>
-                <div className="space-y-4">
-                  <ImportDiscogs />
-                  <AddToCollection />
-                </div>
-              </section>
-            )}
+          {isOwnProfile && (
+            <section>
+              <SectionLabel>Add to Collection</SectionLabel>
+              <div className="space-y-4">
+                <ImportDiscogs />
+                <AddToCollection />
+              </div>
+            </section>
+          )}
+
           {isOwnProfile && (
             <section>
               <SectionLabel>My Collection</SectionLabel>
               <CollectionGrid
                 items={user.collection.map((c) => ({
                   id: c.id,
+                  isFeatured: c.isFeatured,
                   album: {
                     discogsId: c.album.discogsId,
                     title: c.album.title,
@@ -185,17 +170,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </section>
           )}
 
-          <section>
-            <SectionLabel>Featured</SectionLabel>
-            {featured.length > 0 ? (
-              <div className="grid grid-cols-4 gap-2">
-                {featured.map((c) => <AlbumTile key={c.id} album={c.album} size="lg" />)}
-              </div>
-            ) : (
-              <EmptyState text="No featured albums yet." />
-            )}
-          </section>
-
+          {/* Latest Added */}
           <section>
             <SectionLabel>Latest Added</SectionLabel>
             {latestAdded.length > 0 ? (
@@ -207,16 +182,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             )}
           </section>
 
+          {/* Recent Listens */}
           <section>
             <SectionLabel>Recent Listens</SectionLabel>
             {user.logs.length > 0 ? (
               <div className="space-y-2">
                 {user.logs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="flex gap-4 p-3 items-start"
-                    style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
-                  >
+                  <div key={log.id} className="flex gap-4 p-3 items-start"
+                    style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
                     <AlbumTile album={log.album} size="sm" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-2 flex-wrap">
@@ -224,9 +197,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                         <span className="text-xs font-mono" style={{ color: C.muted }}>{log.album.artist}</span>
                       </div>
                       {log.rating != null && <StarRating rating={log.rating} />}
-                      {log.review && (
-                        <p className="mt-1 text-sm line-clamp-2" style={{ color: C.muted }}>{log.review}</p>
-                      )}
+                      {log.review && <p className="mt-1 text-sm line-clamp-2" style={{ color: C.muted }}>{log.review}</p>}
                       <div className="mt-1 flex gap-3 text-xs font-mono" style={{ color: C.subtle }}>
                         {log.format && <span>{log.format}</span>}
                         <span>{new Date(log.playedAt).toLocaleDateString()}</span>
@@ -243,6 +214,27 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
         {/* SIDEBAR */}
         <aside className="w-full lg:w-64 shrink-0 space-y-8">
+
+          {/* Featured 2x2 */}
+          <section>
+            <SectionLabel>Featured</SectionLabel>
+            {featured.length > 0 ? (
+              <div className="grid grid-cols-2 gap-1">
+                {featured.map((c) => (
+                  <div key={c.id} style={{ aspectRatio: "1" }}>
+                    <AlbumTile album={c.album} size="lg" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 text-center text-xs font-mono"
+                style={{ border: `1px dashed ${C.border}`, color: C.subtle }}>
+                {isOwnProfile ? "★ star albums in your collection to feature them" : "No featured albums yet."}
+              </div>
+            )}
+          </section>
+
+          {/* The Setup */}
           <section>
             <SectionLabel>The Setup</SectionLabel>
             {isOwnProfile ? (
@@ -275,20 +267,13 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function AlbumTile({ album, size }: { album: { title: string; artist: string; coverUrl: string | null }; size: "sm" | "lg" }) {
   const dim = size === "lg" ? 120 : 48;
   return album.coverUrl ? (
-    <Image
-      src={album.coverUrl}
-      alt={`${album.title} by ${album.artist}`}
-      width={dim}
-      height={dim}
+    <Image src={album.coverUrl} alt={`${album.title} by ${album.artist}`} width={dim} height={dim}
       className="object-cover aspect-square"
-      style={{ width: size === "lg" ? "100%" : 48, height: size === "lg" ? "auto" : 48, borderRadius: 4, flexShrink: 0 }}
-      unoptimized
-    />
+      style={{ width: size === "lg" ? "100%" : 48, height: size === "lg" ? "100%" : 48, borderRadius: 4, flexShrink: 0 }}
+      unoptimized />
   ) : (
-    <div
-      className="flex items-center justify-center text-xs"
-      style={{ width: size === "lg" ? "100%" : 48, height: size === "lg" ? "auto" : 48, aspectRatio: "1", backgroundColor: "#3D3834", borderRadius: 4, color: "#6B6560", flexShrink: 0 }}
-    >
+    <div className="flex items-center justify-center text-xs"
+      style={{ width: size === "lg" ? "100%" : 48, height: size === "lg" ? "100%" : 48, aspectRatio: "1", backgroundColor: "#3D3834", borderRadius: 4, color: "#6B6560", flexShrink: 0 }}>
       No art
     </div>
   );
@@ -300,7 +285,8 @@ function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex gap-0.5 mt-1">
       {Array.from({ length: 5 }).map((_, i) => (
-        <span key={i} className="text-xs" style={{ color: i < full ? "#E67E22" : i === full && half ? "#E67E2280" : "#524D48" }}>★</span>
+        <span key={i} className="text-xs"
+          style={{ color: i < full ? "#E67E22" : i === full && half ? "#E67E2280" : "#524D48" }}>★</span>
       ))}
     </div>
   );
