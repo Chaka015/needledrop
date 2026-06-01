@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -31,16 +31,22 @@ export async function POST(req: Request) {
 
   // Check availability
   const existing = await prisma.user.findUnique({ where: { username } });
-  if (existing) {
+  if (existing && existing.clerkId !== clerkId) {
     return NextResponse.json(
       { error: "That username is already taken." },
       { status: 409 }
     );
   }
 
-  await prisma.user.update({
+  // Get avatar from Clerk
+  const clerkUser = await currentUser();
+  const avatarUrl = clerkUser?.imageUrl ?? null;
+
+  // Upsert — create user if webhook didn't fire, otherwise update
+  await prisma.user.upsert({
     where: { clerkId },
-    data: { username },
+    update: { username },
+    create: { clerkId, username, avatarUrl },
   });
 
   return NextResponse.json({ username });
