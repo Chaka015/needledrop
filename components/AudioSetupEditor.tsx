@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Image from "next/image";
 
 const C = {
@@ -28,31 +28,7 @@ export default function AudioSetupEditor({ initial }: { initial: AudioSetup | nu
   const [speakers, setSpeakers] = useState(initial?.speakers ?? "");
   const [photoUrl, setPhotoUrl] = useState(initial?.photoUrl ?? "");
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const res = await fetch("/api/setup/upload", {
-      method: "POST",
-      body: formData,
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      setPhotoUrl(data.url);
-    } else {
-      setError("Photo upload failed.");
-    }
-    setUploading(false);
-  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -82,8 +58,7 @@ export default function AudioSetupEditor({ initial }: { initial: AudioSetup | nu
     window.location.reload();
   }
 
-  const hasSetup = turntable || preamp || speakers;
-  const currentPhoto = initial?.photoUrl;
+  const hasSetup = initial?.turntable || initial?.preamp || initial?.speakers;
 
   return (
     <div>
@@ -110,11 +85,10 @@ export default function AudioSetupEditor({ initial }: { initial: AudioSetup | nu
             </button>
           </div>
 
-          {/* Setup photo */}
-          {currentPhoto && (
+          {initial?.photoUrl && (
             <div style={{ border: `1px solid ${C.border}` }}>
               <Image
-                src={currentPhoto}
+                src={initial.photoUrl}
                 alt="Audio setup"
                 width={256}
                 height={192}
@@ -149,36 +123,33 @@ export default function AudioSetupEditor({ initial }: { initial: AudioSetup | nu
             </div>
           ))}
 
-          {/* Photo upload */}
+          {/* Photo URL */}
           <div>
-            <label className="text-xs font-mono block mb-1" style={{ color: C.subtle }}>📷 SETUP PHOTO</label>
+            <label className="text-xs font-mono block mb-1" style={{ color: C.subtle }}>📷 SETUP PHOTO URL</label>
+            <input
+              type="url"
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              placeholder="https://i.imgur.com/yourphoto.jpg"
+              className="w-full text-sm px-3 py-2 outline-none transition-colors duration-100"
+              style={{ backgroundColor: C.surfaceRaised, border: `1px solid ${C.border}`, color: C.text, borderRadius: 0 }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = C.accent)}
+              onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
+            />
             {photoUrl && (
               <Image
                 src={photoUrl}
                 alt="Setup preview"
                 width={220}
                 height={140}
-                className="w-full object-cover mb-2"
+                className="w-full object-cover mt-2"
                 style={{ border: `1px solid ${C.border}` }}
                 unoptimized
               />
             )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoUpload}
-              className="hidden"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="w-full py-2 text-xs font-mono transition-colors duration-100"
-              style={{ backgroundColor: C.surfaceRaised, color: C.muted, border: `1px solid ${C.border}`, borderRadius: 4, opacity: uploading ? 0.4 : 1 }}
-            >
-              {uploading ? "UPLOADING..." : photoUrl ? "CHANGE PHOTO" : "+ UPLOAD PHOTO"}
-            </button>
+            <p className="text-xs font-mono mt-1" style={{ color: C.subtle }}>
+              Upload to imgur.com or any image host and paste the URL here.
+            </p>
           </div>
 
           {error && <p className="text-xs font-mono" style={{ color: "#C0392B" }}>{error}</p>}
