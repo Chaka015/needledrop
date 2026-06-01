@@ -5,6 +5,7 @@ import { auth } from "@clerk/nextjs/server";
 import AddToCollection from "@/components/AddToCollection";
 import CollectionGrid from "@/components/CollectionGrid";
 import AudioSetupEditor from "@/components/AudioSetupEditor";
+import ImportDiscogs from "@/components/ImportDiscogs";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -155,13 +156,15 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col lg:flex-row gap-10">
         <div className="flex-1 min-w-0 space-y-12">
 
-          {isOwnProfile && (
-            <section>
-              <SectionLabel>Add to Collection</SectionLabel>
-              <AddToCollection />
-            </section>
-          )}
-
+            {isOwnProfile && (
+              <section>
+                <SectionLabel>Add to Collection</SectionLabel>
+                <div className="space-y-4">
+                  <ImportDiscogs />
+                  <AddToCollection />
+                </div>
+              </section>
+            )}
           {isOwnProfile && (
             <section>
               <SectionLabel>My Collection</SectionLabel>

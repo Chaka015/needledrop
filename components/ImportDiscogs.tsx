@@ -1,0 +1,74 @@
+"use client";
+
+import { useState } from "react";
+
+const C = {
+  surface: "#3D3834",
+  surfaceRaised: "#4A4540",
+  border: "#524D48",
+  text: "#F7F1E3",
+  muted: "#A89F94",
+  subtle: "#6B6560",
+  accent: "#E67E22",
+  accentHover: "#CF711E",
+};
+
+export default function ImportDiscogs() {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ imported: number; skipped: number; total: number } | null>(null);
+  const [error, setError] = useState("");
+
+  async function handleImport() {
+    setLoading(true);
+    setError("");
+    setResult(null);
+
+    const res = await fetch("/api/discogs/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ discogsUsername: "Chaka015" }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error ?? "Import failed.");
+    } else {
+      setResult(data);
+      setTimeout(() => window.location.reload(), 2000);
+    }
+
+    setLoading(false);
+  }
+
+  return (
+    <div className="space-y-3">
+      <button
+        onClick={handleImport}
+        disabled={loading}
+        className="w-full py-3 text-xs font-mono transition-colors duration-100"
+        style={{
+          backgroundColor: loading ? C.surfaceRaised : C.surface,
+          color: loading ? C.subtle : C.muted,
+          border: `1px solid ${C.border}`,
+          borderRadius: 4,
+          opacity: loading ? 0.6 : 1,
+        }}
+        onMouseEnter={(e) => !loading && (e.currentTarget.style.color = C.text)}
+        onMouseLeave={(e) => !loading && (e.currentTarget.style.color = C.muted)}
+      >
+        {loading ? "IMPORTING FROM DISCOGS... (THIS MAY TAKE A MINUTE)" : "↓ IMPORT FROM DISCOGS"}
+      </button>
+
+      {result && (
+        <p className="text-xs font-mono" style={{ color: C.accent }}>
+          ✓ Imported {result.imported} new records, {result.skipped} already in collection. Reloading...
+        </p>
+      )}
+
+      {error && (
+        <p className="text-xs font-mono" style={{ color: "#C0392B" }}>{error}</p>
+      )}
+    </div>
+  );
+}
