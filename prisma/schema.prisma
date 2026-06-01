@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  clerkId     String   @unique
+  username    String   @unique
+  bio         String?
+  createdAt   DateTime @default(now())
+
+  collection  Collection[]
+  logs        ListeningLog[]
+  wantlist    Wantlist[]
+}
+
+model Album {
+  id            String   @id @default(cuid())
+  discogsId     String   @unique
+  title         String
+  artist        String
+  releaseYear   Int?
+  coverUrl      String?
+  label         String?
+  genre         String?
+
+  collection    Collection[]
+  logs          ListeningLog[]
+  wantlist      Wantlist[]
+}
+
+model Collection {
+  id        String   @id @default(cuid())
+  userId    String
+  albumId   String
+  condition String?
+  addedAt   DateTime @default(now())
+
+  user      User  @relation(fields: [userId], references: [id])
+  album     Album @relation(fields: [albumId], references: [id])
+
+  @@unique([userId, albumId])
+}
+
+model ListeningLog {
+  id        String   @id @default(cuid())
+  userId    String
+  albumId   String
+  rating    Float?
+  review    String?
+  format    String?
+  playedAt  DateTime @default(now())
+
+  user      User  @relation(fields: [userId], references: [id])
+  album     Album @relation(fields: [albumId], references: [id])
+}
+
+model Wantlist {
+  id        String   @id @default(cuid())
+  userId    String
+  albumId   String
+  addedAt   DateTime @default(now())
+
+  user      User  @relation(fields: [userId], references: [id])
+  album     Album @relation(fields: [albumId], references: [id])
+
+  @@unique([userId, albumId])
+}
