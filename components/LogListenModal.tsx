@@ -3,6 +3,18 @@
 import { useState } from "react";
 import Image from "next/image";
 
+const C = {
+  bg: "#2D2926",
+  surface: "#3D3834",
+  surfaceRaised: "#4A4540",
+  border: "#524D48",
+  text: "#F7F1E3",
+  muted: "#A89F94",
+  subtle: "#6B6560",
+  accent: "#E67E22",
+  accentHover: "#CF711E",
+};
+
 interface Album {
   discogsId: string;
   title: string;
@@ -66,41 +78,29 @@ export default function LogListenModal({ album, onClose, onSuccess }: LogListenM
   const displayRating = hoverRating ?? rating;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: "rgba(0,0,0,0.75)" }}>
+      <div className="w-full max-w-md p-6" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
+
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           {album.coverUrl ? (
-            <Image
-              src={album.coverUrl}
-              alt={album.title}
-              width={56}
-              height={56}
-              className="w-14 h-14 rounded-md object-cover shrink-0"
-              unoptimized
-            />
+            <Image src={album.coverUrl} alt={album.title} width={56} height={56}
+              className="object-cover shrink-0" style={{ width: 56, height: 56, borderRadius: 4 }} unoptimized />
           ) : (
-            <div className="w-14 h-14 rounded-md bg-zinc-800 shrink-0" />
+            <div className="shrink-0" style={{ width: 56, height: 56, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
           )}
-          <div className="min-w-0">
-            <div className="font-semibold truncate">{album.albumTitle ?? album.title}</div>
-            <div className="text-sm text-zinc-400 truncate">{album.artist}</div>
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold truncate" style={{ color: C.text }}>{album.albumTitle ?? album.title}</div>
+            <div className="text-sm font-mono truncate" style={{ color: C.muted }}>{album.artist}</div>
           </div>
-          <button
-            onClick={onClose}
-            className="ml-auto text-zinc-500 hover:text-zinc-300 transition-colors text-xl leading-none"
-          >
-            ×
-          </button>
+          <button onClick={onClose} className="text-xl leading-none ml-auto" style={{ color: C.subtle }}>×</button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Star Rating */}
           <div>
-            <label className="text-xs text-zinc-500 uppercase tracking-widest block mb-2">
-              Rating
-            </label>
-            <div className="flex gap-1">
+            <label className="text-xs font-mono uppercase tracking-widest block mb-2" style={{ color: C.subtle }}>Rating</label>
+            <div className="flex gap-1 items-center">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
@@ -108,39 +108,34 @@ export default function LogListenModal({ album, onClose, onSuccess }: LogListenM
                   onClick={() => setRating(star === rating ? null : star)}
                   onMouseEnter={() => setHoverRating(star)}
                   onMouseLeave={() => setHoverRating(null)}
-                  className={`text-3xl transition-colors ${
-                    displayRating && star <= displayRating
-                      ? "text-amber-400"
-                      : "text-zinc-700 hover:text-zinc-500"
-                  }`}
+                  className="text-3xl transition-colors duration-100"
+                  style={{ color: displayRating && star <= displayRating ? C.accent : C.border }}
                 >
                   ★
                 </button>
               ))}
-              {rating && (
-                <span className="ml-2 text-sm text-zinc-500 self-center">{rating}/5</span>
-              )}
+              {rating && <span className="ml-2 text-xs font-mono" style={{ color: C.muted }}>{rating}/5</span>}
             </div>
           </div>
 
           {/* Format */}
           <div>
-            <label className="text-xs text-zinc-500 uppercase tracking-widest block mb-2">
-              Format
-            </label>
+            <label className="text-xs font-mono uppercase tracking-widest block mb-2" style={{ color: C.subtle }}>Format</label>
             <div className="flex flex-wrap gap-2">
               {FORMATS.map((f) => (
                 <button
                   key={f}
                   type="button"
                   onClick={() => setFormat(format === f ? "" : f)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                    format === f
-                      ? "bg-white text-black"
-                      : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
-                  }`}
+                  className="px-3 py-1.5 text-xs font-mono transition-colors duration-100"
+                  style={{
+                    backgroundColor: format === f ? C.accent : C.surfaceRaised,
+                    color: format === f ? C.text : C.muted,
+                    borderRadius: 4,
+                    border: `1px solid ${format === f ? C.accent : C.border}`,
+                  }}
                 >
-                  {f}
+                  {f.toUpperCase()}
                 </button>
               ))}
             </div>
@@ -148,26 +143,32 @@ export default function LogListenModal({ album, onClose, onSuccess }: LogListenM
 
           {/* Review */}
           <div>
-            <label className="text-xs text-zinc-500 uppercase tracking-widest block mb-2">
-              Review <span className="text-zinc-600 normal-case">(optional)</span>
+            <label className="text-xs font-mono uppercase tracking-widest block mb-2" style={{ color: C.subtle }}>
+              Review <span style={{ color: C.subtle, textTransform: "none" }}>(optional)</span>
             </label>
             <textarea
               value={review}
               onChange={(e) => setReview(e.target.value)}
               placeholder="What did you think?"
               rows={3}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-600 outline-none focus:border-zinc-500 transition-colors resize-none"
+              className="w-full text-sm px-4 py-3 outline-none transition-colors duration-100 resize-none"
+              style={{ backgroundColor: C.surfaceRaised, border: `1px solid ${C.border}`, color: C.text, borderRadius: 0 }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = C.accent)}
+              onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
             />
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-xs font-mono" style={{ color: "#C0392B" }}>{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-white text-black rounded-xl text-sm font-medium hover:bg-zinc-200 transition-colors disabled:opacity-40"
+            className="w-full py-3 text-sm font-medium transition-colors duration-100"
+            style={{ backgroundColor: C.accent, color: C.text, borderRadius: 4, opacity: loading ? 0.4 : 1 }}
+            onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = C.accentHover)}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = C.accent)}
           >
-            {loading ? "Logging..." : "Log Listen"}
+            {loading ? "LOGGING..." : "LOG LISTEN"}
           </button>
         </form>
       </div>

@@ -17,43 +17,76 @@ export default async function Home() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white text-center dark:bg-black">
+    <div
+      className="flex min-h-screen items-center justify-center text-center"
+      style={{ backgroundColor: "#2D2926", color: "#F7F1E3" }}
+    >
       <main className="flex flex-col items-center gap-8 py-20 px-6">
         <Image
           src="/nd_splashpage.png"
           alt="NeedleDrop Logo"
-          width={400}
-          height={400}
+          width={320}
+          height={320}
           priority
         />
 
-        <h1 className="text-4xl font-bold text-black dark:text-zinc-50">
-          NeedleDrop
-        </h1>
-
-        <p className="text-lg text-zinc-600 dark:text-zinc-400">
-          / Log your listening
-        </p>
+        <div>
+          <h1
+            className="text-5xl font-bold tracking-tight"
+            style={{ color: "#F7F1E3" }}
+          >
+            NeedleDrop
+          </h1>
+          <p
+            className="mt-3 text-sm uppercase tracking-widest font-mono"
+            style={{ color: "#A89F94" }}
+          >
+            / Log your listening
+          </p>
+        </div>
 
         {!clerkId ? (
           <SignInButton mode="modal">
-            <button className="px-6 py-3 bg-black text-white rounded-full text-sm font-medium hover:bg-zinc-800 transition-colors dark:bg-white dark:text-black">
+            <button
+              className="mt-2 px-8 py-3 text-sm font-medium transition-colors duration-100"
+              style={{
+                backgroundColor: "#E67E22",
+                color: "#F7F1E3",
+                borderRadius: "4px",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#CF711E")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#E67E22")
+              }
+            >
               Get started
             </button>
           </SignInButton>
         ) : username ? (
           <Link
             href={`/${username}`}
-            className="px-6 py-3 bg-black text-white rounded-full text-sm font-medium hover:bg-zinc-800 transition-colors dark:bg-white dark:text-black"
+            className="mt-2 px-8 py-3 text-sm font-medium transition-colors duration-100"
+            style={{
+              backgroundColor: "#E67E22",
+              color: "#F7F1E3",
+              borderRadius: "4px",
+            }}
           >
-            Go to my profile
+            Go to my profile →
           </Link>
         ) : (
           <Link
             href="/onboarding"
-            className="px-6 py-3 bg-black text-white rounded-full text-sm font-medium hover:bg-zinc-800 transition-colors dark:bg-white dark:text-black"
+            className="mt-2 px-8 py-3 text-sm font-medium transition-colors duration-100"
+            style={{
+              backgroundColor: "#E67E22",
+              color: "#F7F1E3",
+              borderRadius: "4px",
+            }}
           >
-            Set up your profile
+            Set up your profile →
           </Link>
         )}
       </main>

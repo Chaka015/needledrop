@@ -3,6 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+const C = {
+  bg: "#2D2926",
+  surface: "#3D3834",
+  surfaceRaised: "#4A4540",
+  border: "#524D48",
+  text: "#F7F1E3",
+  muted: "#A89F94",
+  subtle: "#6B6560",
+  accent: "#E67E22",
+  accentHover: "#CF711E",
+};
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
@@ -23,7 +35,6 @@ export default function OnboardingPage() {
     }
 
     setLoading(true);
-
     const res = await fetch("/api/onboarding", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -31,7 +42,6 @@ export default function OnboardingPage() {
     });
 
     const data = await res.json();
-
     if (!res.ok) {
       setError(data.error ?? "Something went wrong.");
       setLoading(false);
@@ -42,37 +52,47 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-black text-white">
-      <div className="w-full max-w-sm px-6">
-        <h1 className="text-2xl font-bold mb-2">Pick your username</h1>
-        <p className="text-zinc-400 text-sm mb-8">
+    <div className="flex min-h-screen items-center justify-center px-6" style={{ backgroundColor: C.bg }}>
+      <div className="w-full max-w-sm">
+        <h1 className="text-2xl font-bold mb-1" style={{ color: C.text }}>Pick your username</h1>
+        <p className="text-sm font-mono mb-8" style={{ color: C.muted }}>
           This is how you'll appear on NeedleDrop.
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex items-center bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 focus-within:border-zinc-400 transition-colors">
-            <span className="text-zinc-500 mr-1">needledrop.fm/</span>
+          <div
+            className="flex items-center px-4 py-3 transition-colors duration-100"
+            style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
+          >
+            <span className="text-sm font-mono mr-1" style={{ color: C.subtle }}>needledrop.fm/</span>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
               placeholder="username"
-              className="flex-1 bg-transparent outline-none text-white placeholder-zinc-600"
+              className="flex-1 bg-transparent outline-none text-sm"
+              style={{ color: C.text }}
               autoFocus
               maxLength={30}
             />
           </div>
 
-          {error && (
-            <p className="text-red-400 text-sm">{error}</p>
-          )}
+          {error && <p className="text-xs font-mono" style={{ color: "#C0392B" }}>{error}</p>}
 
           <button
             type="submit"
             disabled={loading || username.length < 3}
-            className="mt-2 px-6 py-3 bg-white text-black rounded-full text-sm font-medium hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="py-3 text-sm font-medium transition-colors duration-100"
+            style={{
+              backgroundColor: C.accent,
+              color: C.text,
+              borderRadius: 4,
+              opacity: loading || username.length < 3 ? 0.4 : 1,
+            }}
+            onMouseEnter={(e) => !(loading || username.length < 3) && (e.currentTarget.style.backgroundColor = C.accentHover)}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = C.accent)}
           >
-            {loading ? "Saving..." : "Continue"}
+            {loading ? "SAVING..." : "CONTINUE"}
           </button>
         </form>
       </div>
