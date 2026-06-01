@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import AddToCollection from "@/components/AddToCollection";
 import CollectionGrid from "@/components/CollectionGrid";
+import AudioSetupEditor from "@/components/AudioSetupEditor";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -246,30 +247,26 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
         {/* SIDEBAR */}
         <aside className="w-full lg:w-64 shrink-0 space-y-8">
-          <section>
-            <SectionLabel>The Setup</SectionLabel>
-            <div
-              className="p-5 space-y-4 text-sm"
-              style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
-            >
-              {user.audioSetup ? (
-                <>
-                  {user.audioSetup.turntable && <SetupItem icon="💿" label="TURNTABLE" value={user.audioSetup.turntable} />}
-                  {user.audioSetup.preamp && <SetupItem icon="🎚️" label="PRE-AMP" value={user.audioSetup.preamp} />}
-                  {user.audioSetup.speakers && <SetupItem icon="🔊" label="SPEAKERS" value={user.audioSetup.speakers} />}
-                  {!user.audioSetup.turntable && !user.audioSetup.preamp && !user.audioSetup.speakers && (
-                    <p className="text-xs font-mono" style={{ color: C.subtle }}>No setup listed yet.</p>
-                  )}
-                </>
-              ) : (
+          // in the sidebar:
+        <section>
+          <SectionLabel>The Setup</SectionLabel>
+          {isOwnProfile ? (
+            <AudioSetupEditor initial={user.audioSetup} />
+          ) : (
+            <div className="p-5 space-y-4 text-sm" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
+              {user.audioSetup?.turntable && <SetupItem icon="💿" label="TURNTABLE" value={user.audioSetup.turntable} />}
+              {user.audioSetup?.preamp && <SetupItem icon="🎚️" label="PRE-AMP" value={user.audioSetup.preamp} />}
+              {user.audioSetup?.speakers && <SetupItem icon="🔊" label="SPEAKERS" value={user.audioSetup.speakers} />}
+              {!user.audioSetup?.turntable && !user.audioSetup?.preamp && !user.audioSetup?.speakers && (
                 <p className="text-xs font-mono" style={{ color: C.subtle }}>No setup listed yet.</p>
               )}
             </div>
-          </section>
-        </aside>
-      </div>
-    </div>
-  );
+          )}
+        </section>
+                </aside>
+              </div>
+            </div>
+          );
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
