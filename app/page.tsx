@@ -1,9 +1,20 @@
 import Image from "next/image";
-import { SignInButton, UserButton } from "@clerk/nextjs";
+import Link from "next/link";
+import { SignInButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
 
 export default async function Home() {
-  const { userId } = await auth();
+  const { userId: clerkId } = await auth();
+
+  let username: string | null = null;
+  if (clerkId) {
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: { username: true },
+    });
+    username = user?.username ?? null;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-white text-center dark:bg-black">
@@ -24,16 +35,27 @@ export default async function Home() {
           / Log your listening
         </p>
 
-        {!userId ? (
+        {!clerkId ? (
           <SignInButton mode="modal">
             <button className="px-6 py-3 bg-black text-white rounded-full text-sm font-medium hover:bg-zinc-800 transition-colors dark:bg-white dark:text-black">
               Get started
             </button>
           </SignInButton>
+        ) : username ? (
+          <Link
+            href={`/${username}`}
+            className="px-6 py-3 bg-black text-white rounded-full text-sm font-medium hover:bg-zinc-800 transition-colors dark:bg-white dark:text-black"
+          >
+            Go to my profile
+          </Link>
         ) : (
-          <UserButton />
+          <Link
+            href="/onboarding"
+            className="px-6 py-3 bg-black text-white rounded-full text-sm font-medium hover:bg-zinc-800 transition-colors dark:bg-white dark:text-black"
+          >
+            Set up your profile
+          </Link>
         )}
-
       </main>
     </div>
   );

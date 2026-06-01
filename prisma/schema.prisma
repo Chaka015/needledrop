@@ -8,66 +8,95 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  clerkId     String   @unique
-  username    String   @unique
-  bio         String?
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  clerkId      String   @unique
+  username     String   @unique
+  bio          String?
+  avatarUrl    String?
+  nowSpinning  String?  // albumId of currently playing album
+  createdAt    DateTime @default(now())
+
+  collection   Collection[]
+  logs         ListeningLog[]
+  wantlist     Wantlist[]
+  audioSetup   AudioSetup?
+
+  following    Follow[] @relation("follower")
+  followers    Follow[] @relation("following")
+}
+
+model Album {
+  id          String  @id @default(cuid())
+  discogsId   String  @unique
+  title       String
+  artist      String
+  releaseYear Int?
+  coverUrl    String?
+  label       String?
+  genre       String?
 
   collection  Collection[]
   logs        ListeningLog[]
   wantlist    Wantlist[]
 }
 
-model Album {
-  id            String   @id @default(cuid())
-  discogsId     String   @unique
-  title         String
-  artist        String
-  releaseYear   Int?
-  coverUrl      String?
-  label         String?
-  genre         String?
-
-  collection    Collection[]
-  logs          ListeningLog[]
-  wantlist      Wantlist[]
-}
-
 model Collection {
-  id        String   @id @default(cuid())
-  userId    String
-  albumId   String
-  condition String?
-  addedAt   DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  albumId     String
+  condition   String?
+  isFeatured  Boolean  @default(false)
+  addedAt     DateTime @default(now())
 
-  user      User  @relation(fields: [userId], references: [id])
-  album     Album @relation(fields: [albumId], references: [id])
+  user        User  @relation(fields: [userId], references: [id])
+  album       Album @relation(fields: [albumId], references: [id])
 
   @@unique([userId, albumId])
 }
 
 model ListeningLog {
-  id        String   @id @default(cuid())
-  userId    String
-  albumId   String
-  rating    Float?
-  review    String?
-  format    String?
-  playedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  userId   String
+  albumId  String
+  rating   Float?
+  review   String?
+  format   String?
+  playedAt DateTime @default(now())
 
-  user      User  @relation(fields: [userId], references: [id])
-  album     Album @relation(fields: [albumId], references: [id])
+  user     User  @relation(fields: [userId], references: [id])
+  album    Album @relation(fields: [albumId], references: [id])
 }
 
 model Wantlist {
-  id        String   @id @default(cuid())
-  userId    String
-  albumId   String
-  addedAt   DateTime @default(now())
+  id      String   @id @default(cuid())
+  userId  String
+  albumId String
+  addedAt DateTime @default(now())
 
-  user      User  @relation(fields: [userId], references: [id])
-  album     Album @relation(fields: [albumId], references: [id])
+  user    User  @relation(fields: [userId], references: [id])
+  album   Album @relation(fields: [albumId], references: [id])
 
   @@unique([userId, albumId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    User @relation("follower", fields: [followerId], references: [id])
+  following   User @relation("following", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+}
+
+model AudioSetup {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  turntable String?
+  preamp    String?
+  speakers  String?
+
+  user      User @relation(fields: [userId], references: [id])
 }
