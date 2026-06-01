@@ -3,6 +3,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import AddToCollection from "@/components/AddToCollection";
+import CollectionGrid from "@/components/CollectionGrid";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -130,7 +131,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <AddToCollection />
             </section>
           )}
-
+            {isOwnProfile && (
+  <section>
+    <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">
+      My Collection
+    </h2>
+    <CollectionGrid items={user.collection.map(c => ({ id: c.id, album: { discogsId: c.album.discogsId, title: c.album.title, artist: c.album.artist, releaseYear: c.album.releaseYear, coverUrl: c.album.coverUrl, label: c.album.label, genre: c.album.genre } }))} />
+  </section>
+)}
           <section>
             <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">Featured</h2>
             {featured.length > 0 ? (
