@@ -30,14 +30,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       wantlist: true,
     },
   });
-{isOwnProfile && (
-  <section>
-    <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">
-      Add to Collection
-    </h2>
-    <AddToCollection />
-  </section>
-)}
+
   if (!user) notFound();
 
   // Stats
@@ -53,17 +46,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     (l) => new Date(l.playedAt) >= startOfWeek
   ).length;
 
-  // Featured (top 4 marked isFeatured)
-  const featured = user.collection
-    .filter((c) => c.isFeatured)
-    .slice(0, 4);
+  const featured = user.collection.filter((c) => c.isFeatured).slice(0, 4);
+  const latestAdded = user.collection.filter((c) => !c.isFeatured).slice(0, 4);
 
-  // Latest added (4 most recent collection entries, excluding featured)
-  const latestAdded = user.collection
-    .filter((c) => !c.isFeatured)
-    .slice(0, 4);
-
-  // Now spinning album
   const nowSpinningAlbum = user.nowSpinning
     ? await prisma.album.findUnique({ where: { id: user.nowSpinning } })
     : null;
@@ -77,8 +62,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       {/* ── HEADER ── */}
       <div className="border-b border-zinc-800 px-6 py-10 max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row gap-8 items-start">
-
-          {/* Avatar */}
           <div className="shrink-0">
             {user.avatarUrl ? (
               <Image
@@ -95,7 +78,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             )}
           </div>
 
-          {/* Identity */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold tracking-tight">{user.username}</h1>
@@ -111,41 +93,21 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <p className="mt-2 text-zinc-400 text-sm max-w-xl">{user.bio}</p>
             )}
 
-            {/* Listen counts */}
             <div className="mt-4 flex flex-wrap gap-6 text-sm text-zinc-400">
-              <div>
-                <span className="text-zinc-100 font-semibold">{totalListens}</span>{" "}
-                total listens
-              </div>
-              <div>
-                <span className="text-zinc-100 font-semibold">{listensThisYear}</span>{" "}
-                this year
-              </div>
-              <div>
-                <span className="text-zinc-100 font-semibold">{listensThisWeek}</span>{" "}
-                this week
-              </div>
-              <div>
-                <span className="text-zinc-100 font-semibold">{user.following.length}</span>{" "}
-                following
-              </div>
-              <div>
-                <span className="text-zinc-100 font-semibold">{user.followers.length}</span>{" "}
-                followers
-              </div>
+              <div><span className="text-zinc-100 font-semibold">{totalListens}</span> total listens</div>
+              <div><span className="text-zinc-100 font-semibold">{listensThisYear}</span> this year</div>
+              <div><span className="text-zinc-100 font-semibold">{listensThisWeek}</span> this week</div>
+              <div><span className="text-zinc-100 font-semibold">{user.following.length}</span> following</div>
+              <div><span className="text-zinc-100 font-semibold">{user.followers.length}</span> followers</div>
             </div>
 
-            {/* Stats strip */}
             <div className="mt-5 flex flex-wrap gap-4">
               {[
                 { label: "Collected", value: user.collection.length },
                 { label: "Logged", value: user.logs.length },
                 { label: "Wantlist", value: user.wantlist.length },
               ].map((stat) => (
-                <div
-                  key={stat.label}
-                  className="bg-zinc-900 border border-zinc-800 rounded-lg px-5 py-3 text-center"
-                >
+                <div key={stat.label} className="bg-zinc-900 border border-zinc-800 rounded-lg px-5 py-3 text-center">
                   <div className="text-xl font-bold">{stat.value}</div>
                   <div className="text-xs text-zinc-500 mt-0.5">{stat.label}</div>
                 </div>
@@ -157,67 +119,55 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
       {/* ── MAIN + SIDEBAR ── */}
       <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col lg:flex-row gap-10">
-
-        {/* ── MAIN BODY ── */}
         <div className="flex-1 min-w-0 space-y-12">
 
-          {/* Featured Grid */}
+          {/* Add to Collection (own profile only) */}
+          {isOwnProfile && (
+            <section>
+              <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">
+                Add to Collection
+              </h2>
+              <AddToCollection />
+            </section>
+          )}
+
           <section>
-            <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">
-              Featured
-            </h2>
+            <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">Featured</h2>
             {featured.length > 0 ? (
               <div className="grid grid-cols-4 gap-3">
-                {featured.map((c) => (
-                  <AlbumTile key={c.id} album={c.album} size="lg" />
-                ))}
+                {featured.map((c) => <AlbumTile key={c.id} album={c.album} size="lg" />)}
               </div>
             ) : (
               <EmptyState text="No featured albums yet." />
             )}
           </section>
 
-          {/* Latest Added */}
           <section>
-            <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">
-              Latest Added
-            </h2>
+            <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">Latest Added</h2>
             {latestAdded.length > 0 ? (
               <div className="grid grid-cols-4 gap-3">
-                {latestAdded.map((c) => (
-                  <AlbumTile key={c.id} album={c.album} size="lg" />
-                ))}
+                {latestAdded.map((c) => <AlbumTile key={c.id} album={c.album} size="lg" />)}
               </div>
             ) : (
               <EmptyState text="Nothing added to collection yet." />
             )}
           </section>
 
-          {/* Recent History */}
           <section>
-            <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">
-              Recent Listens
-            </h2>
+            <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">Recent Listens</h2>
             {user.logs.length > 0 ? (
               <div className="space-y-3">
                 {user.logs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="flex gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-4 items-start"
-                  >
+                  <div key={log.id} className="flex gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-4 items-start">
                     <AlbumTile album={log.album} size="sm" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-2 flex-wrap">
                         <span className="font-semibold text-sm">{log.album.title}</span>
                         <span className="text-zinc-500 text-xs">{log.album.artist}</span>
                       </div>
-                      {log.rating != null && (
-                        <StarRating rating={log.rating} />
-                      )}
+                      {log.rating != null && <StarRating rating={log.rating} />}
                       {log.review && (
-                        <p className="mt-1 text-sm text-zinc-400 line-clamp-2">
-                          {log.review}
-                        </p>
+                        <p className="mt-1 text-sm text-zinc-400 line-clamp-2">{log.review}</p>
                       )}
                       <div className="mt-1 flex gap-3 text-xs text-zinc-600">
                         {log.format && <span>{log.format}</span>}
@@ -233,23 +183,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           </section>
         </div>
 
-        {/* ── SIDEBAR ── */}
         <aside className="w-full lg:w-64 shrink-0 space-y-8">
           <section>
-            <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">
-              The Setup
-            </h2>
+            <h2 className="text-xs font-semibold tracking-widest text-zinc-500 uppercase mb-4">The Setup</h2>
             {user.audioSetup ? (
               <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4 text-sm">
-                {user.audioSetup.turntable && (
-                  <SetupItem icon="💿" label="Turntable" value={user.audioSetup.turntable} />
-                )}
-                {user.audioSetup.preamp && (
-                  <SetupItem icon="🎚️" label="Pre-amp" value={user.audioSetup.preamp} />
-                )}
-                {user.audioSetup.speakers && (
-                  <SetupItem icon="🔊" label="Speakers" value={user.audioSetup.speakers} />
-                )}
+                {user.audioSetup.turntable && <SetupItem icon="💿" label="Turntable" value={user.audioSetup.turntable} />}
+                {user.audioSetup.preamp && <SetupItem icon="🎚️" label="Pre-amp" value={user.audioSetup.preamp} />}
+                {user.audioSetup.speakers && <SetupItem icon="🔊" label="Speakers" value={user.audioSetup.speakers} />}
                 {!user.audioSetup.turntable && !user.audioSetup.preamp && !user.audioSetup.speakers && (
                   <p className="text-zinc-600 text-xs">No setup listed yet.</p>
                 )}
@@ -266,15 +207,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   );
 }
 
-// ── Sub-components ──
-
-function AlbumTile({
-  album,
-  size,
-}: {
-  album: { title: string; artist: string; coverUrl: string | null };
-  size: "sm" | "lg";
-}) {
+function AlbumTile({ album, size }: { album: { title: string; artist: string; coverUrl: string | null }; size: "sm" | "lg" }) {
   const dim = size === "lg" ? 120 : 56;
   return album.coverUrl ? (
     <Image
@@ -283,13 +216,10 @@ function AlbumTile({
       width={dim}
       height={dim}
       className={`rounded-md object-cover aspect-square ${size === "lg" ? "w-full" : "w-14 h-14 shrink-0"}`}
+      unoptimized
     />
   ) : (
-    <div
-      className={`rounded-md bg-zinc-800 flex items-center justify-center text-zinc-600 text-xs ${
-        size === "lg" ? "w-full aspect-square" : "w-14 h-14 shrink-0"
-      }`}
-    >
+    <div className={`rounded-md bg-zinc-800 flex items-center justify-center text-zinc-600 text-xs ${size === "lg" ? "w-full aspect-square" : "w-14 h-14 shrink-0"}`}>
       No art
     </div>
   );
@@ -301,37 +231,16 @@ function StarRating({ rating }: { rating: number }) {
   return (
     <div className="flex gap-0.5 mt-1">
       {Array.from({ length: 5 }).map((_, i) => (
-        <span
-          key={i}
-          className={`text-xs ${
-            i < full
-              ? "text-amber-400"
-              : i === full && half
-              ? "text-amber-400 opacity-50"
-              : "text-zinc-700"
-          }`}
-        >
-          ★
-        </span>
+        <span key={i} className={`text-xs ${i < full ? "text-amber-400" : i === full && half ? "text-amber-400 opacity-50" : "text-zinc-700"}`}>★</span>
       ))}
     </div>
   );
 }
 
-function SetupItem({
-  icon,
-  label,
-  value,
-}: {
-  icon: string;
-  label: string;
-  value: string;
-}) {
+function SetupItem({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <div>
-      <div className="text-zinc-500 text-xs mb-0.5">
-        {icon} {label}
-      </div>
+      <div className="text-zinc-500 text-xs mb-0.5">{icon} {label}</div>
       <div className="text-zinc-200">{value}</div>
     </div>
   );
