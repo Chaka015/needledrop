@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import LogListenModal from "./LogListenModal";
 
 interface DiscogsResult {
   discogsId: string;
@@ -20,6 +21,7 @@ export default function AddToCollection() {
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState<string | null>(null);
   const [added, setAdded] = useState<Set<string>>(new Set());
+  const [logTarget, setLogTarget] = useState<DiscogsResult | null>(null);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -46,7 +48,6 @@ export default function AddToCollection() {
         genre: result.genre,
       }),
     });
-
     if (res.ok) {
       setAdded((prev) => new Set(prev).add(result.discogsId));
     }
@@ -101,21 +102,39 @@ export default function AddToCollection() {
                 </div>
               </div>
 
-              <button
-                onClick={() => handleAdd(result)}
-                disabled={!!adding || added.has(result.discogsId)}
-                className="shrink-0 px-4 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-40
-                  bg-zinc-800 hover:bg-zinc-700 text-zinc-200"
-              >
-                {added.has(result.discogsId)
-                  ? "✓ Added"
-                  : adding === result.discogsId
-                  ? "Adding..."
-                  : "+ Add"}
-              </button>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => setLogTarget(result)}
+                  className="px-3 py-2 rounded-lg text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition-colors"
+                >
+                  Log
+                </button>
+                <button
+                  onClick={() => handleAdd(result)}
+                  disabled={!!adding || added.has(result.discogsId)}
+                  className="px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-40 bg-zinc-800 hover:bg-zinc-700 text-zinc-200"
+                >
+                  {added.has(result.discogsId)
+                    ? "✓ Added"
+                    : adding === result.discogsId
+                    ? "..."
+                    : "+ Add"}
+                </button>
+              </div>
             </div>
           ))}
         </div>
+      )}
+
+      {logTarget && (
+        <LogListenModal
+          album={logTarget}
+          onClose={() => setLogTarget(null)}
+          onSuccess={() => {
+            setLogTarget(null);
+            window.location.reload();
+          }}
+        />
       )}
     </div>
   );
