@@ -13,6 +13,8 @@ export async function POST() {
       spotifyAccessToken: null,
       spotifyRefreshToken: null,
       spotifyTokenExpiry: null,
+      spotifyConnected: false,
+      spotifyConnectedAt: null,
     },
   });
 

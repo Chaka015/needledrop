@@ -212,7 +212,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
               )}
             </div>
           ) : (
-            <a href="/api/spotify/connect"
+            <a href="/api/auth/spotify"
               className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-mono transition-colors duration-100"
               style={{ backgroundColor: "#1DB954", color: "#FFFFFF", borderRadius: 4 }}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1AA34A")}

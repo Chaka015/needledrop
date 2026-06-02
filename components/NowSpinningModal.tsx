@@ -39,6 +39,7 @@ interface MBResult {
   year: string | null;
   hasCover: boolean;
   label: string | null;
+  _spotifyCoverUrl?: string | null; // pre-resolved cover URL (Spotify recently played)
 }
 
 interface NowSpinningModalProps {
@@ -48,6 +49,14 @@ interface NowSpinningModalProps {
 
 type Tab = "collection" | "streaming";
 
+interface SpotifyRecent {
+  spotifyAlbumId: string;
+  title: string;
+  artist: string;
+  year: string | null;
+  coverUrl: string | null;
+}
+
 export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModalProps) {
   const [tab, setTab] = useState<Tab>("collection");
   const [query, setQuery] = useState("");
@@ -55,6 +64,7 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
   const [collectionLoading, setCollectionLoading] = useState(true);
   const [mbResults, setMbResults] = useState<MBResult[]>([]);
   const [mbLoading, setMbLoading] = useState(false);
+  const [spotifyRecent, setSpotifyRecent] = useState<SpotifyRecent[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [selectedSource, setSelectedSource] = useState<"physical" | "streaming">("physical");
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -63,6 +73,10 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
     fetch("/api/collection")
       .then((r) => r.json())
       .then((data) => { setCollection(data.items ?? []); setCollectionLoading(false); });
+    // Fetch Spotify recently played if connected
+    fetch("/api/spotify/recent")
+      .then((r) => r.json())
+      .then((data) => setSpotifyRecent(data.tracks ?? []));
   }, []);
 
   useEffect(() => {
@@ -100,7 +114,9 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
   }
 
   async function handleStreamingSpin(mb: MBResult) {
-    const coverUrl = mb.hasCover
+    const coverUrl = mb._spotifyCoverUrl !== undefined
+      ? mb._spotifyCoverUrl
+      : mb.hasCover
       ? `https://coverartarchive.org/release/${mb.mbid}/front-250`
       : null;
 
@@ -221,7 +237,36 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
             )
           ) : (
             <>
-              {!query.trim() && (
+              {/* Spotify recently played */}
+              {!query.trim() && spotifyRecent.length > 0 && (
+                <>
+                  <p className="text-xs font-mono pt-2 pb-1" style={{ color: C.subtle }}>RECENTLY PLAYED ON SPOTIFY</p>
+                  {spotifyRecent.map((r) => (
+                    <button
+                      key={r.spotifyAlbumId}
+                      onClick={() => handleStreamingSpin({ mbid: `spotify:album:${r.spotifyAlbumId}`, title: r.title, artist: r.artist, year: r.year, hasCover: !!r.coverUrl, label: null, _spotifyCoverUrl: r.coverUrl })}
+                      className="w-full flex items-center gap-3 p-2 text-left transition-colors duration-100"
+                      style={{ backgroundColor: "transparent", borderRadius: 4 }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                    >
+                      {r.coverUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={r.coverUrl} alt={r.title} className="object-cover shrink-0" style={{ width: 40, height: 40, borderRadius: 4 }} />
+                      ) : (
+                        <div className="shrink-0" style={{ width: 40, height: 40, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate" style={{ color: C.text }}>{r.title}</div>
+                        <div className="text-xs font-mono truncate" style={{ color: C.muted }}>{r.artist}{r.year ? ` · ${r.year}` : ""}</div>
+                      </div>
+                    </button>
+                  ))}
+                  <div style={{ height: 1, backgroundColor: C.border, margin: "8px 0" }} />
+                  <p className="text-xs font-mono pb-1" style={{ color: C.subtle }}>OR SEARCH MUSICBRAINZ</p>
+                </>
+              )}
+              {!query.trim() && spotifyRecent.length === 0 && (
                 <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>
                   Search any album — powered by MusicBrainz
                 </p>
