@@ -38,5 +38,8 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.json({ log, album });
+  return NextResponse.json({
+    log: { ...log, durationMs: log.durationMs !== null ? Number(log.durationMs) : null },
+    album,
+  });
 }

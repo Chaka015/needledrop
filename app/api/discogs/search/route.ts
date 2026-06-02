@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   }
 
   const res = await fetch(
-    `https://api.discogs.com/database/search?q=${encodeURIComponent(query)}&type=release&per_page=10`,
+    `https://api.discogs.com/database/search?q=${encodeURIComponent(query)}&type=release&per_page=100`,
     {
       headers: {
         Authorization: `Discogs token=${token}`,

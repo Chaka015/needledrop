@@ -268,7 +268,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           </section>
 
           <section>
-            <SectionLabel>Latest Added</SectionLabel>
+            <SectionLabel>Latest Physical Media Added to My Collection</SectionLabel>
             {latestAdded.length > 0 ? (
               <div className="grid grid-cols-4 gap-2">
                 {latestAdded.map((c) => <AlbumTile key={c.id} album={c.album} size="lg" />)}

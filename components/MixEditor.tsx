@@ -30,11 +30,10 @@ interface MixEditorProps {
   mixId: string;
   username: string;
   isPublic: boolean;
-  isPremium?: boolean;
   currentCoverUrl?: string | null;
 }
 
-export default function MixEditor({ mixId, username, isPublic: initialIsPublic, isPremium, currentCoverUrl }: MixEditorProps) {
+export default function MixEditor({ mixId, username, isPublic: initialIsPublic, currentCoverUrl }: MixEditorProps) {
   const router = useRouter();
   const [collection, setCollection] = useState<CollectionItem[]>([]);
   const [isPublic, setIsPublic] = useState(initialIsPublic);

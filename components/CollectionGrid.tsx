@@ -16,9 +16,10 @@ const C = {
 
 const SORT_OPTIONS = [
   { id: "recent", label: "Recently Added" },
-  { id: "az", label: "A–Z" },
-  { id: "za", label: "Z–A" },
-  { id: "artist", label: "Artist" },
+  { id: "az", label: "Album A–Z" },
+  { id: "za", label: "Album Z–A" },
+  { id: "artist-az", label: "Artist A–Z" },
+  { id: "artist-za", label: "Artist Z–A" },
   { id: "year-asc", label: "Year ↑" },
   { id: "year-desc", label: "Year ↓" },
 ];
@@ -61,14 +62,15 @@ export default function CollectionGrid({ items }: { items: CollectionItem[] }) {
     switch (sort) {
       case "az": return a.album.title.localeCompare(b.album.title);
       case "za": return b.album.title.localeCompare(a.album.title);
-      case "artist": return a.album.artist.localeCompare(b.album.artist);
+      case "artist-az": return a.album.artist.localeCompare(b.album.artist);
+      case "artist-za": return b.album.artist.localeCompare(a.album.artist);
       case "year-asc": return (a.album.releaseYear ?? 0) - (b.album.releaseYear ?? 0);
       case "year-desc": return (b.album.releaseYear ?? 0) - (a.album.releaseYear ?? 0);
       default: return 0; // recent = already ordered by addedAt desc from server
     }
   });
 
-  const displayed = query.trim() ? sorted : sorted.slice(0, 5);
+  const displayed = query.trim() ? sorted : sorted.slice(0, 10);
 
   async function handleFeature(id: string) {
     setFeaturing(id);
@@ -117,7 +119,7 @@ export default function CollectionGrid({ items }: { items: CollectionItem[] }) {
 
       {maxError && (
         <p className="text-xs font-mono mb-2" style={{ color: "#C0392B" }}>
-          Max 4 featured. Unfeature one first.
+          Max 5 featured. Unfeature one first.
         </p>
       )}
 
@@ -164,9 +166,9 @@ export default function CollectionGrid({ items }: { items: CollectionItem[] }) {
               </div>
             </div>
           ))}
-          {!query && items.length > 5 && (
+          {!query && items.length > 10 && (
             <p className="text-xs font-mono text-center pt-2" style={{ color: C.subtle }}>
-              Showing 5 of {items.length} — search to find more
+              Showing 10 of {items.length} — search to find more
             </p>
           )}
         </div>

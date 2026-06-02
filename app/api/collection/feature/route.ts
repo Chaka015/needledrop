@@ -33,12 +33,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ isFeatured: false });
   }
 
-  // Check how many are already featured (max 4)
+  // Check how many are already featured (max 5)
   const featuredCount = await prisma.collection.count({
     where: { userId: user.id, isFeatured: true },
   });
 
-  if (featuredCount >= 4) {
+  if (featuredCount >= 5) {
     return NextResponse.json({ error: "MAX_FEATURED" }, { status: 409 });
   }
 

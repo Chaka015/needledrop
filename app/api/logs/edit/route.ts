@@ -34,5 +34,7 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.json({ log: updated });
+  return NextResponse.json({
+    log: { ...updated, durationMs: updated.durationMs !== null ? Number(updated.durationMs) : null },
+  });
 }

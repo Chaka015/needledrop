@@ -28,7 +28,7 @@ export default async function MixPage({ params }: Props) {
   const mix = await prisma.mix.findUnique({
     where: { id: mixId },
     include: {
-      user: { select: { username: true, avatarUrl: true, clerkId: true, isPremium: true } },
+      user: { select: { username: true, avatarUrl: true, clerkId: true } },
       items: {
         orderBy: { position: "asc" },
         include: { album: true },
@@ -99,7 +99,7 @@ export default async function MixPage({ params }: Props) {
         {/* Owner editing tools */}
         {isOwner && (
           <div className="mt-8">
-            <MixEditor mixId={mix.id} username={username} isPublic={mix.isPublic} isPremium={mix.user.isPremium} currentCoverUrl={mix.coverUrl} />
+            <MixEditor mixId={mix.id} username={username} isPublic={mix.isPublic} currentCoverUrl={mix.coverUrl} />
           </div>
         )}
       </div>

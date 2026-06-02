@@ -4,10 +4,11 @@ import { useState } from "react";
 import Image from "next/image";
 
 const C = {
-  border: "var(--skin-border)",
-  text:   "var(--skin-text)",
-  accent: "var(--skin-accent)",
-  subtle: "var(--skin-subtle)",
+  border:  "var(--skin-border)",
+  text:    "var(--skin-text)",
+  accent:  "var(--skin-accent)",
+  subtle:  "var(--skin-subtle)",
+  surface: "var(--skin-surface)",
 };
 
 interface FeaturedItem {
@@ -16,7 +17,68 @@ interface FeaturedItem {
     title: string;
     artist: string;
     coverUrl: string | null;
+    discogsId?: string;
   };
+}
+
+function AlbumTile({
+  item,
+  size,
+  isOwnProfile,
+  isHovered,
+  isRemoving,
+  onHover,
+  onUnfeature,
+}: {
+  item: FeaturedItem;
+  size: "hero" | "grid";
+  isOwnProfile: boolean;
+  isHovered: boolean;
+  isRemoving: boolean;
+  onHover: (id: string | null) => void;
+  onUnfeature: (id: string) => void;
+}) {
+  return (
+    <div
+      className="relative"
+      style={{ aspectRatio: "1" }}
+      onMouseEnter={() => isOwnProfile && onHover(item.id)}
+      onMouseLeave={() => onHover(null)}
+    >
+      {item.album.coverUrl ? (
+        <Image
+          src={item.album.coverUrl}
+          alt={`${item.album.title} by ${item.album.artist}`}
+          width={size === "hero" ? 240 : 120}
+          height={size === "hero" ? 240 : 120}
+          className="object-cover"
+          style={{ width: "100%", height: "100%", borderRadius: 4 }}
+          unoptimized
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-xs"
+          style={{ backgroundColor: C.surface, borderRadius: 4, color: C.subtle }}>
+          No art
+        </div>
+      )}
+
+      {/* Hover overlay */}
+      {isOwnProfile && isHovered && (
+        <div className="absolute inset-0 flex items-start justify-end p-1"
+          style={{ borderRadius: 4, background: "rgba(0,0,0,0.4)" }}>
+          <button
+            onClick={() => onUnfeature(item.id)}
+            disabled={isRemoving}
+            className="flex items-center justify-center w-6 h-6 text-sm transition-colors duration-100"
+            style={{ backgroundColor: C.accent, borderRadius: 4, color: C.text, opacity: isRemoving ? 0.4 : 1 }}
+            title="Remove from featured"
+          >
+            ★
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function FeaturedGrid({ items, isOwnProfile }: { items: FeaturedItem[]; isOwnProfile: boolean }) {
@@ -31,9 +93,7 @@ export default function FeaturedGrid({ items, isOwnProfile }: { items: FeaturedI
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ collectionId: id }),
     });
-    if (res.ok) {
-      setRemoved((prev) => new Set(prev).add(id));
-    }
+    if (res.ok) setRemoved((prev) => new Set(prev).add(id));
     setRemoving(null);
   }
 
@@ -48,55 +108,31 @@ export default function FeaturedGrid({ items, isOwnProfile }: { items: FeaturedI
     );
   }
 
-  return (
-    <div className="grid grid-cols-2 gap-1">
-      {visible.map((c) => (
-        <div
-          key={c.id}
-          className="relative"
-          style={{ aspectRatio: "1" }}
-          onMouseEnter={() => isOwnProfile && setHoverId(c.id)}
-          onMouseLeave={() => setHoverId(null)}
-        >
-          {c.album.coverUrl ? (
-            <Image
-              src={c.album.coverUrl}
-              alt={`${c.album.title} by ${c.album.artist}`}
-              width={120}
-              height={120}
-              className="object-cover"
-              style={{ width: "100%", height: "100%", borderRadius: 4 }}
-              unoptimized
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-xs"
-              style={{ backgroundColor: "var(--skin-surface)", borderRadius: 4, color: C.subtle }}>
-              No art
-            </div>
-          )}
+  const [hero, ...rest] = visible;
 
-          {/* Hover overlay with unfeature button */}
-          {isOwnProfile && hoverId === c.id && (
-            <div className="absolute inset-0 flex items-start justify-end p-1"
-              style={{ borderRadius: 4, background: "rgba(0,0,0,0.4)" }}>
-              <button
-                onClick={() => handleUnfeature(c.id)}
-                disabled={removing === c.id}
-                className="flex items-center justify-center w-6 h-6 text-sm transition-colors duration-100"
-                style={{
-                  backgroundColor: C.accent,
-                  borderRadius: 4,
-                  color: C.text,
-                  opacity: removing === c.id ? 0.4 : 1,
-                }}
-                title="Remove from featured"
-              >
-                ★
-              </button>
-            </div>
-          )}
+  const tileProps = (item: FeaturedItem, size: "hero" | "grid") => ({
+    item,
+    size,
+    isOwnProfile,
+    isHovered: hoverId === item.id,
+    isRemoving: removing === item.id,
+    onHover: setHoverId,
+    onUnfeature: handleUnfeature,
+  });
+
+  return (
+    <div className="space-y-1">
+      {/* Hero — full width spotlight */}
+      <AlbumTile {...tileProps(hero, "hero")} />
+
+      {/* 2×2 grid of remaining up to 4 */}
+      {rest.length > 0 && (
+        <div className="grid grid-cols-2 gap-1">
+          {rest.slice(0, 4).map((item) => (
+            <AlbumTile key={item.id} {...tileProps(item, "grid")} />
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }
