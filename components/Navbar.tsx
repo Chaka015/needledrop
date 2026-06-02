@@ -26,13 +26,15 @@ interface NavbarProps {
   username?: string | null;
   avatarUrl?: string | null;
   nowSpinning?: { title: string; artist: string } | null;
+  spotifyConnected?: boolean;
 }
 
-export default function Navbar({ username, avatarUrl, nowSpinning }: NavbarProps) {
+export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnected }: NavbarProps) {
   const router = useRouter();
   const [showNowSpinning, setShowNowSpinning] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [showAvatar, setShowAvatar] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const addRef = useRef<HTMLDivElement>(null);
   const avatarRef = useRef<HTMLDivElement>(null);
@@ -45,6 +47,18 @@ export default function Navbar({ username, avatarUrl, nowSpinning }: NavbarProps
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  async function handleSpotifySync() {
+    if (syncing) return;
+    setSyncing(true);
+    setShowAdd(false);
+    await Promise.all([
+      fetch("/api/spotify/sync", { method: "POST" }),
+      fetch("/api/spotify/now-playing", { method: "POST" }),
+    ]);
+    setSyncing(false);
+    window.location.reload();
+  }
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -143,6 +157,14 @@ export default function Navbar({ username, avatarUrl, nowSpinning }: NavbarProps
                   <DropdownItem onClick={() => { setShowAdd(false); if (username) router.push(`/${username}`); }}>
                     ↓ Import from Discogs
                   </DropdownItem>
+                  {spotifyConnected && (
+                    <>
+                      <div style={{ height: 1, backgroundColor: C.border, margin: "4px 0" }} />
+                      <DropdownItem onClick={handleSpotifySync}>
+                        {syncing ? "⟳ Syncing…" : "⟳ Sync Spotify"}
+                      </DropdownItem>
+                    </>
+                  )}
                 </div>
               )}
             </div>

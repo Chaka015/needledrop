@@ -25,6 +25,7 @@ model User {
   nowSpinningAt       DateTime?
   spotifyConnected    Boolean          @default(false)
   spotifyConnectedAt  DateTime?
+  spotifyLastSyncedAt DateTime?
   isPremium           Boolean          @default(false)
   premiumSince        DateTime?
   stripeCustomerId    String?          @unique

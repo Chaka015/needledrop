@@ -32,6 +32,7 @@ interface SettingsClientProps {
     bio: string | null;
     skin: string | null;
     spotifyId: string | null;
+    spotifyLastSyncedAt: Date | null;
   };
 }
 
@@ -189,6 +190,11 @@ return (
                 <span className="text-sm font-mono" style={{ color: C.text }}>Spotify connected</span>
                 <span className="text-xs font-mono" style={{ color: C.subtle }}>({user.spotifyId})</span>
               </div>
+              {user.spotifyLastSyncedAt && (
+                <p className="text-xs font-mono" style={{ color: C.subtle }}>
+                  Last synced: {new Date(user.spotifyLastSyncedAt).toLocaleString()}
+                </p>
+              )}
               <div className="flex gap-2">
                 <button onClick={handleSpotifySync} disabled={spotifySyncing}
                   className="px-4 py-2 text-xs font-mono transition-colors duration-100"

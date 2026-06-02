@@ -117,5 +117,10 @@ export async function POST() {
     imported++;
   }
 
+  await prisma.user.update({
+    where: { clerkId },
+    data: { spotifyLastSyncedAt: new Date() },
+  });
+
   return NextResponse.json({ imported, skipped, total: tracks.length });
 }

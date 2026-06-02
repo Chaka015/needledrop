@@ -5,6 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import Navbar from "@/components/Navbar";
+import SpotifyAutoSync from "@/components/SpotifyAutoSync";
 import { getSkin, skinToVars } from "@/lib/skins";
 
 const geistSans = Geist({
@@ -34,6 +35,8 @@ export default async function RootLayout({
   let nowSpinning: { title: string; artist: string } | null = null;
   let nowSpinningActive = false;
   let userSkin: string | null = null;
+  let shouldSpotifySync = false;
+  let spotifyConnected = false;
 
   if (clerkId) {
     const user = await prisma.user.findUnique({
@@ -44,6 +47,8 @@ export default async function RootLayout({
         nowSpinning: true,
         nowSpinningAt: true,
         skin: true,
+        spotifyConnected: true,
+        spotifyLastSyncedAt: true,
       },
     });
 
@@ -51,6 +56,13 @@ export default async function RootLayout({
       username = user.username;
       avatarUrl = user.avatarUrl ?? null;
       userSkin = user.skin ?? null;
+
+      // Auto-sync if Spotify connected and last sync > 15 min ago (or never)
+      if (user.spotifyConnected) {
+        spotifyConnected = true;
+        const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000);
+        shouldSpotifySync = !user.spotifyLastSyncedAt || user.spotifyLastSyncedAt < fifteenMinAgo;
+      }
 
       if (user.nowSpinning) {
         // Only treat as active if set within the last 60 minutes
@@ -86,7 +98,9 @@ export default async function RootLayout({
             username={username}
             avatarUrl={avatarUrl}
             nowSpinning={nowSpinning}
+            spotifyConnected={spotifyConnected}
           />
+          <SpotifyAutoSync shouldSync={shouldSpotifySync} />
           {children}
         </body>
       </html>

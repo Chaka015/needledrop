@@ -94,7 +94,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const listensThisYear = user.logs.filter((l) => new Date(l.playedAt) >= startOfYear).length;
   const listensThisWeek = user.logs.filter((l) => new Date(l.playedAt) >= startOfWeek).length;
 
-  const featured = user.collection.filter((c) => c.isFeatured).slice(0, 4);
+  const featured = user.collection.filter((c) => c.isFeatured).slice(0, 5);
   const latestAdded = user.collection.filter((c) => !c.isFeatured).slice(0, 4);
 
   const nowSpinningAlbum = user.nowSpinning

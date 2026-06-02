@@ -21,23 +21,23 @@ interface FeaturedItem {
   };
 }
 
-function AlbumTile({
+function Tile({
   item,
-  size,
   isOwnProfile,
-  isHovered,
-  isRemoving,
+  hoverId,
+  removing,
   onHover,
   onUnfeature,
 }: {
   item: FeaturedItem;
-  size: "hero" | "grid";
   isOwnProfile: boolean;
-  isHovered: boolean;
-  isRemoving: boolean;
+  hoverId: string | null;
+  removing: string | null;
   onHover: (id: string | null) => void;
   onUnfeature: (id: string) => void;
 }) {
+  const hovered = hoverId === item.id;
+  const isRemoving = removing === item.id;
   return (
     <div
       className="relative"
@@ -49,10 +49,9 @@ function AlbumTile({
         <Image
           src={item.album.coverUrl}
           alt={`${item.album.title} by ${item.album.artist}`}
-          width={size === "hero" ? 240 : 120}
-          height={size === "hero" ? 240 : 120}
+          fill
           className="object-cover"
-          style={{ width: "100%", height: "100%", borderRadius: 4 }}
+          style={{ borderRadius: 4 }}
           unoptimized
         />
       ) : (
@@ -61,9 +60,7 @@ function AlbumTile({
           No art
         </div>
       )}
-
-      {/* Hover overlay */}
-      {isOwnProfile && isHovered && (
+      {isOwnProfile && hovered && (
         <div className="absolute inset-0 flex items-start justify-end p-1"
           style={{ borderRadius: 4, background: "rgba(0,0,0,0.4)" }}>
           <button
@@ -108,31 +105,50 @@ export default function FeaturedGrid({ items, isOwnProfile }: { items: FeaturedI
     );
   }
 
-  const [hero, ...rest] = visible;
-
-  const tileProps = (item: FeaturedItem, size: "hero" | "grid") => ({
-    item,
-    size,
-    isOwnProfile,
-    isHovered: hoverId === item.id,
-    isRemoving: removing === item.id,
+  const tileProps = (item: FeaturedItem) => ({
+    item, isOwnProfile, hoverId, removing,
     onHover: setHoverId,
     onUnfeature: handleUnfeature,
   });
 
-  return (
-    <div className="space-y-1">
-      {/* Hero — full width spotlight */}
-      <AlbumTile {...tileProps(hero, "hero")} />
-
-      {/* 2×2 grid of remaining up to 4 */}
-      {rest.length > 0 && (
+  // 5 items: hero spotlight above 2×2 grid
+  if (visible.length === 5) {
+    const [hero, ...grid] = visible;
+    return (
+      <div className="space-y-1">
+        <Tile {...tileProps(hero)} />
         <div className="grid grid-cols-2 gap-1">
-          {rest.slice(0, 4).map((item) => (
-            <AlbumTile key={item.id} {...tileProps(item, "grid")} />
-          ))}
+          {grid.map((item) => <Tile key={item.id} {...tileProps(item)} />)}
         </div>
-      )}
+      </div>
+    );
+  }
+
+  // 4 items: clean 2×2 grid
+  if (visible.length === 4) {
+    return (
+      <div className="grid grid-cols-2 gap-1">
+        {visible.map((item) => <Tile key={item.id} {...tileProps(item)} />)}
+      </div>
+    );
+  }
+
+  // 3 items: 1 full-width + 2-col row
+  if (visible.length === 3) {
+    return (
+      <div className="space-y-1">
+        <Tile {...tileProps(visible[0])} />
+        <div className="grid grid-cols-2 gap-1">
+          {visible.slice(1).map((item) => <Tile key={item.id} {...tileProps(item)} />)}
+        </div>
+      </div>
+    );
+  }
+
+  // 1–2 items: 2-col grid (1 item fills one cell, 2 items fill both)
+  return (
+    <div className={`grid gap-1 ${visible.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+      {visible.map((item) => <Tile key={item.id} {...tileProps(item)} />)}
     </div>
   );
 }
