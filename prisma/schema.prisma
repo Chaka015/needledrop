@@ -26,6 +26,9 @@ model User {
   spotifyRefreshToken String?
   spotifyTokenExpiry  DateTime?
 
+  // Activity feed filter preferences
+  feedPreferences     Json?
+
   collection   Collection[]
   logs         ListeningLog[]
   wantlist     Wantlist[]

@@ -10,6 +10,7 @@ import RecentListens from "@/components/RecentListens";
 import FeaturedGrid from "@/components/FeaturedGrid";
 import FollowButton from "@/components/FollowButton";
 import MixesList from "@/components/MixesList";
+import SkinApplicator from "@/components/SkinApplicator";
 import { getSkin, skinToVars } from "@/lib/skins";
 
 interface ProfilePageProps {
@@ -111,6 +112,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <div className="min-h-screen font-sans" style={{ ...skinVars, backgroundColor: C.bg, color: C.text }}>
+      <SkinApplicator vars={skinVars as Record<string, string>} />
 
       {/* HEADER */}
       <div style={{ borderBottom: `1px solid ${C.border}` }}>
@@ -136,15 +138,15 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   <FollowButton targetUserId={user.id} initialIsFollowing={isFollowing} />
                 )}
                 {nowSpinningAlbum && (
-                  <span className="flex items-center gap-2 text-xs font-mono px-3 py-1"
-                    style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, color: C.accent, borderRadius: 4 }}>
-                    {user.nowSpinningSource === "streaming" ? (
-                      <span style={{ color: C.muted }}>▶</span>
-                    ) : (
-                      <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: C.accent }} />
-                    )}
-                    {user.nowSpinningSource === "streaming" ? "STREAMING: " : "NOW SPINNING: "}
-                    {nowSpinningAlbum.artist} — {nowSpinningAlbum.title}
+                  <span className="flex items-center gap-2 text-xs font-mono px-3 py-1.5"
+                    style={{ backgroundColor: "#0D0D0D", border: "1px solid #333", borderRadius: 4 }}>
+                    <span className="w-2 h-2 rounded-full animate-pulse shrink-0" style={{ backgroundColor: "#FF3E3E" }} />
+                    <span style={{ color: "#FF3E3E" }}>
+                      {user.nowSpinningSource === "streaming" ? "STREAMING" : "ON AIR"}
+                    </span>
+                    <span style={{ color: "#F7F1E3" }}>
+                      {nowSpinningAlbum.artist} — {nowSpinningAlbum.title}
+                    </span>
                   </span>
                 )}
               </div>

@@ -10,15 +10,15 @@ import AddModal from "./AddModal";
 import NotificationBell from "./NotificationBell";
 
 const C = {
-  bg: "#2D2926",
-  surface: "#3D3834",
-  surfaceRaised: "#4A4540",
-  border: "#524D48",
-  text: "#F7F1E3",
-  muted: "#A89F94",
-  subtle: "#6B6560",
-  accent: "#E67E22",
-  accentHover: "#CF711E",
+  bg: "var(--skin-bg)",
+  surface: "var(--skin-surface)",
+  surfaceRaised: "var(--skin-surface-raised)",
+  border: "var(--skin-border)",
+  text: "var(--skin-text)",
+  muted: "var(--skin-muted)",
+  subtle: "var(--skin-subtle)",
+  accent: "var(--skin-accent)",
+  accentHover: "var(--skin-accent-hover)",
 };
 
 interface NavbarProps {
@@ -83,22 +83,31 @@ export default function Navbar({ username, avatarUrl, nowSpinning }: NavbarProps
             </form>
 
             {/* Now Spinning */}
-            <button
-              onClick={() => setShowNowSpinning(true)}
-              className="flex items-center gap-2 px-4 py-1.5 text-xs font-mono transition-colors duration-100 shrink-0"
-              style={{ backgroundColor: C.accent, color: C.text, borderRadius: 4 }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.accentHover)}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = C.accent)}
-            >
-              {nowSpinning ? (
-                <>
-                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: C.text }} />
-                  <span className="max-w-48 truncate">{nowSpinning.artist} — {nowSpinning.title}</span>
-                </>
-              ) : (
-                <>▶ WHAT ARE YOU SPINNING?</>
-              )}
-            </button>
+            {nowSpinning ? (
+              <button
+                onClick={() => setShowNowSpinning(true)}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono transition-opacity duration-100 shrink-0"
+                style={{ backgroundColor: "#0D0D0D", border: "1px solid #333", borderRadius: 4 }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+              >
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ backgroundColor: "#FF3E3E" }} />
+                <span className="font-bold" style={{ color: "#FF3E3E" }}>ON AIR</span>
+                <span className="max-w-40 truncate" style={{ color: "#F7F1E3" }}>
+                  {nowSpinning.artist} — {nowSpinning.title}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowNowSpinning(true)}
+                className="flex items-center gap-2 px-4 py-1.5 text-xs font-mono transition-colors duration-100 shrink-0"
+                style={{ backgroundColor: C.accent, color: C.text, borderRadius: 4 }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.accentHover)}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = C.accent)}
+              >
+                ▶ WHAT ARE YOU SPINNING?
+              </button>
+            )}
 
             {/* Add dropdown */}
             <div ref={addRef} className="relative shrink-0">
@@ -200,10 +209,10 @@ export default function Navbar({ username, avatarUrl, nowSpinning }: NavbarProps
 function DropdownItem({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
   return (
     <div className="px-4 py-2 text-xs font-mono cursor-pointer transition-colors duration-100"
-      style={{ color: "#A89F94" }}
+      style={{ color: C.muted }}
       onClick={onClick}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "#4A4540"; (e.currentTarget as HTMLDivElement).style.color = "#F7F1E3"; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLDivElement).style.color = "#A89F94"; }}>
+      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = C.surfaceRaised; (e.currentTarget as HTMLDivElement).style.color = C.text; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLDivElement).style.color = C.muted; }}>
       {children}
     </div>
   );
