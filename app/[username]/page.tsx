@@ -120,12 +120,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           <div className="flex flex-col md:flex-row gap-8 items-start">
             <div className="shrink-0">
               {user.avatarUrl ? (
-                <Image src={user.avatarUrl} alt={user.username} width={96} height={96}
+                <Image src={user.avatarUrl} alt={user.username} width={128} height={128}
                   className="object-cover"
-                  style={{ width: 96, height: 96, borderRadius: "50%", border: `2px solid ${C.border}` }} />
+                  style={{ width: 128, height: 128, borderRadius: "50%", border: `3px solid ${C.accent}` }} />
               ) : (
-                <div className="flex items-center justify-center text-3xl font-bold"
-                  style={{ width: 96, height: 96, borderRadius: "50%", backgroundColor: C.surface, color: C.subtle, border: `2px solid ${C.border}` }}>
+                <div className="flex items-center justify-center text-4xl font-bold"
+                  style={{ width: 128, height: 128, borderRadius: "50%", backgroundColor: C.surface, color: C.subtle, border: `3px solid ${C.accent}` }}>
                   {user.username[0].toUpperCase()}
                 </div>
               )}
