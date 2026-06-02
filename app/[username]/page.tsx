@@ -7,6 +7,7 @@ import CollectionGrid from "@/components/CollectionGrid";
 import AudioSetupEditor from "@/components/AudioSetupEditor";
 import ImportDiscogs from "@/components/ImportDiscogs";
 import RecentListens from "@/components/RecentListens";
+import FeaturedGrid from "@/components/FeaturedGrid";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -160,6 +161,22 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
         <div className="flex-1 min-w-0 space-y-12">
 
+          <section>
+            <SectionLabel>Recent Listens</SectionLabel>
+            <RecentListens logs={logs} isOwnProfile={isOwnProfile} />
+          </section>
+
+          <section>
+            <SectionLabel>Latest Added</SectionLabel>
+            {latestAdded.length > 0 ? (
+              <div className="grid grid-cols-4 gap-2">
+                {latestAdded.map((c) => <AlbumTile key={c.id} album={c.album} size="lg" />)}
+              </div>
+            ) : (
+              <EmptyState text="Nothing added to collection yet." />
+            )}
+          </section>
+
           {isOwnProfile && (
             <section>
               <SectionLabel>My Records</SectionLabel>
@@ -180,22 +197,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               />
             </section>
           )}
-
-          <section>
-            <SectionLabel>Latest Added</SectionLabel>
-            {latestAdded.length > 0 ? (
-              <div className="grid grid-cols-4 gap-2">
-                {latestAdded.map((c) => <AlbumTile key={c.id} album={c.album} size="lg" />)}
-              </div>
-            ) : (
-              <EmptyState text="Nothing added to collection yet." />
-            )}
-          </section>
-
-          <section>
-            <SectionLabel>Recent Listens</SectionLabel>
-            <RecentListens logs={logs} isOwnProfile={isOwnProfile} />
-          </section>
         </div>
 
         {/* SIDEBAR */}
@@ -203,20 +204,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
           <section>
             <SectionLabel>Featured</SectionLabel>
-            {featured.length > 0 ? (
-              <div className="grid grid-cols-2 gap-1">
-                {featured.map((c) => (
-                  <div key={c.id} style={{ aspectRatio: "1" }}>
-                    <AlbumTile album={c.album} size="lg" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-4 text-center text-xs font-mono"
-                style={{ border: `1px dashed ${C.border}`, color: C.subtle }}>
-                {isOwnProfile ? "★ star records to feature them" : "No featured albums yet."}
-              </div>
-            )}
+            <FeaturedGrid
+              items={featured.map((c) => ({ id: c.id, album: c.album }))}
+              isOwnProfile={isOwnProfile}
+            />
           </section>
 
           <section>
