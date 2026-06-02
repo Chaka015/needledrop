@@ -2,6 +2,51 @@
 
 ## Identity
 NeedleDrop is a music logging and collection platform. The UI should feel like a well-organized record store — warm, purposeful, and slightly technical. Album artwork is always the star; the interface exists to frame it, not compete with it.
+## Current Roadmap (June 2026)
+
+### Core Philosophy
+- **Physical media first**: Collection is the primary experience. Streaming is acknowledged but secondary.
+- **Personal curation over discovery**: Users build their own collections and mixes; social grows organically from that.
+- **Beat Discogs by**: Better UX, community features, social connection, marketplace (future).
+
+### Immediate Priorities
+
+#### 1. Two-Tab Now Spinning Modal
+- **Collection tab**: Search user's own records, pick one, log with optional rating/review/format
+- **Streaming tab**: Search MusicBrainz API, set Now Spinning but marked as streaming (different badge color)
+- Streaming listens logged separately, don't count toward "Records" stat
+- Streaming logs show service icon (▶) instead of format (Vinyl/CD)
+
+#### 2. Spotify OAuth Integration
+- Users can connect Spotify account in settings
+- Auto-log recent plays in background (daily cron or on login)
+- Streaming logs marked distinctly, don't inflate collection count
+- Goal: frictionless streaming logging without competing with Spotify
+
+#### 3. Mixes Feature
+- Users can create curated lists of 5-50 albums called "Mixes"
+- Each mix has title, description, optional cover image
+- Mixes are shareable (can be featured on profiles, social feed)
+- Mixes can only contain physical records from user's collection (not streaming)
+- URL: `/[username]/mixes/[mixId]`
+
+#### 4. Landing Page (Logged-Out Users)
+- Hero section: "NeedleDrop — The social network for record collectors"
+- **Latest Additions**: Albums added to collections in the last 7 days (global, sorted by date)
+- **Most Popular**: Albums added in the last 7 days, sorted by spin count
+- **Featured Mixes**: Top curated mixes from community
+- CTA: "Sign up to start collecting"
+
+#### 5. Premium / Patreon Tier
+- Unlock: Custom mix covers (image upload), analytics dashboard (listening trends), early access to new features
+- Messaging: "Support NeedleDrop and unlock creator tools"
+- Stripe or Patreon integration
+
+### Future (Not Yet)
+- Marketplace (box it out, don't build)
+- Community leaderboards
+- Better onboarding flows
+- Advanced analytics
 
 ---
 

@@ -22,11 +22,16 @@ export async function POST(req: Request, { params }: Params) {
   const user = await prisma.user.findUnique({ where: { clerkId } });
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  const { content } = await req.json();
+  const { content, parentId } = await req.json();
   if (!content?.trim()) return NextResponse.json({ error: "Empty comment" }, { status: 400 });
 
   const comment = await prisma.albumComment.create({
-    data: { userId: user.id, albumId, content: content.trim() },
+    data: {
+      userId: user.id,
+      albumId,
+      content: content.trim(),
+      ...(parentId ? { parentId } : {}),
+    },
     include: { user: { select: { username: true, avatarUrl: true } } },
   });
 

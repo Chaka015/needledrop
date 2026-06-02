@@ -77,9 +77,21 @@ export default async function AlbumPage({ params }: Props) {
       collection: { include: { user: true } },
       wantlist: { include: { user: true } },
       comments: {
+        where: { parentId: null, deleted: false },
         orderBy: { createdAt: "desc" },
         take: 50,
-        include: { user: { select: { username: true, avatarUrl: true } } },
+        include: {
+          user: { select: { username: true, avatarUrl: true } },
+          CommentSpin: { select: { userId: true } },
+          replies: {
+            where: { deleted: false },
+            orderBy: { createdAt: "asc" },
+            include: {
+              user: { select: { username: true, avatarUrl: true } },
+              CommentSpin: { select: { userId: true } },
+            },
+          },
+        },
       },
     },
   });
@@ -118,6 +130,7 @@ export default async function AlbumPage({ params }: Props) {
     format: log.format,
     source: log.source,
     spinCount: log.spins.length,
+    userHasSpun: currentUser ? log.spins.some((s) => s.userId === currentUser.id) : false,
     user: { username: log.user.username, avatarUrl: log.user.avatarUrl },
   }));
 
@@ -142,6 +155,17 @@ export default async function AlbumPage({ params }: Props) {
     content: c.content,
     createdAt: c.createdAt.toISOString(),
     user: c.user,
+    spinCount: c.CommentSpin.length,
+    userHasSpun: currentUser ? c.CommentSpin.some((s) => s.userId === currentUser.id) : false,
+    replies: c.replies.map((r) => ({
+      id: r.id,
+      content: r.content,
+      createdAt: r.createdAt.toISOString(),
+      user: r.user,
+      spinCount: r.CommentSpin.length,
+      userHasSpun: currentUser ? r.CommentSpin.some((s) => s.userId === currentUser.id) : false,
+      replies: [],
+    })),
   }));
 
   return (
@@ -223,7 +247,7 @@ export default async function AlbumPage({ params }: Props) {
           tracks={formattedTracks}
           pressings={formattedPressings}
           initialComments={formattedComments}
-          isLoggedIn={!!currentUser}
+          currentUsername={currentUser?.username ?? null}
         />
       </div>
     </div>

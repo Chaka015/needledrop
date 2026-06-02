@@ -30,15 +30,19 @@ interface MixEditorProps {
   mixId: string;
   username: string;
   isPublic: boolean;
+  isPremium?: boolean;
+  currentCoverUrl?: string | null;
 }
 
-export default function MixEditor({ mixId, username, isPublic: initialIsPublic }: MixEditorProps) {
+export default function MixEditor({ mixId, username, isPublic: initialIsPublic, isPremium, currentCoverUrl }: MixEditorProps) {
   const router = useRouter();
   const [collection, setCollection] = useState<CollectionItem[]>([]);
   const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [open, setOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [coverUrl, setCoverUrl] = useState(currentCoverUrl ?? null);
 
   useEffect(() => {
     if (!open) return;
@@ -86,6 +90,32 @@ export default function MixEditor({ mixId, username, isPublic: initialIsPublic }
     });
   }
 
+  async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`/api/mixes/${mixId}/cover`, { method: "POST", body: fd });
+    if (res.ok) {
+      const data = await res.json();
+      setCoverUrl(data.url);
+      router.refresh();
+    }
+    setUploading(false);
+    e.target.value = "";
+  }
+
+  async function handleRemoveCover() {
+    await fetch(`/api/mixes/${mixId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ coverUrl: null }),
+    });
+    setCoverUrl(null);
+    router.refresh();
+  }
+
   return (
     <div className="space-y-3">
       <h3 className="text-xs font-mono uppercase tracking-widest" style={{ color: C.subtle }}>Edit Mix</h3>
@@ -107,6 +137,26 @@ export default function MixEditor({ mixId, username, isPublic: initialIsPublic }
           onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
           {isPublic ? "PUBLIC" : "PRIVATE"}
         </button>
+        {isPremium && (
+          <label
+            className="px-4 py-2 text-xs font-mono transition-colors duration-100 cursor-pointer"
+            style={{ backgroundColor: C.surfaceRaised, color: uploading ? C.subtle : C.muted, borderRadius: 4, border: `1px solid ${C.border}` }}
+            onMouseEnter={(e) => !uploading && ((e.currentTarget as HTMLLabelElement).style.color = C.text)}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLLabelElement).style.color = C.muted)}>
+            {uploading ? "UPLOADING…" : coverUrl ? "CHANGE COVER" : "◎ UPLOAD COVER"}
+            <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} disabled={uploading} />
+          </label>
+        )}
+        {isPremium && coverUrl && (
+          <button
+            onClick={handleRemoveCover}
+            className="px-4 py-2 text-xs font-mono transition-colors duration-100"
+            style={{ backgroundColor: "transparent", color: C.subtle, borderRadius: 4, border: `1px solid ${C.border}` }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
+            onMouseLeave={(e) => (e.currentTarget.style.color = C.subtle)}>
+            REMOVE COVER
+          </button>
+        )}
         <button
           onClick={handleDelete}
           className="px-4 py-2 text-xs font-mono transition-colors duration-100"
@@ -116,6 +166,9 @@ export default function MixEditor({ mixId, username, isPublic: initialIsPublic }
           DELETE MIX
         </button>
       </div>
+      {isPremium && !coverUrl && (
+        <p className="text-xs font-mono" style={{ color: C.subtle }}>◎ Upload a custom cover image for this mix</p>
+      )}
 
       {open && (
         <div className="p-4 space-y-3" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
