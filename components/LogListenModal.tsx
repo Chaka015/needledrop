@@ -31,11 +31,12 @@ interface LogListenModalProps {
   album: Album;
   onClose: () => void;
   onSuccess: () => void;
+  source?: "physical" | "streaming";
 }
 
-const FORMATS = ["Vinyl", "CD", "Cassette", "Digital", "Other"];
+const FORMATS = ["Vinyl", "CD", "Cassette", "Other"];
 
-export default function LogListenModal({ album, onClose, onSuccess }: LogListenModalProps) {
+export default function LogListenModal({ album, onClose, onSuccess, source = "physical" }: LogListenModalProps) {
   const [rating, setRating] = useState<number | null>(null);
   const [review, setReview] = useState("");
   const [format, setFormat] = useState("");
@@ -60,7 +61,8 @@ export default function LogListenModal({ album, onClose, onSuccess }: LogListenM
         genre: album.genre,
         rating,
         review: review || null,
-        format: format || null,
+        format: source === "streaming" ? null : (format || null),
+        source,
       }),
     });
 
@@ -101,23 +103,29 @@ export default function LogListenModal({ album, onClose, onSuccess }: LogListenM
             <StarRatingInput rating={rating} onChange={setRating} />
           </div>
 
-          <div>
-            <label className="text-xs font-mono uppercase tracking-widest block mb-2" style={{ color: C.subtle }}>Format</label>
-            <div className="flex flex-wrap gap-2">
-              {FORMATS.map((f) => (
-                <button key={f} type="button" onClick={() => setFormat(format === f ? "" : f)}
-                  className="px-3 py-1.5 text-xs font-mono transition-colors duration-100"
-                  style={{
-                    backgroundColor: format === f ? C.accent : C.surfaceRaised,
-                    color: format === f ? C.text : C.muted,
-                    borderRadius: 4,
-                    border: `1px solid ${format === f ? C.accent : C.border}`,
-                  }}>
-                  {f.toUpperCase()}
-                </button>
-              ))}
+          {source === "streaming" ? (
+            <div className="flex items-center gap-2 text-xs font-mono py-1" style={{ color: C.muted }}>
+              <span style={{ color: C.accent }}>▶</span> STREAMING — no format required
             </div>
-          </div>
+          ) : (
+            <div>
+              <label className="text-xs font-mono uppercase tracking-widest block mb-2" style={{ color: C.subtle }}>Format</label>
+              <div className="flex flex-wrap gap-2">
+                {FORMATS.map((f) => (
+                  <button key={f} type="button" onClick={() => setFormat(format === f ? "" : f)}
+                    className="px-3 py-1.5 text-xs font-mono transition-colors duration-100"
+                    style={{
+                      backgroundColor: format === f ? C.accent : C.surfaceRaised,
+                      color: format === f ? C.text : C.muted,
+                      borderRadius: 4,
+                      border: `1px solid ${format === f ? C.accent : C.border}`,
+                    }}>
+                    {f.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="text-xs font-mono uppercase tracking-widest block mb-2" style={{ color: C.subtle }}>

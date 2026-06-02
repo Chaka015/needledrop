@@ -8,11 +8,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { albumId } = await req.json();
+  const { albumId, source } = await req.json();
 
   await prisma.user.update({
     where: { clerkId },
-    data: { nowSpinning: albumId ?? null },
+    data: {
+      nowSpinning: albumId ?? null,
+      nowSpinningSource: albumId ? (source === "streaming" ? "streaming" : "physical") : null,
+    },
   });
 
   return NextResponse.json({ ok: true });

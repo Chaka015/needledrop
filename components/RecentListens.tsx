@@ -19,6 +19,7 @@ interface Log {
   rating: number | null;
   review: string | null;
   format: string | null;
+  source: string;
   playedAt: string;
   spinCount: number;
   userHasSpun: boolean;
@@ -84,7 +85,11 @@ export default function RecentListens({ logs, isOwnProfile }: { logs: Log[]; isO
             <p className="mt-1 text-sm line-clamp-2" style={{ color: C.muted }}>{log.review}</p>
           )}
           <div className="mt-1 flex gap-3 text-xs font-mono" style={{ color: C.subtle }}>
-            {log.format && <span>{log.format}</span>}
+            {log.source === "streaming" ? (
+              <span style={{ color: C.muted }}>▶ STREAMING</span>
+            ) : log.format ? (
+              <span>{log.format}</span>
+            ) : null}
             <span>{new Date(log.playedAt).toLocaleDateString()}</span>
           </div>
         </div>

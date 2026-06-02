@@ -9,6 +9,7 @@ import ImportDiscogs from "@/components/ImportDiscogs";
 import RecentListens from "@/components/RecentListens";
 import FeaturedGrid from "@/components/FeaturedGrid";
 import FollowButton from "@/components/FollowButton";
+import MixesList from "@/components/MixesList";
 import { getSkin, skinToVars } from "@/lib/skins";
 
 interface ProfilePageProps {
@@ -50,6 +51,17 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         orderBy: { addedAt: "desc" },
         include: { album: true },
       },
+      mixes: {
+        orderBy: { updatedAt: "desc" },
+        include: {
+          items: {
+            orderBy: { position: "asc" },
+            take: 4,
+            include: { album: { select: { coverUrl: true, title: true, artist: true } } },
+          },
+          _count: { select: { items: true } },
+        },
+      },
     },
   });
 
@@ -90,6 +102,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     rating: log.rating,
     review: log.review,
     format: log.format,
+    source: log.source,
     playedAt: log.playedAt.toISOString(),
     spinCount: log.spins.length,
     userHasSpun: currentUser ? log.spins.some((s) => s.userId === currentUser.id) : false,
@@ -125,8 +138,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 {nowSpinningAlbum && (
                   <span className="flex items-center gap-2 text-xs font-mono px-3 py-1"
                     style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, color: C.accent, borderRadius: 4 }}>
-                    <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: C.accent }} />
-                    NOW SPINNING: {nowSpinningAlbum.artist} — {nowSpinningAlbum.title}
+                    {user.nowSpinningSource === "streaming" ? (
+                      <span style={{ color: C.muted }}>▶</span>
+                    ) : (
+                      <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: C.accent }} />
+                    )}
+                    {user.nowSpinningSource === "streaming" ? "STREAMING: " : "NOW SPINNING: "}
+                    {nowSpinningAlbum.artist} — {nowSpinningAlbum.title}
                   </span>
                 )}
               </div>
@@ -254,6 +272,15 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               )}
             </section>
           )}
+
+          <section>
+            <SectionLabel>Mixes</SectionLabel>
+            <MixesList
+              mixes={user.mixes}
+              username={username}
+              isOwnProfile={isOwnProfile}
+            />
+          </section>
 
           <section>
             <SectionLabel>The Setup</SectionLabel>

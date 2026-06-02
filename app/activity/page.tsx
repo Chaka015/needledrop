@@ -66,6 +66,7 @@ export default async function ActivityPage() {
       rating: log.rating,
       review: log.review,
       format: log.format,
+      source: log.source,
       spinCount: log.spins.length,
       userHasSpun: currentUser ? log.spins.some((s) => s.userId === currentUser.id) : false,
       user: { username: log.user.username, avatarUrl: log.user.avatarUrl },

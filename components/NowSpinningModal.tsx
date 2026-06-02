@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import LogListenModal from "./LogListenModal";
 
@@ -32,24 +32,56 @@ interface CollectionItem {
   album: Album;
 }
 
+interface MBResult {
+  mbid: string;
+  title: string;
+  artist: string;
+  year: string | null;
+  hasCover: boolean;
+  label: string | null;
+}
+
 interface NowSpinningModalProps {
   onClose: () => void;
   onSuccess: () => void;
 }
 
+type Tab = "collection" | "streaming";
+
 export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModalProps) {
+  const [tab, setTab] = useState<Tab>("collection");
   const [query, setQuery] = useState("");
   const [collection, setCollection] = useState<CollectionItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [collectionLoading, setCollectionLoading] = useState(true);
+  const [mbResults, setMbResults] = useState<MBResult[]>([]);
+  const [mbLoading, setMbLoading] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+  const [selectedSource, setSelectedSource] = useState<"physical" | "streaming">("physical");
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetch("/api/collection")
       .then((r) => r.json())
-      .then((data) => { setCollection(data.items ?? []); setLoading(false); });
+      .then((data) => { setCollection(data.items ?? []); setCollectionLoading(false); });
   }, []);
 
-  const filtered = query.trim()
+  useEffect(() => {
+    if (tab !== "streaming") return;
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    if (!query.trim()) { setMbResults([]); return; }
+
+    setMbLoading(true);
+    searchTimeout.current = setTimeout(async () => {
+      const res = await fetch(`/api/musicbrainz?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      setMbResults(data.results ?? []);
+      setMbLoading(false);
+    }, 400);
+
+    return () => { if (searchTimeout.current) clearTimeout(searchTimeout.current); };
+  }, [query, tab]);
+
+  const filteredCollection = query.trim()
     ? collection.filter(
         (c) =>
           c.album.title.toLowerCase().includes(query.toLowerCase()) ||
@@ -57,15 +89,63 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
       )
     : collection.slice(0, 8);
 
-  async function handleSpin(album: Album) {
-    // Set now spinning
+  async function handlePhysicalSpin(album: Album) {
     await fetch("/api/now-spinning", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ albumId: album.id }),
+      body: JSON.stringify({ albumId: album.id, source: "physical" }),
     });
-    // Show log modal for rating/review
+    setSelectedSource("physical");
     setSelectedAlbum(album);
+  }
+
+  async function handleStreamingSpin(mb: MBResult) {
+    const coverUrl = mb.hasCover
+      ? `https://coverartarchive.org/release/${mb.mbid}/front-250`
+      : null;
+
+    const payload = {
+      discogsId: `mb:${mb.mbid}`,
+      title: mb.title,
+      artist: mb.artist,
+      releaseYear: mb.year ? parseInt(mb.year) : null,
+      coverUrl,
+      label: mb.label,
+      genre: null,
+    };
+
+    const res = await fetch("/api/albums/upsert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    const dbAlbum: Album = {
+      id: data.album?.id ?? "",
+      discogsId: payload.discogsId,
+      title: mb.title,
+      artist: mb.artist,
+      coverUrl,
+      releaseYear: payload.releaseYear,
+      label: mb.label,
+      genre: null,
+    };
+
+    await fetch("/api/now-spinning", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ albumId: dbAlbum.id, source: "streaming" }),
+    });
+
+    setSelectedSource("streaming");
+    setSelectedAlbum(dbAlbum);
+  }
+
+  function handleTabSwitch(t: Tab) {
+    setTab(t);
+    setQuery("");
+    setMbResults([]);
   }
 
   if (selectedAlbum) {
@@ -81,6 +161,7 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
           label: selectedAlbum.label,
           genre: selectedAlbum.genre,
         }}
+        source={selectedSource}
         onClose={onClose}
         onSuccess={onSuccess}
       />
@@ -92,11 +173,25 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
       <div className="w-full max-w-md" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
 
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: `1px solid ${C.border}` }}>
-          <div>
-            <h2 className="text-sm font-bold" style={{ color: C.text }}>What are you spinning?</h2>
-            <p className="text-xs font-mono mt-0.5" style={{ color: C.subtle }}>Pick from your collection</p>
-          </div>
+          <h2 className="text-sm font-bold" style={{ color: C.text }}>What are you spinning?</h2>
           <button onClick={onClose} style={{ color: C.subtle }} className="text-xl leading-none">×</button>
+        </div>
+
+        <div className="flex" style={{ borderBottom: `1px solid ${C.border}` }}>
+          {(["collection", "streaming"] as Tab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => handleTabSwitch(t)}
+              className="flex-1 py-2.5 text-xs font-mono uppercase tracking-widest transition-colors duration-100"
+              style={{
+                color: tab === t ? C.text : C.subtle,
+                borderBottom: tab === t ? `2px solid ${C.accent}` : "2px solid transparent",
+                backgroundColor: tab === t ? C.surfaceRaised : "transparent",
+              }}
+            >
+              {t === "collection" ? "▼ My Records" : "▶ Streaming"}
+            </button>
+          ))}
         </div>
 
         <div className="px-5 pt-4 pb-2">
@@ -104,7 +199,7 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search your collection..."
+            placeholder={tab === "collection" ? "Search your collection..." : "Search any album or artist..."}
             autoFocus
             className="w-full text-sm px-3 py-2 outline-none transition-colors duration-100"
             style={{ backgroundColor: C.surfaceRaised, border: `1px solid ${C.border}`, color: C.text, borderRadius: 0 }}
@@ -114,35 +209,100 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
         </div>
 
         <div className="px-5 pb-5 space-y-1 max-h-80 overflow-y-auto">
-          {loading ? (
-            <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>Loading collection...</p>
-          ) : filtered.length === 0 ? (
-            <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>No matches found.</p>
+          {tab === "collection" ? (
+            collectionLoading ? (
+              <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>Loading collection...</p>
+            ) : filteredCollection.length === 0 ? (
+              <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>No matches found.</p>
+            ) : (
+              filteredCollection.map((c) => (
+                <CollectionRow key={c.id} album={c.album} onSelect={() => handlePhysicalSpin(c.album)} />
+              ))
+            )
           ) : (
-            filtered.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => handleSpin(c.album)}
-                className="w-full flex items-center gap-3 p-2 text-left transition-colors duration-100"
-                style={{ backgroundColor: "transparent", borderRadius: 4 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-              >
-                {c.album.coverUrl ? (
-                  <Image src={c.album.coverUrl} alt={c.album.title} width={40} height={40}
-                    className="object-cover shrink-0" style={{ width: 40, height: 40, borderRadius: 4 }} unoptimized />
-                ) : (
-                  <div className="shrink-0" style={{ width: 40, height: 40, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate" style={{ color: C.text }}>{c.album.title}</div>
-                  <div className="text-xs font-mono truncate" style={{ color: C.muted }}>{c.album.artist}</div>
-                </div>
-              </button>
-            ))
+            <>
+              {!query.trim() && (
+                <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>
+                  Search any album — powered by MusicBrainz
+                </p>
+              )}
+              {mbLoading && (
+                <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>Searching...</p>
+              )}
+              {!mbLoading && query.trim() && mbResults.length === 0 && (
+                <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>No results found.</p>
+              )}
+              {mbResults.map((r) => (
+                <StreamingRow key={r.mbid} result={r} onSelect={() => handleStreamingSpin(r)} />
+              ))}
+            </>
           )}
         </div>
+
+        {tab === "streaming" && (
+          <div className="px-5 pb-4" style={{ borderTop: `1px solid ${C.border}` }}>
+            <p className="pt-3 text-xs font-mono" style={{ color: C.subtle }}>
+              ▶ Streaming listens are logged separately and don&apos;t count toward your Records stat.
+            </p>
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+function CollectionRow({ album, onSelect }: { album: Album; onSelect: () => void }) {
+  return (
+    <button
+      onClick={onSelect}
+      className="w-full flex items-center gap-3 p-2 text-left transition-colors duration-100"
+      style={{ backgroundColor: "transparent", borderRadius: 4 }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+    >
+      {album.coverUrl ? (
+        <Image src={album.coverUrl} alt={album.title} width={40} height={40}
+          className="object-cover shrink-0" style={{ width: 40, height: 40, borderRadius: 4 }} unoptimized />
+      ) : (
+        <div className="shrink-0" style={{ width: 40, height: 40, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate" style={{ color: C.text }}>{album.title}</div>
+        <div className="text-xs font-mono truncate" style={{ color: C.muted }}>{album.artist}</div>
+      </div>
+    </button>
+  );
+}
+
+function StreamingRow({ result, onSelect }: { result: MBResult; onSelect: () => void }) {
+  const coverUrl = result.hasCover
+    ? `https://coverartarchive.org/release/${result.mbid}/front-250`
+    : null;
+
+  return (
+    <button
+      onClick={onSelect}
+      className="w-full flex items-center gap-3 p-2 text-left transition-colors duration-100"
+      style={{ backgroundColor: "transparent", borderRadius: 4 }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+    >
+      {coverUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={coverUrl} alt={result.title}
+          className="object-cover shrink-0" style={{ width: 40, height: 40, borderRadius: 4 }} />
+      ) : (
+        <div className="shrink-0 flex items-center justify-center text-xs font-mono"
+          style={{ width: 40, height: 40, backgroundColor: C.surfaceRaised, borderRadius: 4, color: C.subtle }}>
+          ▶
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate" style={{ color: C.text }}>{result.title}</div>
+        <div className="text-xs font-mono truncate" style={{ color: C.muted }}>
+          {result.artist}{result.year ? ` · ${result.year}` : ""}
+        </div>
+      </div>
+    </button>
   );
 }
