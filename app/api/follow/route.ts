@@ -19,12 +19,7 @@ export async function POST(req: Request) {
   }
 
   const existing = await prisma.follow.findUnique({
-    where: {
-      followerId_followingId: {
-        followerId: currentUser.id,
-        followingId: targetUserId,
-      },
-    },
+    where: { followerId_followingId: { followerId: currentUser.id, followingId: targetUserId } },
   });
 
   if (existing) {
@@ -34,6 +29,17 @@ export async function POST(req: Request) {
     await prisma.follow.create({
       data: { followerId: currentUser.id, followingId: targetUserId },
     });
+
+    // Notify the followed user
+    await prisma.notification.create({
+      data: {
+        userId: targetUserId,
+        type: "follow",
+        fromId: currentUser.id,
+        message: `${currentUser.username} started following you`,
+      },
+    });
+
     return NextResponse.json({ following: true });
   }
 }

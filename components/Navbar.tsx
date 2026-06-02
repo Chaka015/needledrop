@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { SignOutButton } from "@clerk/nextjs";
 import NowSpinningModal from "./NowSpinningModal";
 import AddModal from "./AddModal";
+import NotificationBell from "./NotificationBell";
 
 const C = {
   bg: "#2D2926",
@@ -67,7 +68,7 @@ export default function Navbar({ username, avatarUrl, nowSpinning }: NavbarProps
 
         {username && (
           <>
-            {/* Search bar */}
+            {/* Search */}
             <form onSubmit={handleSearch} className="flex-1 max-w-xs">
               <input
                 type="text"
@@ -75,12 +76,7 @@ export default function Navbar({ username, avatarUrl, nowSpinning }: NavbarProps
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search users or albums..."
                 className="w-full text-xs px-3 py-1.5 outline-none transition-colors duration-100 font-mono"
-                style={{
-                  backgroundColor: C.surface,
-                  border: `1px solid ${C.border}`,
-                  color: C.text,
-                  borderRadius: 4,
-                }}
+                style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, color: C.text, borderRadius: 4 }}
                 onFocus={(e) => (e.currentTarget.style.borderColor = C.accent)}
                 onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
               />
@@ -147,12 +143,15 @@ export default function Navbar({ username, avatarUrl, nowSpinning }: NavbarProps
               style={{ color: C.muted }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = C.text)}
               onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = C.muted)}>
-              ACTIVITY
+              SOCIAL FEED
             </Link>
 
+            {/* Notification Bell */}
+            <NotificationBell />
+
             {/* Avatar dropdown */}
-            <div ref={avatarRef} className="relative shrink-0 ml-auto">
-              <button onClick={() => setShowAvatar((v) => !v)} className="flex items-center gap-2">
+            <div ref={avatarRef} className="relative shrink-0">
+              <button onClick={() => setShowAvatar((v) => !v)} className="flex items-center">
                 {avatarUrl ? (
                   <Image src={avatarUrl} alt={username} width={28} height={28}
                     className="object-cover"

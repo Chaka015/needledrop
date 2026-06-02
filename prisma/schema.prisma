@@ -11,11 +11,12 @@ model User {
   id           String   @id @default(cuid())
   clerkId      String   @unique
   username     String   @unique
+  notifications Notification[]
   bio          String?
   avatarUrl    String?
   nowSpinning  String?  // albumId of currently playing album
   spins        Spin[]
-  skin         String?
+  skin       String?
   createdAt    DateTime @default(now())
 
   collection   Collection[]
@@ -26,7 +27,18 @@ model User {
   following    Follow[] @relation("follower")
   followers    Follow[] @relation("following")
 }
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "spin", "follow", "now_spinning"
+  fromId    String?
+  logId     String?
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
 
+  user      User  @relation(fields: [userId], references: [id])
+}
 model Album {
   id          String  @id @default(cuid())
   discogsId   String  @unique
@@ -86,6 +98,7 @@ model Wantlist {
   id      String   @id @default(cuid())
   userId  String
   albumId String
+  notifications Notification[]
   addedAt DateTime @default(now())
 
   user    User  @relation(fields: [userId], references: [id])

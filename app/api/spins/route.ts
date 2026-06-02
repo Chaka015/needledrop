@@ -27,6 +27,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ spun: false });
   } else {
     await prisma.spin.create({ data: { userId: user.id, logId } });
+
+    // Create notification for log owner
+    const log = await prisma.listeningLog.findUnique({
+      where: { id: logId },
+      include: { album: true },
+    });
+
+    if (log && log.userId !== user.id) {
+      await prisma.notification.create({
+        data: {
+          userId: log.userId,
+          type: "spin",
+          fromId: user.id,
+          logId,
+          message: `${user.username} spun your listen of ${log.album.title}`,
+        },
+      });
+    }
+
     return NextResponse.json({ spun: true });
   }
 }
