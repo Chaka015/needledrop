@@ -14,9 +14,9 @@ model User {
   notifications Notification[]
   bio          String?
   avatarUrl    String?
-  nowSpinning  String?  // albumId of currently playing album
-  nowSpinningSource String? // "physical" | "streaming"
-  nowSpinningAt DateTime? // when nowSpinning was last set
+  nowSpinning      String?   // albumId of currently playing album
+  nowSpinningSource String?  // "physical" | "streaming"
+  nowSpinningAt    DateTime? // when nowSpinning was last set
   spins        Spin[]
   skin         String?
   createdAt    DateTime @default(now())
@@ -26,15 +26,19 @@ model User {
   spotifyAccessToken  String?
   spotifyRefreshToken String?
   spotifyTokenExpiry  DateTime?
+  spotifyConnected    Boolean   @default(false)
+  spotifyConnectedAt  DateTime?
 
   // Activity feed filter preferences
   feedPreferences     Json?
 
-  collection   Collection[]
-  logs         ListeningLog[]
-  wantlist     Wantlist[]
-  audioSetup   AudioSetup?
-  mixes        Mix[]
+  collection     Collection[]
+  logs           ListeningLog[]
+  wantlist       Wantlist[]
+  audioSetup     AudioSetup?
+  mixes          Mix[]
+  showAttendance ShowAttendance[]
+  albumComments  AlbumComment[]
 
   following    Follow[] @relation("follower")
   followers    Follow[] @relation("following")
@@ -56,17 +60,21 @@ model Notification {
 model Album {
   id          String  @id @default(cuid())
   discogsId   String  @unique
+  mbid        String? // MusicBrainz release ID
   title       String
   artist      String
+  artistMbid  String? // MusicBrainz artist ID
   releaseYear Int?
   coverUrl    String?
   label       String?
   genre       String?
+  durationMs  BigInt? // total album duration in milliseconds
 
   collection  Collection[]
   logs        ListeningLog[]
   wantlist    Wantlist[]
   mixItems    MixItem[]
+  comments    AlbumComment[]
 }
 
 model Spin {
@@ -86,6 +94,7 @@ model Collection {
   userId      String
   albumId     String
   condition   String?
+  pressingId  String?  // Discogs release ID for specific pressing
   isFeatured  Boolean  @default(false)
   addedAt     DateTime @default(now())
 
@@ -96,15 +105,16 @@ model Collection {
 }
 
 model ListeningLog {
-  id       String   @id @default(cuid())
-  userId   String
-  albumId  String
-  rating   Float?
-  spins    Spin[]
-  review   String?
-  format   String?
+  id           String   @id @default(cuid())
+  userId       String
+  albumId      String
+  rating       Float?
+  spins        Spin[]
+  review       String?
+  format       String?
   source       String   @default("physical") // "physical" | "streaming"
   autoImported Boolean  @default(false)      // true for Spotify auto-imports
+  durationMs   BigInt?  // album duration at time of logging
   playedAt     DateTime @default(now())
 
   user     User  @relation(fields: [userId], references: [id])
@@ -152,6 +162,7 @@ model Mix {
   title       String
   description String?
   coverUrl    String?
+  isPublic    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -160,14 +171,41 @@ model Mix {
 }
 
 model MixItem {
-  id       String @id @default(cuid())
+  id       String  @id @default(cuid())
   mixId    String
   albumId  String
   position Int
+  note     String? // optional per-album note
 
   mix      Mix   @relation(fields: [mixId], references: [id], onDelete: Cascade)
   album    Album @relation(fields: [albumId], references: [id])
 
   @@unique([mixId, albumId])
   @@unique([mixId, position])
+}
+
+model AlbumComment {
+  id        String   @id @default(cuid())
+  userId    String
+  albumId   String
+  content   String
+  createdAt DateTime @default(now())
+
+  user      User  @relation(fields: [userId], references: [id])
+  album     Album @relation(fields: [albumId], references: [id])
+}
+
+model ShowAttendance {
+  id          String   @id @default(cuid())
+  userId      String
+  setlistFmId String
+  artistMbid  String
+  venueName   String
+  venueCity   String
+  showDate    DateTime
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, setlistFmId])
 }

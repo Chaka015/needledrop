@@ -98,11 +98,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     ? await prisma.album.findUnique({ where: { id: user.nowSpinning } })
     : null;
 
-  // For visitors: determine if spinning is active (<60 min) or stale (>60 min → "LAST PLAYED")
+  // Active = set within 60 minutes. Applies to both owner and visitor.
+  // Owner: badge hidden entirely when stale; visitor: dimmed "LAST PLAYED"
   const sixtyMinutesAgo = new Date(now.getTime() - 60 * 60 * 1000);
-  const nowSpinningIsActive = !isOwnProfile
-    ? (user.nowSpinningAt ? user.nowSpinningAt > sixtyMinutesAgo : false)
-    : true; // owners always see it as active
+  const nowSpinningIsActive = user.nowSpinningAt ? user.nowSpinningAt > sixtyMinutesAgo : false;
 
   const logs = user.logs.map((log) => ({
     id: log.id,
@@ -143,13 +142,16 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 {currentUser && !isOwnProfile && (
                   <FollowButton targetUserId={user.id} initialIsFollowing={isFollowing} />
                 )}
-                {nowSpinningAlbum && (
+                {/* ON AIR badge:
+                    - Active (<60 min): red pulse, ON AIR / STREAMING label
+                    - Stale (>60 min): owner sees nothing; visitor sees dimmed LAST PLAYED */}
+                {nowSpinningAlbum && (nowSpinningIsActive || !isOwnProfile) && (
                   <span className="flex items-center gap-2 text-xs font-mono px-3 py-1.5"
                     style={{
                       backgroundColor: "#0D0D0D",
                       border: "1px solid #333",
                       borderRadius: 4,
-                      opacity: nowSpinningIsActive ? 1 : 0.65,
+                      opacity: nowSpinningIsActive ? 1 : 0.55,
                     }}>
                     {nowSpinningAlbum.coverUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -161,7 +163,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     ) : (
                       <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#555" }} />
                     )}
-                    <span style={{ color: nowSpinningIsActive ? "#FF3E3E" : "#777" }}>
+                    <span style={{ color: nowSpinningIsActive ? "#FF3E3E" : "#666" }}>
                       {!nowSpinningIsActive
                         ? "LAST PLAYED"
                         : user.nowSpinningSource === "streaming"

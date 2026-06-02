@@ -1,19 +1,19 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 const C = {
-  surface: "#3D3834",
-  surfaceRaised: "#4A4540",
-  border: "#524D48",
-  text: "#F7F1E3",
-  muted: "#A89F94",
-  subtle: "#6B6560",
-  accent: "#E67E22",
-  accentHover: "#CF711E",
-  danger: "#C0392B",
+  surface:       "var(--skin-surface)",
+  surfaceRaised: "var(--skin-surface-raised)",
+  border:        "var(--skin-border)",
+  text:          "var(--skin-text)",
+  muted:         "var(--skin-muted)",
+  subtle:        "var(--skin-subtle)",
+  accent:        "var(--skin-accent)",
+  accentHover:   "var(--skin-accent-hover)",
+  danger:        "#C0392B",
 };
 
 interface CollectionItem {
