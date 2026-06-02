@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 import Image from "next/image";
 import Link from "next/link";
 import AlbumActions from "@/components/AlbumActions";
+import AlbumTabsClient from "@/components/AlbumTabsClient";
 
 interface Props {
   params: Promise<{ discogsId: string }>;
@@ -20,6 +21,48 @@ const C = {
   accent:        "var(--skin-accent)",
 };
 
+interface MBTrack { number: string; title: string; length?: number }
+interface MBMedium { tracks: MBTrack[] }
+interface MBRelease { media?: MBMedium[]; "artist-credit"?: { artist: { id: string } }[] }
+
+async function fetchMBTracklist(mbid: string): Promise<MBTrack[]> {
+  try {
+    const res = await fetch(
+      `https://musicbrainz.org/ws/2/release/${mbid}?inc=recordings&fmt=json`,
+      { headers: { "User-Agent": "NeedleDrop/1.0 (needledrop.app)" }, next: { revalidate: 86400 } }
+    );
+    if (!res.ok) return [];
+    const data: MBRelease = await res.json();
+    return data.media?.flatMap((m) => m.tracks) ?? [];
+  } catch { return []; }
+}
+
+interface DiscogsVersion {
+  id: number;
+  country: string;
+  year: number | null;
+  label: string | null;
+  catno: string | null;
+  format: string | null;
+  major_formats: string[];
+}
+
+async function fetchDiscogsVersions(discogsId: string): Promise<DiscogsVersion[]> {
+  // Only fetch for Discogs IDs (not spotify: or mb: prefixed)
+  if (!discogsId.match(/^\d+$/)) return [];
+  try {
+    const DISCOGS_TOKEN = process.env.DISCOGS_TOKEN;
+    const url = `https://api.discogs.com/masters/${discogsId}/versions?per_page=25`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Discogs token=${DISCOGS_TOKEN}`, "User-Agent": "NeedleDrop/1.0" },
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.versions ?? []).slice(0, 25);
+  } catch { return []; }
+}
+
 export default async function AlbumPage({ params }: Props) {
   const { discogsId } = await params;
   const { userId: clerkId } = await auth();
@@ -31,11 +74,12 @@ export default async function AlbumPage({ params }: Props) {
         orderBy: { playedAt: "desc" },
         include: { user: true, spins: true },
       },
-      collection: {
-        include: { user: true },
-      },
-      wantlist: {
-        include: { user: true },
+      collection: { include: { user: true } },
+      wantlist: { include: { user: true } },
+      comments: {
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: { user: { select: { username: true, avatarUrl: true } } },
       },
     },
   });
@@ -60,6 +104,46 @@ export default async function AlbumPage({ params }: Props) {
   const inCollection = (currentUser?.collection.length ?? 0) > 0;
   const inWantlist = (currentUser?.wantlist.length ?? 0) > 0;
 
+  // Fetch track listing and pressings in parallel
+  const [tracks, pressings] = await Promise.all([
+    album.mbid ? fetchMBTracklist(album.mbid) : Promise.resolve([]),
+    fetchDiscogsVersions(discogsId),
+  ]);
+
+  const formattedLogs = album.logs.map((log) => ({
+    id: log.id,
+    playedAt: log.playedAt.toISOString(),
+    rating: log.rating,
+    review: log.review,
+    format: log.format,
+    source: log.source,
+    spinCount: log.spins.length,
+    user: { username: log.user.username, avatarUrl: log.user.avatarUrl },
+  }));
+
+  const formattedTracks = tracks.map((t) => ({
+    position: t.number,
+    title: t.title,
+    length: t.length,
+  }));
+
+  const formattedPressings = pressings.map((p) => ({
+    id: String(p.id),
+    country: p.country,
+    year: p.year,
+    label: p.label,
+    catno: p.catno,
+    format: p.major_formats?.[0] ?? p.format,
+    variant: null,
+  }));
+
+  const formattedComments = album.comments.map((c) => ({
+    id: c.id,
+    content: c.content,
+    createdAt: c.createdAt.toISOString(),
+    user: c.user,
+  }));
+
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: C.bg, color: C.text }}>
       <div className="max-w-4xl mx-auto px-6 py-10">
@@ -79,14 +163,20 @@ export default async function AlbumPage({ params }: Props) {
 
           <div className="flex-1 min-w-0">
             <h1 className="text-3xl font-bold tracking-tight mb-1" style={{ color: C.text }}>{album.title}</h1>
-            <p className="text-lg font-mono mb-1" style={{ color: C.muted }}>{album.artist}</p>
-            <div className="flex gap-4 text-xs font-mono mb-4" style={{ color: C.subtle }}>
+            {album.artistMbid ? (
+              <Link href={`/artist/${album.artistMbid}`}
+                className="text-lg font-mono hover:underline" style={{ color: C.muted }}>
+                {album.artist}
+              </Link>
+            ) : (
+              <p className="text-lg font-mono" style={{ color: C.muted }}>{album.artist}</p>
+            )}
+            <div className="flex gap-4 text-xs font-mono mt-1 mb-4" style={{ color: C.subtle }}>
               {album.releaseYear && <span>{album.releaseYear}</span>}
               {album.label && <span>{album.label}</span>}
               {album.genre && <span>{album.genre}</span>}
             </div>
 
-            {/* Stats */}
             <div className="flex gap-4 mb-6">
               {[
                 { label: "LOGGED", value: album.logs.length },
@@ -110,7 +200,6 @@ export default async function AlbumPage({ params }: Props) {
               )}
             </div>
 
-            {/* Actions */}
             {currentUser && (
               <AlbumActions
                 albumId={album.id}
@@ -128,78 +217,15 @@ export default async function AlbumPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Logs */}
-        <div>
-          <h2 className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: C.subtle }}>
-            Listening Logs
-          </h2>
-          {album.logs.length === 0 ? (
-            <div className="p-8 text-center text-sm font-mono"
-              style={{ border: `1px dashed ${C.border}`, color: C.subtle }}>
-              No one has logged this album yet.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {album.logs.map((log) => (
-                <div key={log.id} className="flex gap-4 p-4"
-                  style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                  <Link href={`/${log.user.username}`} className="shrink-0">
-                    {log.user.avatarUrl ? (
-                      <Image src={log.user.avatarUrl} alt={log.user.username} width={36} height={36}
-                        className="object-cover"
-                        style={{ width: 36, height: 36, borderRadius: "50%", border: `1px solid ${C.border}` }}
-                        unoptimized />
-                    ) : (
-                      <div className="flex items-center justify-center text-sm font-bold"
-                        style={{ width: 36, height: 36, borderRadius: "50%", backgroundColor: C.surfaceRaised, color: C.subtle }}>
-                        {log.user.username[0].toUpperCase()}
-                      </div>
-                    )}
-                  </Link>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-2">
-                      <Link href={`/${log.user.username}`} className="font-semibold text-sm hover:underline"
-                        style={{ color: C.text }}>
-                        {log.user.username}
-                      </Link>
-                      {log.format && (
-                        <span className="text-xs font-mono" style={{ color: C.subtle }}>{log.format}</span>
-                      )}
-                    </div>
-                    {log.rating != null && <StarRating rating={log.rating} />}
-                    {log.review && (
-                      <p className="mt-1 text-sm" style={{ color: C.muted }}>{log.review}</p>
-                    )}
-                    <div className="mt-1 flex gap-3 text-xs font-mono" style={{ color: C.subtle }}>
-                      <span>{new Date(log.playedAt).toLocaleDateString()}</span>
-                      <span>↻ {log.spins.length}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <AlbumTabsClient
+          albumId={album.id}
+          logs={formattedLogs}
+          tracks={formattedTracks}
+          pressings={formattedPressings}
+          initialComments={formattedComments}
+          isLoggedIn={!!currentUser}
+        />
       </div>
-    </div>
-  );
-}
-
-function StarRating({ rating }: { rating: number }) {
-  return (
-    <div className="flex gap-0.5 mt-1">
-      {[1, 2, 3, 4, 5].map((star) => {
-        const full = star <= Math.floor(rating);
-        const half = !full && star === Math.ceil(rating) && rating % 1 !== 0;
-        return (
-          <span key={star} className="text-xs" style={{ position: "relative", display: "inline-block" }}>
-            <span style={{ color: "#524D48" }}>★</span>
-            {(full || half) && (
-              <span style={{ position: "absolute", left: 0, top: 0, overflow: "hidden", width: full ? "100%" : "50%", color: "#E67E22" }}>★</span>
-            )}
-          </span>
-        );
-      })}
     </div>
   );
 }
