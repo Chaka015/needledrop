@@ -2,6 +2,45 @@
 
 ## Identity
 NeedleDrop is a music logging and collection platform. The UI should feel like a well-organized record store — warm, purposeful, and slightly technical. Album artwork is always the star; the interface exists to frame it, not compete with it.
+
+---
+
+## Philosophy — The Bandcamp Spirit
+
+NeedleDrop is a love letter to music. Every feature decision should pass this test: *does this serve the music fan, or does this serve growth metrics?* We want to make money, but never at the expense of the culture we're celebrating.
+
+### What Bandcamp Gets Right (That We Should Too)
+- **Artist-first presentation** — the artist and their work is the hero, never the platform
+- **Direct support culture** — celebrate the act of buying, owning, and supporting artists directly
+- **Community-defined tags** — user-defined genre/mood tags, not corporate genre buckets
+- **Discovery through human taste** — through other collectors' collections and mixes, never through an algorithm
+- **No algorithm** — chronological, editorial, human. We surface what the community loves, not what maximizes engagement
+- **Liner notes culture** — give collectors space to write about albums the way artists write about their own work. Long-form is welcome here.
+- **Adjacency discovery** — "collectors who own this also own..." powered by real collection data, not recommendation engines
+
+### What We Add That Bandcamp Doesn't Have
+- The physical collection as identity
+- Pressing-level granularity
+- The ritual of listening celebrated (Now Spinning, flip counter)
+- Show history and live music connection
+- A marketplace that puts money in artists' and collectors' hands at a fair commission
+
+### Design Principles Derived From This
+- Album art is always the star — make it big, make it beautiful
+- Density should feel rich, not overwhelming
+- Warm, not clinical — this is about love of music not technology
+- Every empty state should feel like an invitation, not a void
+- Self-expression over prescription — give users flexibility in how they present themselves (see: Featured top 5, Mixes, bio)
+- Music in 5s and 10s — traditional music reference points (Top 5, Top 10, not arbitrary numbers)
+
+### Things We Will Never Do
+- Sell user listening data to third parties
+- Let advertisers influence what gets surfaced
+- Prioritize streaming over physical ownership in any UI decision
+- Make the algorithm the curator — humans curate here
+- Treat a Spotify skip the same as a vinyl listen
+
+---
 ## Current Roadmap (June 2026)
 
 ### Core Philosophy
