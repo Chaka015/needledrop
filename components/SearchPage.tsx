@@ -142,17 +142,26 @@ export default function SearchPage({ query, initialTab, users, albums, isLoggedI
                     </div>
                   </div>
                   {isLoggedIn && (
-                    <button onClick={() => handleFollow(user.id)} disabled={followLoading === user.id}
-                      className="shrink-0 px-4 py-2 text-xs font-mono transition-colors duration-100"
-                      style={{
-                        backgroundColor: followStates[user.id] ? C.surfaceRaised : C.accent,
-                        color: followStates[user.id] ? C.muted : C.text,
-                        borderRadius: 4,
-                        border: `1px solid ${followStates[user.id] ? C.border : C.accent}`,
-                        opacity: followLoading === user.id ? 0.4 : 1,
-                      }}>
-                      {followStates[user.id] ? "FOLLOWING" : "FOLLOW"}
-                    </button>
+                    <div className="flex gap-2 shrink-0">
+                      <button onClick={() => handleFollow(user.id)} disabled={followLoading === user.id}
+                        className="px-4 py-2 text-xs font-mono transition-colors duration-100"
+                        style={{
+                          backgroundColor: followStates[user.id] ? C.surfaceRaised : C.accent,
+                          color: followStates[user.id] ? C.muted : C.text,
+                          borderRadius: 4,
+                          border: `1px solid ${followStates[user.id] ? C.border : C.accent}`,
+                          opacity: followLoading === user.id ? 0.4 : 1,
+                        }}>
+                        {followStates[user.id] ? "FOLLOWING" : "FOLLOW"}
+                      </button>
+                      <a href={`/messages/${user.username}`}
+                        className="px-4 py-2 text-xs font-mono transition-colors duration-100"
+                        style={{ backgroundColor: C.surfaceRaised, color: C.muted, borderRadius: 4, border: `1px solid ${C.border}` }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
+                        MESSAGE
+                      </a>
+                    </div>
                   )}
                 </div>
               ))}

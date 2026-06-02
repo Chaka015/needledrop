@@ -9,6 +9,7 @@ import ImportDiscogs from "@/components/ImportDiscogs";
 import RecentListens from "@/components/RecentListens";
 import FeaturedGrid from "@/components/FeaturedGrid";
 import FollowButton from "@/components/FollowButton";
+import MessageButton from "@/components/MessageButton";
 import MixesList from "@/components/MixesList";
 import SkinApplicator from "@/components/SkinApplicator";
 import FlipCounter from "@/components/FlipCounter";
@@ -147,7 +148,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold tracking-tight" style={{ color: C.text }}>{user.username}</h1>
                 {currentUser && !isOwnProfile && (
-                  <FollowButton targetUserId={user.id} initialIsFollowing={isFollowing} />
+                  <>
+                    <FollowButton targetUserId={user.id} initialIsFollowing={isFollowing} />
+                    <MessageButton username={user.username} />
+                  </>
                 )}
                 {/* ON AIR badge:
                     - Active (<60 min): red pulse, ON AIR / STREAMING label

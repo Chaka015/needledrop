@@ -41,6 +41,19 @@ model User {
   showAttendance      ShowAttendance[]
   spins               Spin[]
   wantlist            Wantlist[]
+  sentMessages        Message[]        @relation("MessageFrom")
+  receivedMessages    Message[]        @relation("MessageTo")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  fromId    String
+  toId      String
+  content   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  from      User     @relation("MessageFrom", fields: [fromId], references: [id])
+  to        User     @relation("MessageTo", fields: [toId], references: [id])
 }
 
 model Notification {

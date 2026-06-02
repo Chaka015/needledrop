@@ -8,6 +8,7 @@ import { SignOutButton } from "@clerk/nextjs";
 import NowSpinningModal from "./NowSpinningModal";
 import AddModal from "./AddModal";
 import NotificationBell from "./NotificationBell";
+import MessageBadge from "./MessageBadge";
 
 const C = {
   bg: "var(--skin-bg)",
@@ -155,6 +156,9 @@ export default function Navbar({ username, avatarUrl, nowSpinning }: NavbarProps
               SOCIAL FEED
             </Link>
 
+            {/* Messages */}
+            <MessageBadge />
+
             {/* Notification Bell */}
             <NotificationBell />
 
@@ -178,6 +182,9 @@ export default function Navbar({ username, avatarUrl, nowSpinning }: NavbarProps
                   style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
                   <DropdownItem onClick={() => setShowAvatar(false)}>
                     <Link href={`/${username}`} className="block w-full">MY PROFILE</Link>
+                  </DropdownItem>
+                  <DropdownItem onClick={() => setShowAvatar(false)}>
+                    <Link href="/messages" className="block w-full">MESSAGES</Link>
                   </DropdownItem>
                   <DropdownItem onClick={() => setShowAvatar(false)}>
                     <Link href="/settings" className="block w-full">SETTINGS</Link>
