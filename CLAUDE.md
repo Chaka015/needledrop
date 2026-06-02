@@ -193,3 +193,48 @@ Each skin maps to a set of CSS variable overrides. The current default is **Anal
 - Profile page reads `user.skin` and applies the correct variable set
 - Skin picker lives in a settings page or inline on the profile (own profile only)
 - All components use CSS variables, never hardcoded colors, so skins work automatically
+
+---
+
+## Vision — Live Listening & Physical Media
+
+### The "Now Spinning" Flow
+Physical listening is intentional and ritualistic — it should be treated differently from streaming.
+
+**Physical logging flow:**
+- A persistent **"What are you spinning?"** action — always visible in the nav
+- User searches their collection, picks the record, confirms
+- This simultaneously: logs the listen AND sets the Now Spinning badge on their profile
+- Now Spinning stays live until the user spins something new (which auto-replaces it)
+- No "stop" button needed — the badge is a statement, not a timer
+
+**Now Spinning badge:**
+- Pulsing accent-colored dot + "NOW SPINNING: Artist — Album"
+- Visible on profile header
+- Visible in activity feed and friend profiles
+- Eventually: a live "who's spinning right now" feed across the whole site
+
+### Physical vs Digital — Kept Separate
+- **Physical** (vinyl, CD, cassette): manual, intentional, logged via "What are you spinning?"
+- **Digital** (Spotify, Apple Music, Tidal, etc.): automated, pulled via OAuth, runs in background
+- Both appear in the listening log but are visually distinguished by format
+- Goal: support any streaming service via OAuth, not just Spotify
+
+### Social Live Feed Vision
+- Activity feed showing notable actions: listens, adds, features, follows
+- "Who's spinning right now" — a live feed of active Now Spinning users
+- This makes the platform feel like a virtual listening room
+- Marketplace is a long-term future feature — box it out but don't build yet
+
+---
+
+## Navigation Plan
+
+Top nav like Letterboxd — clean, always visible. Submenus for:
+- Search (any album or artist)
+- Import from Discogs
+- "What are you spinning?" (prominent physical logging action)
+- Social / activity feed
+- Profile link
+
+Import from Discogs and album search move out of the profile page into nav submenus — the profile page becomes cleaner and more editorial.
