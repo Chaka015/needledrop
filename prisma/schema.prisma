@@ -16,6 +16,7 @@ model User {
   avatarUrl    String?
   nowSpinning  String?  // albumId of currently playing album
   nowSpinningSource String? // "physical" | "streaming"
+  nowSpinningAt DateTime? // when nowSpinning was last set
   spins        Spin[]
   skin         String?
   createdAt    DateTime @default(now())
@@ -102,8 +103,9 @@ model ListeningLog {
   spins    Spin[]
   review   String?
   format   String?
-  source   String   @default("physical") // "physical" | "streaming"
-  playedAt DateTime @default(now())
+  source       String   @default("physical") // "physical" | "streaming"
+  autoImported Boolean  @default(false)      // true for Spotify auto-imports
+  playedAt     DateTime @default(now())
 
   user     User  @relation(fields: [userId], references: [id])
   album    Album @relation(fields: [albumId], references: [id])

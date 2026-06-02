@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import StarRatingInput from "./StarRatingInput";
 
 const C = {
@@ -83,8 +82,9 @@ export default function LogListenModal({ album, onClose, onSuccess, source = "ph
 
         <div className="flex items-center gap-4 mb-6">
           {album.coverUrl ? (
-            <Image src={album.coverUrl} alt={album.title} width={56} height={56}
-              className="object-cover shrink-0" style={{ width: 56, height: 56, borderRadius: 4 }} unoptimized />
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={album.coverUrl} alt={album.title}
+              className="object-cover shrink-0" style={{ width: 56, height: 56, borderRadius: 4 }} />
           ) : (
             <div className="shrink-0" style={{ width: 56, height: 56, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
           )}
