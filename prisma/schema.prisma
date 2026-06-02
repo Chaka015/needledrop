@@ -98,8 +98,7 @@ model Wantlist {
   id      String   @id @default(cuid())
   userId  String
   albumId String
-  notifications Notification[]
-  addedAt DateTime @default(now())
+   addedAt DateTime @default(now())
 
   user    User  @relation(fields: [userId], references: [id])
   album   Album @relation(fields: [albumId], references: [id])
