@@ -195,7 +195,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 </div>
               )}
 
-              {user.bio && <p className="mt-2 text-sm max-w-xl" style={{ color: C.muted }}>{user.bio}</p>}
+              {/* Member since */}
+              <p className="mt-2 text-xs font-mono" style={{ color: C.muted }}>
+                Member since {new Date(user.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+              </p>
+
+              {user.bio && <p className="mt-1 text-sm max-w-xl" style={{ color: C.muted }}>{user.bio}</p>}
 
               {/* Listen counts */}
               <div className="mt-4 flex flex-wrap gap-6 text-sm font-mono" style={{ color: C.muted }}>
@@ -206,16 +211,16 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 ].map((s) => (
                   <Link key={s.label} href={s.href} className="hover:underline">
                     <span className="font-bold" style={{ color: C.text }}>{s.value}</span>{" "}
-                    <span className="text-xs" style={{ color: C.subtle }}>{s.label}</span>
+                    <span className="text-xs" style={{ color: C.muted }}>{s.label}</span>
                   </Link>
                 ))}
                 <Link href={`/${username}/following`} className="hover:underline">
                   <span className="font-bold" style={{ color: C.text }}>{user.following.length}</span>{" "}
-                  <span className="text-xs" style={{ color: C.subtle }}>FOLLOWING</span>
+                  <span className="text-xs" style={{ color: C.muted }}>FOLLOWING</span>
                 </Link>
                 <Link href={`/${username}/followers`} className="hover:underline">
                   <span className="font-bold" style={{ color: C.text }}>{user.followers.length}</span>{" "}
-                  <span className="text-xs" style={{ color: C.subtle }}>FOLLOWERS</span>
+                  <span className="text-xs" style={{ color: C.muted }}>FOLLOWERS</span>
                 </Link>
               </div>
 
