@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import CollectionGrid from "@/components/CollectionGrid";
@@ -35,10 +36,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       logs: {
         orderBy: { playedAt: "desc" },
         take: 10,
-        include: {
-          album: true,
-          spins: true,
-        },
+        include: { album: true, spins: true },
       },
       collection: {
         orderBy: { addedAt: "desc" },
@@ -79,11 +77,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     playedAt: log.playedAt.toISOString(),
     spinCount: log.spins.length,
     userHasSpun: currentUser ? log.spins.some((s) => s.userId === currentUser.id) : false,
-    album: {
-      title: log.album.title,
-      artist: log.album.artist,
-      coverUrl: log.album.coverUrl,
-    },
+    album: { title: log.album.title, artist: log.album.artist, coverUrl: log.album.coverUrl },
   }));
 
   return (
@@ -120,24 +114,32 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
               {user.bio && <p className="mt-2 text-sm max-w-xl" style={{ color: C.muted }}>{user.bio}</p>}
 
+              {/* Listen counts */}
               <div className="mt-4 flex flex-wrap gap-6 text-sm font-mono" style={{ color: C.muted }}>
                 {[
                   { value: totalListens, label: "TOTAL" },
                   { value: listensThisYear, label: "THIS YEAR" },
                   { value: listensThisWeek, label: "THIS WEEK" },
-                  { value: user.following.length, label: "FOLLOWING" },
-                  { value: user.followers.length, label: "FOLLOWERS" },
                 ].map((s) => (
                   <div key={s.label}>
                     <span className="font-bold" style={{ color: C.text }}>{s.value}</span>{" "}
                     <span className="text-xs" style={{ color: C.subtle }}>{s.label}</span>
                   </div>
                 ))}
+                <Link href={`/${username}/following`} className="hover:underline">
+                  <span className="font-bold" style={{ color: C.text }}>{user.following.length}</span>{" "}
+                  <span className="text-xs" style={{ color: C.subtle }}>FOLLOWING</span>
+                </Link>
+                <Link href={`/${username}/followers`} className="hover:underline">
+                  <span className="font-bold" style={{ color: C.text }}>{user.followers.length}</span>{" "}
+                  <span className="text-xs" style={{ color: C.subtle }}>FOLLOWERS</span>
+                </Link>
               </div>
 
+              {/* Stats strip */}
               <div className="mt-5 flex flex-wrap gap-3">
                 {[
-                  { label: "COLLECTED", value: user.collection.length },
+                  { label: "RECORDS", value: user.collection.length },
                   { label: "LOGGED", value: user.logs.length },
                   { label: "WANTLIST", value: user.wantlist.length },
                 ].map((stat) => (
@@ -156,12 +158,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       {/* MAIN + SIDEBAR */}
       <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col lg:flex-row gap-10">
 
-        {/* MAIN */}
         <div className="flex-1 min-w-0 space-y-12">
 
           {isOwnProfile && (
             <section>
-              <SectionLabel>My Collection</SectionLabel>
+              <SectionLabel>My Records</SectionLabel>
               <CollectionGrid
                 items={user.collection.map((c) => ({
                   id: c.id,
@@ -213,7 +214,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             ) : (
               <div className="p-4 text-center text-xs font-mono"
                 style={{ border: `1px dashed ${C.border}`, color: C.subtle }}>
-                {isOwnProfile ? "★ star albums in your collection to feature them" : "No featured albums yet."}
+                {isOwnProfile ? "★ star records to feature them" : "No featured albums yet."}
               </div>
             )}
           </section>

@@ -14,6 +14,15 @@ const C = {
   accent: "#E67E22",
 };
 
+const SORT_OPTIONS = [
+  { id: "recent", label: "Recently Added" },
+  { id: "az", label: "A–Z" },
+  { id: "za", label: "Z–A" },
+  { id: "artist", label: "Artist" },
+  { id: "year-asc", label: "Year ↑" },
+  { id: "year-desc", label: "Year ↓" },
+];
+
 interface Album {
   discogsId: string;
   title: string;
@@ -32,6 +41,7 @@ interface CollectionItem {
 
 export default function CollectionGrid({ items }: { items: CollectionItem[] }) {
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState("recent");
   const [logTarget, setLogTarget] = useState<Album | null>(null);
   const [featuring, setFeaturing] = useState<string | null>(null);
   const [featuredIds, setFeaturedIds] = useState<Set<string>>(
@@ -39,13 +49,26 @@ export default function CollectionGrid({ items }: { items: CollectionItem[] }) {
   );
   const [maxError, setMaxError] = useState(false);
 
-  const filtered = query.trim()
+  const searched = query.trim()
     ? items.filter(
         (c) =>
           c.album.title.toLowerCase().includes(query.toLowerCase()) ||
           c.album.artist.toLowerCase().includes(query.toLowerCase())
       )
-    : items.slice(0, 5);
+    : items;
+
+  const sorted = [...searched].sort((a, b) => {
+    switch (sort) {
+      case "az": return a.album.title.localeCompare(b.album.title);
+      case "za": return b.album.title.localeCompare(a.album.title);
+      case "artist": return a.album.artist.localeCompare(b.album.artist);
+      case "year-asc": return (a.album.releaseYear ?? 0) - (b.album.releaseYear ?? 0);
+      case "year-desc": return (b.album.releaseYear ?? 0) - (a.album.releaseYear ?? 0);
+      default: return 0; // recent = already ordered by addedAt desc from server
+    }
+  });
+
+  const displayed = query.trim() ? sorted : sorted.slice(0, 5);
 
   async function handleFeature(id: string) {
     setFeaturing(id);
@@ -68,44 +91,45 @@ export default function CollectionGrid({ items }: { items: CollectionItem[] }) {
         else next.delete(id);
         return next;
       });
-      // Reload to update the featured sidebar
       setTimeout(() => window.location.reload(), 300);
     }
-
     setFeaturing(null);
   }
 
   return (
     <div className="w-full">
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search your collection..."
-        className="w-full text-sm px-4 py-3 outline-none transition-colors duration-100 mb-3"
-        style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, color: C.text, borderRadius: 0 }}
-        onFocus={(e) => (e.currentTarget.style.borderColor = C.accent)}
-        onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
-      />
+      {/* Search + Sort */}
+      <div className="flex gap-2 mb-3">
+        <input type="text" value={query} onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search your records..."
+          className="flex-1 text-sm px-4 py-2 outline-none transition-colors duration-100"
+          style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, color: C.text, borderRadius: 0 }}
+          onFocus={(e) => (e.currentTarget.style.borderColor = C.accent)}
+          onBlur={(e) => (e.currentTarget.style.borderColor = C.border)} />
+        <select value={sort} onChange={(e) => setSort(e.target.value)}
+          className="text-xs font-mono px-3 py-2 outline-none transition-colors duration-100"
+          style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, color: C.muted, borderRadius: 0 }}>
+          {SORT_OPTIONS.map((o) => (
+            <option key={o.id} value={o.id}>{o.label}</option>
+          ))}
+        </select>
+      </div>
 
       {maxError && (
         <p className="text-xs font-mono mb-2" style={{ color: "#C0392B" }}>
-          Max 4 featured albums. Unfeature one first.
+          Max 4 featured. Unfeature one first.
         </p>
       )}
 
-      {filtered.length === 0 ? (
+      {displayed.length === 0 ? (
         <p className="text-xs font-mono text-center py-6" style={{ color: C.subtle }}>
-          {query ? "No matches in your collection." : "Nothing in your collection yet."}
+          {query ? "No matches in your records." : "Nothing in your collection yet."}
         </p>
       ) : (
         <div className="space-y-1">
-          {filtered.map((c) => (
-            <div
-              key={c.id}
-              className="flex items-center gap-3 p-3"
-              style={{ backgroundColor: C.surface, border: `1px solid ${c.isFeatured || featuredIds.has(c.id) ? C.accent : C.border}` }}
-            >
+          {displayed.map((c) => (
+            <div key={c.id} className="flex items-center gap-3 p-3"
+              style={{ backgroundColor: C.surface, border: `1px solid ${featuredIds.has(c.id) ? C.accent : C.border}` }}>
               {c.album.coverUrl ? (
                 <Image src={c.album.coverUrl} alt={c.album.title} width={48} height={48}
                   className="object-cover shrink-0" style={{ width: 48, height: 48, borderRadius: 4 }} unoptimized />
@@ -119,9 +143,7 @@ export default function CollectionGrid({ items }: { items: CollectionItem[] }) {
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
-                <button
-                  onClick={() => handleFeature(c.id)}
-                  disabled={featuring === c.id}
+                <button onClick={() => handleFeature(c.id)} disabled={featuring === c.id}
                   className="px-2 py-1.5 text-xs font-mono transition-colors duration-100"
                   style={{
                     backgroundColor: featuredIds.has(c.id) ? C.accent : C.surfaceRaised,
@@ -129,17 +151,14 @@ export default function CollectionGrid({ items }: { items: CollectionItem[] }) {
                     borderRadius: 4,
                     border: `1px solid ${featuredIds.has(c.id) ? C.accent : C.border}`,
                   }}
-                  title={featuredIds.has(c.id) ? "Unfeature" : "Feature"}
-                >
+                  title={featuredIds.has(c.id) ? "Unfeature" : "Feature"}>
                   ★
                 </button>
-                <button
-                  onClick={() => setLogTarget(c.album)}
+                <button onClick={() => setLogTarget(c.album)}
                   className="px-3 py-1.5 text-xs font-mono transition-colors duration-100"
                   style={{ backgroundColor: C.surfaceRaised, color: C.muted, borderRadius: 4, border: `1px solid ${C.border}` }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}
-                >
+                  onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
                   LOG
                 </button>
               </div>
@@ -154,11 +173,9 @@ export default function CollectionGrid({ items }: { items: CollectionItem[] }) {
       )}
 
       {logTarget && (
-        <LogListenModal
-          album={{ ...logTarget, albumTitle: logTarget.title }}
+        <LogListenModal album={{ ...logTarget, albumTitle: logTarget.title }}
           onClose={() => setLogTarget(null)}
-          onSuccess={() => { setLogTarget(null); window.location.reload(); }}
-        />
+          onSuccess={() => { setLogTarget(null); window.location.reload(); }} />
       )}
     </div>
   );
