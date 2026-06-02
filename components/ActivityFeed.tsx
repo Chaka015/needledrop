@@ -67,6 +67,13 @@ export type FeedItem =
       user: { username: string; avatarUrl: string | null };
       album: { title: string; artist: string; coverUrl: string | null; discogsId: string };
       logId: string;
+    }
+  | {
+      type: "join";
+      id: string;
+      timestamp: string;
+      user: { id: string; username: string; avatarUrl: string | null };
+      initialIsFollowing: boolean;
     };
 
 interface FeedPreferences {
@@ -186,6 +193,7 @@ export default function ActivityFeed({
     if (item.type === "follow") return prefs.showFollows;
     if (item.type === "mix") return prefs.showMixes;
     if (item.type === "spin") return prefs.showSpins;
+    if (item.type === "join") return tab === "community"; // only in community tab
     return true;
   });
   const items = collapseDigests(filtered);
@@ -455,7 +463,62 @@ function FeedCard({
     );
   }
 
+  if (item.type === "join") {
+    return <JoinCard item={item} />;
+  }
+
   return null;
+}
+
+function JoinCard({ item }: { item: Extract<FeedItem, { type: "join" }> }) {
+  const [isFollowing, setIsFollowing] = useState(item.initialIsFollowing);
+  const [loading, setLoading] = useState(false);
+
+  async function handleFollow() {
+    setLoading(true);
+    const res = await fetch("/api/follow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetUserId: item.user.id }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setIsFollowing(data.following);
+    }
+    setLoading(false);
+  }
+
+  const cardStyle = { backgroundColor: C.surface, border: `1px solid ${C.border}` };
+  return (
+    <div className="flex items-center gap-4 p-4" style={cardStyle}>
+      <Link href={`/${item.user.username}`} className="shrink-0">
+        <Avatar user={item.user} />
+      </Link>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm" style={{ color: C.muted }}>
+          <Link href={`/${item.user.username}`} className="font-bold hover:underline" style={{ color: C.text }}>
+            {item.user.username}
+          </Link>{" "}just joined NeedleDrop 👋
+        </div>
+        <div className="text-xs font-mono mt-0.5" style={{ color: C.subtle }}>
+          {new Date(item.timestamp).toLocaleDateString()}
+        </div>
+      </div>
+      <button
+        onClick={handleFollow}
+        disabled={loading}
+        className="shrink-0 px-4 py-2 text-xs font-mono transition-colors duration-100"
+        style={{
+          backgroundColor: isFollowing ? C.surfaceRaised : C.accent,
+          color: isFollowing ? C.muted : C.text,
+          borderRadius: 4,
+          border: `1px solid ${isFollowing ? C.border : C.accent}`,
+          opacity: loading ? 0.4 : 1,
+        }}>
+        {isFollowing ? "FOLLOWING" : "FOLLOW"}
+      </button>
+    </div>
+  );
 }
 
 function StarRating({ rating }: { rating: number }) {

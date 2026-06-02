@@ -49,8 +49,9 @@ export default async function ActivityPage() {
   async function fetchStream(userIds: string[] | null): Promise<FeedItem[]> {
     const filter = userIds ? { userId: { in: userIds } } : {};
     const followerFilter = userIds ? { followerId: { in: userIds } } : {};
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    const [logs, adds, follows, mixes, spins] = await Promise.all([
+    const [logs, adds, follows, mixes, spins, joins] = await Promise.all([
       prisma.listeningLog.findMany({
         where: filter,
         orderBy: { playedAt: "desc" },
@@ -87,6 +88,17 @@ export default async function ActivityPage() {
           log: { include: { album: true } },
         },
       }),
+      // Joins only for community (global) stream, last 30 days, completed onboarding
+      userIds === null
+        ? prisma.user.findMany({
+            where: {
+              createdAt: { gte: thirtyDaysAgo },
+              NOT: { username: { startsWith: "user_" } },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 20,
+          })
+        : Promise.resolve([] as Awaited<ReturnType<typeof prisma.user.findMany>>),
     ]);
 
     const items: FeedItem[] = [
@@ -132,6 +144,13 @@ export default async function ActivityPage() {
         user: { username: s.user.username, avatarUrl: s.user.avatarUrl },
         album: { title: s.log.album.title, artist: s.log.album.artist, coverUrl: s.log.album.coverUrl, discogsId: s.log.album.discogsId },
         logId: s.logId,
+      })),
+      ...joins.map((u): FeedItem => ({
+        type: "join",
+        id: u.id,
+        timestamp: u.createdAt.toISOString(),
+        user: { id: u.id, username: u.username, avatarUrl: u.avatarUrl },
+        initialIsFollowing: currentUser ? followingIds.includes(u.id) : false,
       })),
     ];
 
