@@ -27,8 +27,17 @@ export type FeedItem =
       review: string | null;
       format: string | null;
       source: string;
+      autoImported: boolean;
       spinCount: number;
       userHasSpun: boolean;
+    }
+  | {
+      type: "digest";
+      id: string;
+      timestamp: string;
+      user: { username: string; avatarUrl: string | null };
+      albums: { title: string; artist: string; coverUrl: string | null; discogsId: string }[];
+      count: number;
     }
   | {
       type: "add";
@@ -138,7 +147,40 @@ export default function ActivityFeed({
   }
 
   const allItems = tab === "friends" ? friendItems : globalItems;
-  const items = allItems.filter((item) => {
+
+  // Collapse consecutive auto-imported streaming listens from the same user+day into digest cards
+  function collapseDigests(raw: FeedItem[]): FeedItem[] {
+    const out: FeedItem[] = [];
+    const digestMap = new Map<string, { idx: number; item: Extract<FeedItem, { type: "digest" }> }>();
+
+    for (const item of raw) {
+      if (item.type === "listen" && item.source === "streaming" && item.autoImported) {
+        const day = item.timestamp.slice(0, 10); // YYYY-MM-DD
+        const key = `${item.user.username}:${day}`;
+        const existing = digestMap.get(key);
+        if (existing) {
+          existing.item.count++;
+          if (existing.item.albums.length < 4) existing.item.albums.push(item.album);
+        } else {
+          const digest: Extract<FeedItem, { type: "digest" }> = {
+            type: "digest",
+            id: `digest:${key}`,
+            timestamp: item.timestamp,
+            user: item.user,
+            albums: [item.album],
+            count: 1,
+          };
+          digestMap.set(key, { idx: out.length, item: digest });
+          out.push(digest);
+        }
+      } else {
+        out.push(item);
+      }
+    }
+    return out;
+  }
+
+  const filtered = allItems.filter((item) => {
     if (item.type === "listen") return prefs.showListens;
     if (item.type === "add") return prefs.showAdds;
     if (item.type === "follow") return prefs.showFollows;
@@ -146,6 +188,7 @@ export default function ActivityFeed({
     if (item.type === "spin") return prefs.showSpins;
     return true;
   });
+  const items = collapseDigests(filtered);
 
   return (
     <div>
@@ -376,6 +419,37 @@ function FeedCard({
               {new Date(item.timestamp).toLocaleDateString()}
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (item.type === "digest") {
+    const day = new Date(item.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return (
+      <div className="flex gap-4 p-4" style={{ ...cardStyle, borderLeft: "3px solid #4A4540" }}>
+        <Link href={`/${item.user.username}`} className="shrink-0"><Avatar user={item.user} /></Link>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-mono mb-2" style={{ color: C.muted }}>
+            <Link href={`/${item.user.username}`} className="font-bold hover:underline" style={{ color: C.text }}>
+              {item.user.username}
+            </Link>{" "}streamed{" "}
+            <span style={{ color: C.text }}>{item.count} album{item.count !== 1 ? "s" : ""}</span>
+            {" "}on {day}
+          </div>
+          <div className="flex gap-1.5 mb-2">
+            {item.albums.slice(0, 4).map((a, i) => (
+              a.coverUrl ? (
+                <Image key={i} src={a.coverUrl} alt={a.title} width={36} height={36}
+                  className="object-cover shrink-0" style={{ width: 36, height: 36, borderRadius: 4 }} unoptimized />
+              ) : (
+                <div key={i} className="shrink-0" style={{ width: 36, height: 36, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
+              )
+            ))}
+          </div>
+          <p className="text-xs font-mono" style={{ color: C.subtle }}>
+            Add any to your collection? → Visit their profile
+          </p>
         </div>
       </div>
     );

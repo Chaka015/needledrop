@@ -105,6 +105,7 @@ export async function POST() {
         albumId: album.id,
         format: null,
         source: "streaming",
+        autoImported: true,
         playedAt,
       },
     });
