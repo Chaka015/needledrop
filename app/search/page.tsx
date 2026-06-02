@@ -1,19 +1,23 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import SearchResults from "@/components/SearchResults";
+import SearchPage from "@/components/SearchPage";
 
-interface SearchPageProps {
-  searchParams: Promise<{ q?: string }>;
+interface Props {
+  searchParams: Promise<{ q?: string; tab?: string }>;
 }
 
-export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const { q } = await searchParams;
+export default async function Search({ searchParams }: Props) {
+  const { q, tab } = await searchParams;
   const { userId: clerkId } = await auth();
 
   const currentUser = clerkId
-    ? await prisma.user.findUnique({ where: { clerkId } })
+    ? await prisma.user.findUnique({
+        where: { clerkId },
+        include: { following: true },
+      })
     : null;
 
+  // Search users
   const users = q
     ? await prisma.user.findMany({
         where: {
@@ -25,11 +29,28 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           collection: { select: { id: true } },
           logs: { select: { id: true } },
         },
-        take: 20,
+        take: 50,
       })
     : [];
 
-  const results = users.map((u) => ({
+  // Search albums in our DB
+  const albums = q
+    ? await prisma.album.findMany({
+        where: {
+          OR: [
+            { title: { contains: q, mode: "insensitive" } },
+            { artist: { contains: q, mode: "insensitive" } },
+          ],
+        },
+        include: {
+          logs: { select: { id: true } },
+          collection: { select: { id: true } },
+        },
+        take: 50,
+      })
+    : [];
+
+  const formattedUsers = users.map((u) => ({
     id: u.id,
     username: u.username,
     avatarUrl: u.avatarUrl,
@@ -38,23 +59,36 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     collectionCount: u.collection.length,
     logCount: u.logs.length,
     isFollowing: currentUser
-      ? u.followers.some((f) => f.followerId === currentUser.id)
+      ? currentUser.following.some((f) => f.followingId === u.id)
       : false,
   }));
 
-  const C = {
-    bg: "#2D2926",
-    text: "#F7F1E3",
-    subtle: "#6B6560",
-  };
+  const formattedAlbums = albums.map((a) => ({
+    id: a.id,
+    discogsId: a.discogsId,
+    title: a.title,
+    artist: a.artist,
+    releaseYear: a.releaseYear,
+    coverUrl: a.coverUrl,
+    label: a.label,
+    genre: a.genre,
+    logCount: a.logs.length,
+    collectionCount: a.collection.length,
+  }));
+
+  const C = { bg: "#2D2926", text: "#F7F1E3", subtle: "#6B6560" };
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: C.bg, color: C.text }}>
-      <div className="max-w-2xl mx-auto px-6 py-10">
-        <h1 className="text-xs font-mono uppercase tracking-widest mb-6" style={{ color: C.subtle }}>
-          {q ? `Search results for "${q}"` : "Search for users"}
-        </h1>
-        <SearchResults results={results} isLoggedIn={!!currentUser} />
+      <div className="max-w-3xl mx-auto px-6 py-10">
+        <SearchPage
+          query={q ?? ""}
+          initialTab={(tab as "users" | "albums") ?? "users"}
+          users={formattedUsers}
+          albums={formattedAlbums}
+          isLoggedIn={!!currentUser}
+          discogsToken={process.env.DISCOGS_TOKEN ?? ""}
+        />
       </div>
     </div>
   );
