@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import AddToCollection from "@/components/AddToCollection";
 import CollectionGrid from "@/components/CollectionGrid";
 import AudioSetupEditor from "@/components/AudioSetupEditor";
 import ImportDiscogs from "@/components/ImportDiscogs";
@@ -36,7 +35,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       logs: {
         orderBy: { playedAt: "desc" },
         take: 10,
-        include: { album: true },
+        include: {
+          album: true,
+          spins: true,
+        },
       },
       collection: {
         orderBy: { addedAt: "desc" },
@@ -47,6 +49,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   });
 
   if (!user) notFound();
+
+  const currentUser = clerkId
+    ? await prisma.user.findUnique({ where: { clerkId } })
+    : null;
+
+  const isOwnProfile = currentUser?.id === user.id;
 
   const totalListens = user.logs.length;
   const now = new Date();
@@ -63,9 +71,20 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     ? await prisma.album.findUnique({ where: { id: user.nowSpinning } })
     : null;
 
-  const isOwnProfile = clerkId
-    ? (await prisma.user.findUnique({ where: { clerkId } }))?.id === user.id
-    : false;
+  const logs = user.logs.map((log) => ({
+    id: log.id,
+    rating: log.rating,
+    review: log.review,
+    format: log.format,
+    playedAt: log.playedAt.toISOString(),
+    spinCount: log.spins.length,
+    userHasSpun: currentUser ? log.spins.some((s) => s.userId === currentUser.id) : false,
+    album: {
+      title: log.album.title,
+      artist: log.album.artist,
+      coverUrl: log.album.coverUrl,
+    },
+  }));
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: C.bg, color: C.text }}>
@@ -142,16 +161,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
           {isOwnProfile && (
             <section>
-              <SectionLabel>Add to Collection</SectionLabel>
-              <div className="space-y-4">
-                <ImportDiscogs />
-                <AddToCollection />
-              </div>
-            </section>
-          )}
-
-          {isOwnProfile && (
-            <section>
               <SectionLabel>My Collection</SectionLabel>
               <CollectionGrid
                 items={user.collection.map((c) => ({
@@ -171,7 +180,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </section>
           )}
 
-          {/* Latest Added */}
           <section>
             <SectionLabel>Latest Added</SectionLabel>
             {latestAdded.length > 0 ? (
@@ -183,40 +191,15 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             )}
           </section>
 
-          {/* Recent Listens */}
           <section>
             <SectionLabel>Recent Listens</SectionLabel>
-            {user.logs.length > 0 ? (
-              <div className="space-y-2">
-                {user.logs.map((log) => (
-                  <div key={log.id} className="flex gap-4 p-3 items-start"
-                    style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                    <AlbumTile album={log.album} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2 flex-wrap">
-                        <span className="font-semibold text-sm" style={{ color: C.text }}>{log.album.title}</span>
-                        <span className="text-xs font-mono" style={{ color: C.muted }}>{log.album.artist}</span>
-                      </div>
-                      {log.rating != null && <StarRating rating={log.rating} />}
-                      {log.review && <p className="mt-1 text-sm line-clamp-2" style={{ color: C.muted }}>{log.review}</p>}
-                      <div className="mt-1 flex gap-3 text-xs font-mono" style={{ color: C.subtle }}>
-                        {log.format && <span>{log.format}</span>}
-                        <span>{new Date(log.playedAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState text="No listens logged yet." />
-            )}
+            <RecentListens logs={logs} isOwnProfile={isOwnProfile} />
           </section>
         </div>
 
         {/* SIDEBAR */}
         <aside className="w-full lg:w-64 shrink-0 space-y-8">
 
-          {/* Featured 2x2 */}
           <section>
             <SectionLabel>Featured</SectionLabel>
             {featured.length > 0 ? (
@@ -235,7 +218,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             )}
           </section>
 
-          {/* The Setup */}
           <section>
             <SectionLabel>The Setup</SectionLabel>
             {isOwnProfile ? (
@@ -276,19 +258,6 @@ function AlbumTile({ album, size }: { album: { title: string; artist: string; co
     <div className="flex items-center justify-center text-xs"
       style={{ width: size === "lg" ? "100%" : 48, height: size === "lg" ? "100%" : 48, aspectRatio: "1", backgroundColor: "#3D3834", borderRadius: 4, color: "#6B6560", flexShrink: 0 }}>
       No art
-    </div>
-  );
-}
-
-function StarRating({ rating }: { rating: number }) {
-  const full = Math.floor(rating);
-  const half = rating % 1 >= 0.5;
-  return (
-    <div className="flex gap-0.5 mt-1">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <span key={i} className="text-xs"
-          style={{ color: i < full ? "#E67E22" : i === full && half ? "#E67E2280" : "#524D48" }}>★</span>
-      ))}
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import StarRatingInput from "./StarRatingInput";
 
 const C = {
   surface: "#3D3834",
@@ -34,7 +35,6 @@ interface EditLogModalProps {
 
 export default function EditLogModal({ log, onClose, onSuccess }: EditLogModalProps) {
   const [rating, setRating] = useState<number | null>(log.rating);
-  const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [review, setReview] = useState(log.review ?? "");
   const [format, setFormat] = useState(log.format ?? "");
   const [saving, setSaving] = useState(false);
@@ -48,12 +48,7 @@ export default function EditLogModal({ log, onClose, onSuccess }: EditLogModalPr
     const res = await fetch("/api/logs/edit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        logId: log.id,
-        rating,
-        review: review || null,
-        format: format || null,
-      }),
+      body: JSON.stringify({ logId: log.id, rating, review: review || null, format: format || null }),
     });
 
     if (!res.ok) {
@@ -67,13 +62,10 @@ export default function EditLogModal({ log, onClose, onSuccess }: EditLogModalPr
     onSuccess();
   }
 
-  const displayRating = hoverRating ?? rating;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: "rgba(0,0,0,0.75)" }}>
       <div className="w-full max-w-md p-6" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
 
-        {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           {log.album.coverUrl ? (
             <Image src={log.album.coverUrl} alt={log.album.title} width={56} height={56}
@@ -89,31 +81,18 @@ export default function EditLogModal({ log, onClose, onSuccess }: EditLogModalPr
         </div>
 
         <form onSubmit={handleSave} className="space-y-5">
-          {/* Star Rating */}
           <div>
-            <label className="text-xs font-mono uppercase tracking-widest block mb-2" style={{ color: C.subtle }}>Rating</label>
-            <div className="flex gap-1 items-center">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button key={star} type="button"
-                  onClick={() => setRating(star === rating ? null : star)}
-                  onMouseEnter={() => setHoverRating(star)}
-                  onMouseLeave={() => setHoverRating(null)}
-                  className="text-3xl transition-colors duration-100"
-                  style={{ color: displayRating && star <= displayRating ? C.accent : C.border }}>
-                  ★
-                </button>
-              ))}
-              {rating && <span className="ml-2 text-xs font-mono" style={{ color: C.muted }}>{rating}/5</span>}
-            </div>
+            <label className="text-xs font-mono uppercase tracking-widest block mb-2" style={{ color: C.subtle }}>
+              Rating <span style={{ textTransform: "none", color: C.subtle }}>(min 1★)</span>
+            </label>
+            <StarRatingInput rating={rating} onChange={setRating} />
           </div>
 
-          {/* Format */}
           <div>
             <label className="text-xs font-mono uppercase tracking-widest block mb-2" style={{ color: C.subtle }}>Format</label>
             <div className="flex flex-wrap gap-2">
               {FORMATS.map((f) => (
-                <button key={f} type="button"
-                  onClick={() => setFormat(format === f ? "" : f)}
+                <button key={f} type="button" onClick={() => setFormat(format === f ? "" : f)}
                   className="px-3 py-1.5 text-xs font-mono transition-colors duration-100"
                   style={{
                     backgroundColor: format === f ? C.accent : C.surfaceRaised,
@@ -127,7 +106,6 @@ export default function EditLogModal({ log, onClose, onSuccess }: EditLogModalPr
             </div>
           </div>
 
-          {/* Review */}
           <div>
             <label className="text-xs font-mono uppercase tracking-widest block mb-2" style={{ color: C.subtle }}>
               Review <span style={{ color: C.subtle, textTransform: "none" }}>(optional)</span>
