@@ -117,10 +117,8 @@ export default async function Home() {
           </p>
           <SignInButton mode="modal">
             <button
-              className="px-8 py-3 text-sm font-medium transition-colors duration-100"
-              style={{ backgroundColor: C.accent, color: C.text, borderRadius: 4 }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#CF711E")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = C.accent)}>
+              className="hover-accent-bg px-8 py-3 text-sm font-medium"
+              style={{ color: C.text, borderRadius: 4 }}>
               Start collecting →
             </button>
           </SignInButton>
@@ -175,10 +173,8 @@ export default async function Home() {
             <div className="space-y-1">
               {popularWithCount.map(({ album, count }, idx) => (
                 <Link key={album.id} href={`/album/${album.discogsId}`}
-                  className="flex items-center gap-4 p-3 transition-colors duration-100"
-                  style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = C.surface)}>
+                  className="hover-surface-raised flex items-center gap-4 p-3"
+                  style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
                   <span className="text-xs font-mono w-5 text-right shrink-0" style={{ color: C.subtle }}>
                     {idx + 1}
                   </span>
@@ -208,10 +204,8 @@ export default async function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {featuredMixes.map((mix) => (
                 <Link key={mix.id} href={`/${mix.user.username}/mixes/${mix.id}`}
-                  className="flex items-center gap-4 p-4 transition-colors duration-100"
-                  style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = C.surface)}>
+                  className="hover-surface-raised flex items-center gap-4 p-4"
+                  style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
                   <div className="shrink-0 grid grid-cols-2 gap-0.5" style={{ width: 56, height: 56 }}>
                     {[0, 1, 2, 3].map((i) => {
                       const item = mix.items[i];
@@ -277,10 +271,8 @@ export default async function Home() {
           </p>
           <SignInButton mode="modal">
             <button
-              className="px-8 py-3 text-sm font-medium transition-colors duration-100"
-              style={{ backgroundColor: C.accent, color: C.text, borderRadius: 4 }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#CF711E")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = C.accent)}>
+              className="hover-accent-bg px-8 py-3 text-sm font-medium"
+              style={{ color: C.text, borderRadius: 4 }}>
               Sign up free →
             </button>
           </SignInButton>

@@ -71,10 +71,8 @@ export default async function MixesPage({ params }: Props) {
           <div className="space-y-2">
             {mixes.map((mix) => (
               <Link key={mix.id} href={`/${username}/mixes/${mix.id}`}
-                className="flex items-center gap-4 p-4 transition-colors duration-100"
-                style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = C.surface)}>
+                className="hover-surface-raised flex items-center gap-4 p-4"
+                style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
                 {/* 2×2 cover collage */}
                 <div className="grid grid-cols-2 gap-0.5 shrink-0" style={{ width: 56, height: 56 }}>
                   {[0, 1, 2, 3].map((i) => {

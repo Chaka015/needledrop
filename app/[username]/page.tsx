@@ -224,10 +224,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 ].map((stat) => (
                   stat.href ? (
                     <Link key={stat.label} href={stat.href}
-                      className="px-5 py-3 text-center transition-colors duration-100"
-                      style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
-                      onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = C.accent)}
-                      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = C.border)}>
+                      className="hover-border-accent px-5 py-3 text-center"
+                      style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
                       <div className="text-xl font-bold font-mono" style={{ color: C.text }}>{stat.value}</div>
                       <div className="text-xs font-mono mt-0.5" style={{ color: C.subtle }}>{stat.label}</div>
                     </Link>
