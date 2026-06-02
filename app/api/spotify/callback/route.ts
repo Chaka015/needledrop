@@ -1,10 +1,14 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID!;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET!;
-const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/spotify/callback`;
+
+function appUrl(req: Request) {
+  return process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin;
+}
 
 export async function GET(req: Request) {
   const { userId: clerkId } = await auth();
@@ -12,11 +16,19 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
+  const state = searchParams.get("state");
   const error = searchParams.get("error");
 
-  if (error || !code) {
+  // Verify CSRF state
+  const cookieStore = await cookies();
+  const savedState = cookieStore.get("spotify_oauth_state")?.value;
+  cookieStore.delete("spotify_oauth_state");
+
+  if (error || !code || !state || state !== savedState) {
     return NextResponse.redirect(new URL("/settings?spotify=error", req.url));
   }
+
+  const redirectUri = `${appUrl(req)}/api/spotify/callback`;
 
   const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
@@ -27,7 +39,7 @@ export async function GET(req: Request) {
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUri,
     }),
   });
 
@@ -37,7 +49,6 @@ export async function GET(req: Request) {
 
   const tokens = await tokenRes.json();
 
-  // Get Spotify user ID
   const profileRes = await fetch("https://api.spotify.com/v1/me", {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
   });

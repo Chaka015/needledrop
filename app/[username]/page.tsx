@@ -98,6 +98,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     ? await prisma.album.findUnique({ where: { id: user.nowSpinning } })
     : null;
 
+  // For visitors: determine if spinning is active (<60 min) or stale (>60 min → "LAST PLAYED")
+  const sixtyMinutesAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  const nowSpinningIsActive = !isOwnProfile
+    ? (user.nowSpinningAt ? user.nowSpinningAt > sixtyMinutesAgo : false)
+    : true; // owners always see it as active
+
   const logs = user.logs.map((log) => ({
     id: log.id,
     rating: log.rating,
@@ -120,12 +126,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           <div className="flex flex-col md:flex-row gap-8 items-start">
             <div className="shrink-0">
               {user.avatarUrl ? (
-                <Image src={user.avatarUrl} alt={user.username} width={96} height={96}
+                <Image src={user.avatarUrl} alt={user.username} width={128} height={128}
                   className="object-cover"
-                  style={{ width: 96, height: 96, borderRadius: "50%", border: `2px solid ${C.border}` }} />
+                  style={{ width: 128, height: 128, borderRadius: "50%", border: `3px solid ${C.accent}` }} />
               ) : (
-                <div className="flex items-center justify-center text-3xl font-bold"
-                  style={{ width: 96, height: 96, borderRadius: "50%", backgroundColor: C.surface, color: C.subtle, border: `2px solid ${C.border}` }}>
+                <div className="flex items-center justify-center text-4xl font-bold"
+                  style={{ width: 128, height: 128, borderRadius: "50%", backgroundColor: C.surface, color: C.subtle, border: `3px solid ${C.accent}` }}>
                   {user.username[0].toUpperCase()}
                 </div>
               )}
@@ -139,10 +145,28 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 )}
                 {nowSpinningAlbum && (
                   <span className="flex items-center gap-2 text-xs font-mono px-3 py-1.5"
-                    style={{ backgroundColor: "#0D0D0D", border: "1px solid #333", borderRadius: 4 }}>
-                    <span className="w-2 h-2 rounded-full animate-pulse shrink-0" style={{ backgroundColor: "#FF3E3E" }} />
-                    <span style={{ color: "#FF3E3E" }}>
-                      {user.nowSpinningSource === "streaming" ? "STREAMING" : "ON AIR"}
+                    style={{
+                      backgroundColor: "#0D0D0D",
+                      border: "1px solid #333",
+                      borderRadius: 4,
+                      opacity: nowSpinningIsActive ? 1 : 0.65,
+                    }}>
+                    {nowSpinningAlbum.coverUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={nowSpinningAlbum.coverUrl} alt=""
+                        style={{ width: 24, height: 24, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+                    )}
+                    {nowSpinningIsActive ? (
+                      <span className="w-2 h-2 rounded-full animate-pulse shrink-0" style={{ backgroundColor: "#FF3E3E" }} />
+                    ) : (
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#555" }} />
+                    )}
+                    <span style={{ color: nowSpinningIsActive ? "#FF3E3E" : "#777" }}>
+                      {!nowSpinningIsActive
+                        ? "LAST PLAYED"
+                        : user.nowSpinningSource === "streaming"
+                        ? "STREAMING"
+                        : "ON AIR"}
                     </span>
                     <span style={{ color: "#F7F1E3" }}>
                       {nowSpinningAlbum.artist} — {nowSpinningAlbum.title}
@@ -156,14 +180,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               {/* Listen counts */}
               <div className="mt-4 flex flex-wrap gap-6 text-sm font-mono" style={{ color: C.muted }}>
                 {[
-                  { value: totalListens, label: "TOTAL" },
-                  { value: listensThisYear, label: "THIS YEAR" },
-                  { value: listensThisWeek, label: "THIS WEEK" },
+                  { value: totalListens, label: "TOTAL", href: `/${username}/logs` },
+                  { value: listensThisYear, label: "THIS YEAR", href: `/${username}/logs?filter=year` },
+                  { value: listensThisWeek, label: "THIS WEEK", href: `/${username}/logs?filter=week` },
                 ].map((s) => (
-                  <div key={s.label}>
+                  <Link key={s.label} href={s.href} className="hover:underline">
                     <span className="font-bold" style={{ color: C.text }}>{s.value}</span>{" "}
                     <span className="text-xs" style={{ color: C.subtle }}>{s.label}</span>
-                  </div>
+                  </Link>
                 ))}
                 <Link href={`/${username}/following`} className="hover:underline">
                   <span className="font-bold" style={{ color: C.text }}>{user.following.length}</span>{" "}

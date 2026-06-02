@@ -15,6 +15,7 @@ export async function POST(req: Request) {
     data: {
       nowSpinning: albumId ?? null,
       nowSpinningSource: albumId ? (source === "streaming" ? "streaming" : "physical") : null,
+      nowSpinningAt: albumId ? new Date() : null,
     },
   });
 

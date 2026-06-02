@@ -15,6 +15,22 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "**.discogs.com",
       },
+      {
+        protocol: "https",
+        hostname: "coverartarchive.org",
+      },
+      {
+        protocol: "https",
+        hostname: "**.coverartarchive.org",
+      },
+      {
+        protocol: "https",
+        hostname: "**.archive.org",
+      },
+      {
+        protocol: "https",
+        hostname: "i.scdn.co",
+      },
     ],
   },
 };

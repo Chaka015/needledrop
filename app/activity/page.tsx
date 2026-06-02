@@ -100,6 +100,7 @@ export default async function ActivityPage() {
         review: l.review,
         format: l.format,
         source: l.source,
+        autoImported: l.autoImported,
         spinCount: l.spins.length,
         userHasSpun: currentUser ? l.spins.some((s) => s.userId === currentUser.id) : false,
       })),
