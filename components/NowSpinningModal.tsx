@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import LogListenModal from "./LogListenModal";
 
 const C = {
   bg: "#2D2926",
@@ -22,6 +23,8 @@ interface Album {
   artist: string;
   coverUrl: string | null;
   releaseYear: number | null;
+  label: string | null;
+  genre: string | null;
 }
 
 interface CollectionItem {
@@ -38,7 +41,7 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
   const [query, setQuery] = useState("");
   const [collection, setCollection] = useState<CollectionItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [setting, setSetting] = useState<string | null>(null);
+  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
 
   useEffect(() => {
     fetch("/api/collection")
@@ -55,39 +58,39 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
     : collection.slice(0, 8);
 
   async function handleSpin(album: Album) {
-    setSetting(album.id);
-    const res = await fetch("/api/now-spinning", {
+    // Set now spinning
+    await fetch("/api/now-spinning", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ albumId: album.id }),
     });
+    // Show log modal for rating/review
+    setSelectedAlbum(album);
+  }
 
-    if (res.ok) {
-      // Also log the listen
-      await fetch("/api/logs/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          discogsId: album.discogsId,
-          title: album.title,
-          artist: album.artist,
-          releaseYear: album.releaseYear,
-          coverUrl: album.coverUrl,
-          label: null,
-          genre: null,
-          format: "Vinyl",
-        }),
-      });
-      onSuccess();
-    }
-    setSetting(null);
+  if (selectedAlbum) {
+    return (
+      <LogListenModal
+        album={{
+          discogsId: selectedAlbum.discogsId,
+          title: selectedAlbum.title,
+          albumTitle: selectedAlbum.title,
+          artist: selectedAlbum.artist,
+          releaseYear: selectedAlbum.releaseYear,
+          coverUrl: selectedAlbum.coverUrl,
+          label: selectedAlbum.label,
+          genre: selectedAlbum.genre,
+        }}
+        onClose={onClose}
+        onSuccess={onSuccess}
+      />
+    );
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: "rgba(0,0,0,0.75)" }}>
       <div className="w-full max-w-md" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: `1px solid ${C.border}` }}>
           <div>
             <h2 className="text-sm font-bold" style={{ color: C.text }}>What are you spinning?</h2>
@@ -96,7 +99,6 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
           <button onClick={onClose} style={{ color: C.subtle }} className="text-xl leading-none">×</button>
         </div>
 
-        {/* Search */}
         <div className="px-5 pt-4 pb-2">
           <input
             type="text"
@@ -111,7 +113,6 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
           />
         </div>
 
-        {/* Results */}
         <div className="px-5 pb-5 space-y-1 max-h-80 overflow-y-auto">
           {loading ? (
             <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>Loading collection...</p>
@@ -122,7 +123,6 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
               <button
                 key={c.id}
                 onClick={() => handleSpin(c.album)}
-                disabled={setting === c.album.id}
                 className="w-full flex items-center gap-3 p-2 text-left transition-colors duration-100"
                 style={{ backgroundColor: "transparent", borderRadius: 4 }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}
@@ -138,9 +138,6 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
                   <div className="text-sm font-medium truncate" style={{ color: C.text }}>{c.album.title}</div>
                   <div className="text-xs font-mono truncate" style={{ color: C.muted }}>{c.album.artist}</div>
                 </div>
-                {setting === c.album.id && (
-                  <span className="text-xs font-mono shrink-0" style={{ color: C.accent }}>▶</span>
-                )}
               </button>
             ))
           )}

@@ -6,6 +6,7 @@ import AddToCollection from "@/components/AddToCollection";
 import CollectionGrid from "@/components/CollectionGrid";
 import AudioSetupEditor from "@/components/AudioSetupEditor";
 import ImportDiscogs from "@/components/ImportDiscogs";
+import RecentListens from "@/components/RecentListens";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
