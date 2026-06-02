@@ -156,14 +156,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               {/* Listen counts */}
               <div className="mt-4 flex flex-wrap gap-6 text-sm font-mono" style={{ color: C.muted }}>
                 {[
-                  { value: totalListens, label: "TOTAL" },
-                  { value: listensThisYear, label: "THIS YEAR" },
-                  { value: listensThisWeek, label: "THIS WEEK" },
+                  { value: totalListens, label: "TOTAL", href: `/${username}/logs` },
+                  { value: listensThisYear, label: "THIS YEAR", href: `/${username}/logs?filter=year` },
+                  { value: listensThisWeek, label: "THIS WEEK", href: `/${username}/logs?filter=week` },
                 ].map((s) => (
-                  <div key={s.label}>
+                  <Link key={s.label} href={s.href} className="hover:underline">
                     <span className="font-bold" style={{ color: C.text }}>{s.value}</span>{" "}
                     <span className="text-xs" style={{ color: C.subtle }}>{s.label}</span>
-                  </div>
+                  </Link>
                 ))}
                 <Link href={`/${username}/following`} className="hover:underline">
                   <span className="font-bold" style={{ color: C.text }}>{user.following.length}</span>{" "}
