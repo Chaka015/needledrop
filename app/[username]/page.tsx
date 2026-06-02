@@ -140,6 +140,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 {nowSpinningAlbum && (
                   <span className="flex items-center gap-2 text-xs font-mono px-3 py-1.5"
                     style={{ backgroundColor: "#0D0D0D", border: "1px solid #333", borderRadius: 4 }}>
+                    {nowSpinningAlbum.coverUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={nowSpinningAlbum.coverUrl} alt=""
+                        style={{ width: 24, height: 24, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+                    )}
                     <span className="w-2 h-2 rounded-full animate-pulse shrink-0" style={{ backgroundColor: "#FF3E3E" }} />
                     <span style={{ color: "#FF3E3E" }}>
                       {user.nowSpinningSource === "streaming" ? "STREAMING" : "ON AIR"}
