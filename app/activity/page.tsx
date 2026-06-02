@@ -39,7 +39,7 @@ export default async function ActivityPage() {
       review: log.review,
       format: log.format,
       spinCount: log.spins.length,
-      userHasSpun: log.spins.some((s) => s.userId === currentUser.id),
+      userHasSpun: currentUser ? log.spins.some((s) => s.userId === currentUser.id) : false,
       user: { username: log.user.username, avatarUrl: log.user.avatarUrl },
       album: { title: log.album.title, artist: log.album.artist, coverUrl: log.album.coverUrl },
     }));
