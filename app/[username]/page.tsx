@@ -11,6 +11,8 @@ import FeaturedGrid from "@/components/FeaturedGrid";
 import FollowButton from "@/components/FollowButton";
 import MixesList from "@/components/MixesList";
 import SkinApplicator from "@/components/SkinApplicator";
+import FlipCounter from "@/components/FlipCounter";
+import QuickLogWidget from "@/components/QuickLogWidget";
 import { getSkin, skinToVars } from "@/lib/skins";
 
 interface ProfilePageProps {
@@ -103,6 +105,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const sixtyMinutesAgo = new Date(now.getTime() - 60 * 60 * 1000);
   const nowSpinningIsActive = user.nowSpinningAt ? user.nowSpinningAt > sixtyMinutesAgo : false;
 
+  // Sum durationMs across all logs for the flip counter (BigInt → Number for rendering)
+  const totalListeningMs = user.logs.reduce((sum, log) => {
+    return sum + (log.durationMs ? Number(log.durationMs) : 0);
+  }, 0);
+
   const logs = user.logs.map((log) => ({
     id: log.id,
     rating: log.rating,
@@ -177,6 +184,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 )}
               </div>
 
+              {/* Listening time flip counter */}
+              {totalListeningMs > 0 && (
+                <div className="mt-3">
+                  <FlipCounter totalMs={totalListeningMs} />
+                </div>
+              )}
+
               {user.bio && <p className="mt-2 text-sm max-w-xl" style={{ color: C.muted }}>{user.bio}</p>}
 
               {/* Listen counts */}
@@ -204,15 +218,26 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               {/* Stats strip */}
               <div className="mt-5 flex flex-wrap gap-3">
                 {[
-                  { label: "RECORDS", value: user.collection.length },
-                  { label: "LOGGED", value: user.logs.length },
-                  { label: "WANTLIST", value: user.wantlist.length },
+                  { label: "RECORDS", value: user.collection.length, href: null },
+                  { label: "LOGGED", value: user.logs.length, href: `/${username}/logs` },
+                  { label: "WANTLIST", value: user.wantlist.length, href: `/${username}/wantlist` },
                 ].map((stat) => (
-                  <div key={stat.label} className="px-5 py-3 text-center"
-                    style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                    <div className="text-xl font-bold font-mono" style={{ color: C.text }}>{stat.value}</div>
-                    <div className="text-xs font-mono mt-0.5" style={{ color: C.subtle }}>{stat.label}</div>
-                  </div>
+                  stat.href ? (
+                    <Link key={stat.label} href={stat.href}
+                      className="px-5 py-3 text-center transition-colors duration-100"
+                      style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
+                      onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = C.accent)}
+                      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = C.border)}>
+                      <div className="text-xl font-bold font-mono" style={{ color: C.text }}>{stat.value}</div>
+                      <div className="text-xs font-mono mt-0.5" style={{ color: C.subtle }}>{stat.label}</div>
+                    </Link>
+                  ) : (
+                    <div key={stat.label} className="px-5 py-3 text-center"
+                      style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
+                      <div className="text-xl font-bold font-mono" style={{ color: C.text }}>{stat.value}</div>
+                      <div className="text-xs font-mono mt-0.5" style={{ color: C.subtle }}>{stat.label}</div>
+                    </div>
+                  )
                 ))}
               </div>
             </div>
@@ -224,6 +249,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col lg:flex-row gap-10">
 
         <div className="flex-1 min-w-0 space-y-12">
+
+          {isOwnProfile && (
+            <section>
+              <QuickLogWidget />
+            </section>
+          )}
 
           <section>
             <SectionLabel>Recent Listens</SectionLabel>
