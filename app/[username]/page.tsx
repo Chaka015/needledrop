@@ -98,6 +98,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     ? await prisma.album.findUnique({ where: { id: user.nowSpinning } })
     : null;
 
+  // For visitors: determine if spinning is active (<60 min) or stale (>60 min → "LAST PLAYED")
+  const sixtyMinutesAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  const nowSpinningIsActive = !isOwnProfile
+    ? (user.nowSpinningAt ? user.nowSpinningAt > sixtyMinutesAgo : false)
+    : true; // owners always see it as active
+
   const logs = user.logs.map((log) => ({
     id: log.id,
     rating: log.rating,
@@ -139,15 +145,28 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 )}
                 {nowSpinningAlbum && (
                   <span className="flex items-center gap-2 text-xs font-mono px-3 py-1.5"
-                    style={{ backgroundColor: "#0D0D0D", border: "1px solid #333", borderRadius: 4 }}>
+                    style={{
+                      backgroundColor: "#0D0D0D",
+                      border: "1px solid #333",
+                      borderRadius: 4,
+                      opacity: nowSpinningIsActive ? 1 : 0.65,
+                    }}>
                     {nowSpinningAlbum.coverUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={nowSpinningAlbum.coverUrl} alt=""
                         style={{ width: 24, height: 24, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
                     )}
-                    <span className="w-2 h-2 rounded-full animate-pulse shrink-0" style={{ backgroundColor: "#FF3E3E" }} />
-                    <span style={{ color: "#FF3E3E" }}>
-                      {user.nowSpinningSource === "streaming" ? "STREAMING" : "ON AIR"}
+                    {nowSpinningIsActive ? (
+                      <span className="w-2 h-2 rounded-full animate-pulse shrink-0" style={{ backgroundColor: "#FF3E3E" }} />
+                    ) : (
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#555" }} />
+                    )}
+                    <span style={{ color: nowSpinningIsActive ? "#FF3E3E" : "#777" }}>
+                      {!nowSpinningIsActive
+                        ? "LAST PLAYED"
+                        : user.nowSpinningSource === "streaming"
+                        ? "STREAMING"
+                        : "ON AIR"}
                     </span>
                     <span style={{ color: "#F7F1E3" }}>
                       {nowSpinningAlbum.artist} — {nowSpinningAlbum.title}
