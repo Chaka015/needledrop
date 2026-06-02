@@ -25,10 +25,18 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  function fetchNotifications() {
     fetch("/api/notifications")
       .then((r) => r.json())
       .then((data) => setNotifications(data.notifications ?? []));
+  }
+
+  useEffect(() => {
+    fetchNotifications();
+    // Refresh when tab regains focus so new spins/follows appear
+    function onFocus() { fetchNotifications(); }
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   useEffect(() => {
