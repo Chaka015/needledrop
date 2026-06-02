@@ -31,16 +31,10 @@ export default async function Home() {
         />
 
         <div>
-          <h1
-            className="text-5xl font-bold tracking-tight"
-            style={{ color: "#F7F1E3" }}
-          >
+          <h1 className="text-5xl font-bold tracking-tight" style={{ color: "#F7F1E3" }}>
             NeedleDrop
           </h1>
-          <p
-            className="mt-3 text-sm uppercase tracking-widest font-mono"
-            style={{ color: "#A89F94" }}
-          >
+          <p className="mt-3 text-sm uppercase tracking-widest font-mono" style={{ color: "#A89F94" }}>
             / Log your listening
           </p>
         </div>
@@ -48,18 +42,8 @@ export default async function Home() {
         {!clerkId ? (
           <SignInButton mode="modal">
             <button
-              className="mt-2 px-8 py-3 text-sm font-medium transition-colors duration-100"
-              style={{
-                backgroundColor: "#E67E22",
-                color: "#F7F1E3",
-                borderRadius: "4px",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "#CF711E")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "#E67E22")
-              }
+              className="mt-2 px-8 py-3 text-sm font-medium"
+              style={{ backgroundColor: "#E67E22", color: "#F7F1E3", borderRadius: "4px" }}
             >
               Get started
             </button>
@@ -67,24 +51,16 @@ export default async function Home() {
         ) : username ? (
           <Link
             href={`/${username}`}
-            className="mt-2 px-8 py-3 text-sm font-medium transition-colors duration-100"
-            style={{
-              backgroundColor: "#E67E22",
-              color: "#F7F1E3",
-              borderRadius: "4px",
-            }}
+            className="mt-2 px-8 py-3 text-sm font-medium"
+            style={{ backgroundColor: "#E67E22", color: "#F7F1E3", borderRadius: "4px" }}
           >
             Go to my profile →
           </Link>
         ) : (
           <Link
             href="/onboarding"
-            className="mt-2 px-8 py-3 text-sm font-medium transition-colors duration-100"
-            style={{
-              backgroundColor: "#E67E22",
-              color: "#F7F1E3",
-              borderRadius: "4px",
-            }}
+            className="mt-2 px-8 py-3 text-sm font-medium"
+            style={{ backgroundColor: "#E67E22", color: "#F7F1E3", borderRadius: "4px" }}
           >
             Set up your profile →
           </Link>
