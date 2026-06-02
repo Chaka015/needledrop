@@ -99,7 +99,7 @@ export default async function MixPage({ params }: Props) {
         {/* Owner editing tools */}
         {isOwner && (
           <div className="mt-8">
-            <MixEditor mixId={mix.id} username={username} />
+            <MixEditor mixId={mix.id} username={username} isPublic={mix.isPublic} />
           </div>
         )}
       </div>

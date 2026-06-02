@@ -31,13 +31,14 @@ export async function PATCH(req: Request, { params }: Params) {
   if (!mix) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (mix.user.clerkId !== clerkId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const { title, description, coverUrl } = await req.json();
+  const { title, description, coverUrl, isPublic } = await req.json();
   const updated = await prisma.mix.update({
     where: { id: mixId },
     data: {
       title: title?.trim() ?? mix.title,
       description: description !== undefined ? (description?.trim() ?? null) : mix.description,
       coverUrl: coverUrl !== undefined ? coverUrl : mix.coverUrl,
+      isPublic: isPublic !== undefined ? Boolean(isPublic) : mix.isPublic,
     },
   });
 

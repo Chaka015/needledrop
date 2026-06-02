@@ -29,11 +29,13 @@ interface CollectionItem {
 interface MixEditorProps {
   mixId: string;
   username: string;
+  isPublic: boolean;
 }
 
-export default function MixEditor({ mixId, username }: MixEditorProps) {
+export default function MixEditor({ mixId, username, isPublic: initialIsPublic }: MixEditorProps) {
   const router = useRouter();
   const [collection, setCollection] = useState<CollectionItem[]>([]);
+  const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
   const [open, setOpen] = useState(false);
@@ -74,11 +76,21 @@ export default function MixEditor({ mixId, username }: MixEditorProps) {
     router.push(`/${username}`);
   }
 
+  async function togglePublic() {
+    const next = !isPublic;
+    setIsPublic(next);
+    await fetch(`/api/mixes/${mixId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isPublic: next }),
+    });
+  }
+
   return (
     <div className="space-y-3">
       <h3 className="text-xs font-mono uppercase tracking-widest" style={{ color: C.subtle }}>Edit Mix</h3>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setOpen((v) => !v)}
           className="px-4 py-2 text-xs font-mono transition-colors duration-100"
@@ -86,6 +98,14 @@ export default function MixEditor({ mixId, username }: MixEditorProps) {
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.accentHover)}
           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = C.accent)}>
           + ADD RECORD
+        </button>
+        <button
+          onClick={togglePublic}
+          className="px-4 py-2 text-xs font-mono transition-colors duration-100"
+          style={{ backgroundColor: C.surfaceRaised, color: C.muted, borderRadius: 4, border: `1px solid ${C.border}` }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
+          onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
+          {isPublic ? "PUBLIC" : "PRIVATE"}
         </button>
         <button
           onClick={handleDelete}
