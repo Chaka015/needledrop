@@ -4,6 +4,7 @@ import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { fetchArtist, fetchArtistReleases, fetchWikipediaSummary } from "@/lib/musicbrainz";
+import { fetchArtistNews } from "@/lib/newsapi";
 import ArtistShowsClient from "@/components/ArtistShowsClient";
 
 interface Props {
@@ -47,6 +48,8 @@ export default async function ArtistPage({ params }: Props) {
   ]);
 
   if (!artist) notFound();
+
+  const news = await fetchArtistNews(artist.name);
 
   // Find Wikipedia URL from MusicBrainz relations
   const wikiUrl = artist.relations?.find((r) => r.type === "wikipedia" && r.url?.resource)?.url?.resource;
@@ -122,6 +125,30 @@ export default async function ArtistPage({ params }: Props) {
                     className="inline-block mt-3 text-xs font-mono hover:underline" style={{ color: C.accent }}>
                     Read more on Wikipedia →
                   </a>
+                </div>
+              </section>
+            )}
+
+            {/* NEWS */}
+            {news.length > 0 && (
+              <section>
+                <SectionLabel>Latest News</SectionLabel>
+                <div className="space-y-1">
+                  {news.map((article, i) => (
+                    <a key={i} href={article.url} target="_blank" rel="noopener noreferrer"
+                      className="block p-4 transition-colors duration-100"
+                      style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
+                      onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = C.accent)}
+                      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = C.border)}>
+                      <div className="text-sm font-semibold mb-1 hover:underline" style={{ color: C.text }}>
+                        {article.title}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs font-mono" style={{ color: C.subtle }}>
+                        <span style={{ color: C.muted }}>{article.source}</span>
+                        <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
+                      </div>
+                    </a>
+                  ))}
                 </div>
               </section>
             )}
