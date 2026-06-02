@@ -20,6 +20,7 @@ interface FeedLog {
   rating: number | null;
   review: string | null;
   format: string | null;
+  source: string;
   spinCount: number;
   userHasSpun: boolean;
   user: { username: string; avatarUrl: string | null };
@@ -126,7 +127,11 @@ export default function ActivityFeed({
                         <p className="mt-1 text-sm line-clamp-2" style={{ color: C.muted }}>{log.review}</p>
                       )}
                       <div className="mt-1 text-xs font-mono" style={{ color: C.subtle }}>
-                        {log.format && <span className="mr-3">{log.format}</span>}
+                        {log.source === "streaming" ? (
+                          <span className="mr-3" style={{ color: C.muted }}>▶ STREAMING</span>
+                        ) : log.format ? (
+                          <span className="mr-3">{log.format}</span>
+                        ) : null}
                         {new Date(log.playedAt).toLocaleDateString()}
                       </div>
                     </div>

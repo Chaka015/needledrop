@@ -13,21 +13,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const { discogsId, title, artist, releaseYear, coverUrl, label, genre, rating, review, format } =
+  const { discogsId, title, artist, releaseYear, coverUrl, label, genre, rating, review, format, source } =
     await req.json();
 
   if (!discogsId || !title || !artist) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  // Upsert album
   const album = await prisma.album.upsert({
     where: { discogsId },
     update: { coverUrl, label, genre },
     create: { discogsId, title, artist, releaseYear, coverUrl, label, genre },
   });
 
-  // Create log entry
   const log = await prisma.listeningLog.create({
     data: {
       userId: user.id,
@@ -35,6 +33,7 @@ export async function POST(req: Request) {
       rating: rating ?? null,
       review: review ?? null,
       format: format ?? null,
+      source: source === "streaming" ? "streaming" : "physical",
     },
   });
 

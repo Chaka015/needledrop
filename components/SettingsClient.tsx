@@ -13,49 +13,16 @@ const C = {
   subtle: "#6B6560",
   accent: "#E67E22",
   accentHover: "#CF711E",
+  success: "#5E9E6E",
+  danger: "#C0392B",
 };
 
 const SKINS = [
-  {
-    id: "analog-warmth",
-    name: "Analog Warmth",
-    bg: "#2D2926",
-    surface: "#3D3834",
-    accent: "#E67E22",
-    description: "Espresso & terracotta",
-  },
-  {
-    id: "silver-face",
-    name: "Silver Face",
-    bg: "#1A1A1A",
-    surface: "#2A2A2A",
-    accent: "#C0C0C0",
-    description: "Brushed aluminum",
-  },
-  {
-    id: "midnight-black",
-    name: "Midnight Black",
-    bg: "#0D0D0D",
-    surface: "#1A1A1A",
-    accent: "#FF3E3E",
-    description: "Matte black & red",
-  },
-  {
-    id: "wood-grain",
-    name: "Wood Grain",
-    bg: "#3B2F2F",
-    surface: "#4A3B35",
-    accent: "#D4A96A",
-    description: "Warm oak & cream",
-  },
-  {
-    id: "studio-console",
-    name: "Studio Console",
-    bg: "#1A2420",
-    surface: "#243530",
-    accent: "#4CAF82",
-    description: "Forest green & cream",
-  },
+  { id: "analog-warmth", name: "Analog Warmth", bg: "#2D2926", surface: "#3D3834", accent: "#E67E22", description: "Espresso & terracotta" },
+  { id: "silver-face", name: "Silver Face", bg: "#1A1A1A", surface: "#2A2A2A", accent: "#C0C0C0", description: "Brushed aluminum" },
+  { id: "midnight-black", name: "Midnight Black", bg: "#0D0D0D", surface: "#1A1A1A", accent: "#FF3E3E", description: "Matte black & red" },
+  { id: "wood-grain", name: "Wood Grain", bg: "#3B2F2F", surface: "#4A3B35", accent: "#D4A96A", description: "Warm oak & cream" },
+  { id: "studio-console", name: "Studio Console", bg: "#1A2420", surface: "#243530", accent: "#4CAF82", description: "Forest green & cream" },
 ];
 
 interface SettingsClientProps {
@@ -64,6 +31,7 @@ interface SettingsClientProps {
     avatarUrl: string | null;
     bio: string | null;
     skin: string | null;
+    spotifyId: string | null;
   };
 }
 
@@ -74,6 +42,9 @@ export default function SettingsClient({ user }: SettingsClientProps) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [spotifyConnected, setSpotifyConnected] = useState(!!user.spotifyId);
+  const [spotifySyncing, setSpotifySyncing] = useState(false);
+  const [spotifySyncResult, setSpotifySyncResult] = useState<string | null>(null);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -95,6 +66,25 @@ export default function SettingsClient({ user }: SettingsClientProps) {
       setTimeout(() => setSaved(false), 3000);
     }
     setSaving(false);
+  }
+
+  async function handleSpotifySync() {
+    setSpotifySyncing(true);
+    setSpotifySyncResult(null);
+    const res = await fetch("/api/spotify/sync", { method: "POST" });
+    const data = await res.json();
+    setSpotifySyncResult(
+      res.ok
+        ? `✓ Imported ${data.imported} listens (${data.skipped} already logged)`
+        : `Error: ${data.error ?? "Sync failed"}`
+    );
+    setSpotifySyncing(false);
+  }
+
+  async function handleSpotifyDisconnect() {
+    await fetch("/api/spotify/disconnect", { method: "POST" });
+    setSpotifyConnected(false);
+    setSpotifySyncResult(null);
   }
 
   return (
@@ -144,23 +134,18 @@ export default function SettingsClient({ user }: SettingsClientProps) {
               onBlur={(e) => (e.currentTarget.style.borderColor = C.border)} />
           </section>
 
-          {/* Colour Variants */}
+          {/* Profile Skin */}
           <section>
             <h2 className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: C.subtle }}>Profile Skin</h2>
             <div className="grid grid-cols-1 gap-3">
               {SKINS.map((skin) => (
-                <button
-                  key={skin.id}
-                  type="button"
-                  onClick={() => setSelectedSkin(skin.id)}
+                <button key={skin.id} type="button" onClick={() => setSelectedSkin(skin.id)}
                   className="flex items-center gap-4 p-4 text-left transition-colors duration-100"
                   style={{
                     backgroundColor: selectedSkin === skin.id ? C.surfaceRaised : C.surface,
                     border: `1px solid ${selectedSkin === skin.id ? C.accent : C.border}`,
                     borderRadius: 0,
-                  }}
-                >
-                  {/* Skin preview */}
+                  }}>
                   <div className="flex gap-1 shrink-0">
                     <div style={{ width: 32, height: 32, backgroundColor: skin.bg, border: `1px solid ${C.border}` }} />
                     <div style={{ width: 32, height: 32, backgroundColor: skin.surface, border: `1px solid ${C.border}` }} />
@@ -178,8 +163,8 @@ export default function SettingsClient({ user }: SettingsClientProps) {
             </div>
           </section>
 
-          {error && <p className="text-xs font-mono" style={{ color: "#C0392B" }}>{error}</p>}
-          {saved && <p className="text-xs font-mono" style={{ color: "#5E9E6E" }}>✓ Settings saved</p>}
+          {error && <p className="text-xs font-mono" style={{ color: C.danger }}>{error}</p>}
+          {saved && <p className="text-xs font-mono" style={{ color: C.success }}>✓ Settings saved</p>}
 
           <button type="submit" disabled={saving}
             className="px-8 py-3 text-sm font-medium transition-colors duration-100"
@@ -189,6 +174,53 @@ export default function SettingsClient({ user }: SettingsClientProps) {
             {saving ? "SAVING..." : "SAVE SETTINGS"}
           </button>
         </form>
+
+        {/* Spotify Integration — outside the form */}
+        <section className="mt-12 pt-8" style={{ borderTop: `1px solid ${C.border}` }}>
+          <h2 className="text-xs font-mono uppercase tracking-widest mb-1" style={{ color: C.subtle }}>Streaming</h2>
+          <p className="text-xs font-mono mb-4" style={{ color: C.muted }}>
+            Connect Spotify to auto-import your recent plays as streaming logs.
+          </p>
+
+          {spotifyConnected ? (
+            <div className="p-4 space-y-3" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: C.success }} />
+                <span className="text-sm font-mono" style={{ color: C.text }}>Spotify connected</span>
+                <span className="text-xs font-mono" style={{ color: C.subtle }}>({user.spotifyId})</span>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleSpotifySync} disabled={spotifySyncing}
+                  className="px-4 py-2 text-xs font-mono transition-colors duration-100"
+                  style={{ backgroundColor: C.surfaceRaised, color: C.muted, borderRadius: 4, border: `1px solid ${C.border}`, opacity: spotifySyncing ? 0.4 : 1 }}
+                  onMouseEnter={(e) => !spotifySyncing && (e.currentTarget.style.color = C.text)}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
+                  {spotifySyncing ? "SYNCING..." : "SYNC NOW"}
+                </button>
+                <button onClick={handleSpotifyDisconnect}
+                  className="px-4 py-2 text-xs font-mono transition-colors duration-100"
+                  style={{ backgroundColor: "transparent", color: C.subtle, borderRadius: 4, border: `1px solid ${C.border}` }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = C.danger; (e.currentTarget as HTMLButtonElement).style.borderColor = C.danger; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = C.subtle; (e.currentTarget as HTMLButtonElement).style.borderColor = C.border; }}>
+                  DISCONNECT
+                </button>
+              </div>
+              {spotifySyncResult && (
+                <p className="text-xs font-mono" style={{ color: spotifySyncResult.startsWith("✓") ? C.success : C.danger }}>
+                  {spotifySyncResult}
+                </p>
+              )}
+            </div>
+          ) : (
+            <a href="/api/spotify/connect"
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-mono transition-colors duration-100"
+              style={{ backgroundColor: "#1DB954", color: "#FFFFFF", borderRadius: 4 }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1AA34A")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1DB954")}>
+              ▶ CONNECT SPOTIFY
+            </a>
+          )}
+        </section>
       </div>
     </div>
   );

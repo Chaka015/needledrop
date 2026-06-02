@@ -15,18 +15,27 @@ model User {
   bio          String?
   avatarUrl    String?
   nowSpinning  String?  // albumId of currently playing album
+  nowSpinningSource String? // "physical" | "streaming"
   spins        Spin[]
-  skin       String?
+  skin         String?
   createdAt    DateTime @default(now())
+
+  // Spotify OAuth
+  spotifyId           String?
+  spotifyAccessToken  String?
+  spotifyRefreshToken String?
+  spotifyTokenExpiry  DateTime?
 
   collection   Collection[]
   logs         ListeningLog[]
   wantlist     Wantlist[]
   audioSetup   AudioSetup?
+  mixes        Mix[]
 
   following    Follow[] @relation("follower")
   followers    Follow[] @relation("following")
 }
+
 model Notification {
   id        String   @id @default(cuid())
   userId    String
@@ -39,6 +48,7 @@ model Notification {
 
   user      User  @relation(fields: [userId], references: [id])
 }
+
 model Album {
   id          String  @id @default(cuid())
   discogsId   String  @unique
@@ -52,6 +62,7 @@ model Album {
   collection  Collection[]
   logs        ListeningLog[]
   wantlist    Wantlist[]
+  mixItems    MixItem[]
 }
 
 model Spin {
@@ -88,6 +99,7 @@ model ListeningLog {
   spins    Spin[]
   review   String?
   format   String?
+  source   String   @default("physical") // "physical" | "streaming"
   playedAt DateTime @default(now())
 
   user     User  @relation(fields: [userId], references: [id])
@@ -98,7 +110,7 @@ model Wantlist {
   id      String   @id @default(cuid())
   userId  String
   albumId String
-   addedAt DateTime @default(now())
+  addedAt DateTime @default(now())
 
   user    User  @relation(fields: [userId], references: [id])
   album   Album @relation(fields: [albumId], references: [id])
@@ -124,7 +136,33 @@ model AudioSetup {
   turntable String?
   preamp    String?
   speakers  String?
-  photoUrl  String? 
+  photoUrl  String?
 
   user      User @relation(fields: [userId], references: [id])
+}
+
+model Mix {
+  id          String    @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  coverUrl    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id])
+  items       MixItem[]
+}
+
+model MixItem {
+  id       String @id @default(cuid())
+  mixId    String
+  albumId  String
+  position Int
+
+  mix      Mix   @relation(fields: [mixId], references: [id], onDelete: Cascade)
+  album    Album @relation(fields: [albumId], references: [id])
+
+  @@unique([mixId, albumId])
+  @@unique([mixId, position])
 }
