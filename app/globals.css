@@ -35,3 +35,16 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Skin-aware hover utilities — safe to use in server components via className */
+.hover-surface { transition: background-color 100ms ease; }
+.hover-surface:hover { background-color: var(--skin-surface); }
+
+.hover-surface-raised { transition: background-color 100ms ease; }
+.hover-surface-raised:hover { background-color: var(--skin-surface-raised); }
+
+.hover-border-accent { transition: border-color 100ms ease; }
+.hover-border-accent:hover { border-color: var(--skin-accent) !important; }
+
+.hover-accent-bg { transition: background-color 100ms ease; background-color: var(--skin-accent); }
+.hover-accent-bg:hover { background-color: var(--skin-accent-hover); }
