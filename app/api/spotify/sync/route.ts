@@ -24,9 +24,11 @@ async function refreshToken(refreshToken: string): Promise<{ access_token: strin
 interface SpotifyTrack {
   played_at: string;
   track: {
+    type: string;       // "track" for music, "episode" for podcasts
     name: string;
     artists: { name: string }[];
     album: {
+      album_type: string; // "album" | "single" | "compilation" | "podcast"
       name: string;
       id: string;
       images: { url: string }[];
@@ -75,6 +77,9 @@ export async function POST() {
 
   for (const item of tracks) {
     const track = item.track;
+    // Skip podcasts and episodes
+    if (track.type === "episode" || track.album?.album_type === "podcast") { skipped++; continue; }
+
     const playedAt = new Date(item.played_at);
     const discogsId = `spotify:album:${track.album.id}`;
 

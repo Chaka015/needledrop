@@ -30,10 +30,11 @@ interface Log {
   };
 }
 
-export default function RecentListens({ logs, isOwnProfile }: { logs: Log[]; isOwnProfile: boolean }) {
+export default function RecentListens({ logs: initialLogs, isOwnProfile }: { logs: Log[]; isOwnProfile: boolean }) {
+  const [logs, setLogs] = useState(initialLogs);
   const [editTarget, setEditTarget] = useState<Log | null>(null);
   const [spinStates, setSpinStates] = useState<Record<string, { count: number; spun: boolean }>>(
-    Object.fromEntries(logs.map((l) => [l.id, { count: l.spinCount, spun: l.userHasSpun }]))
+    Object.fromEntries(initialLogs.map((l) => [l.id, { count: l.spinCount, spun: l.userHasSpun }]))
   );
 
   async function handleSpin(logId: string) {
@@ -135,6 +136,10 @@ export default function RecentListens({ logs, isOwnProfile }: { logs: Log[]; isO
           log={editTarget}
           onClose={() => setEditTarget(null)}
           onSuccess={() => { setEditTarget(null); window.location.reload(); }}
+          onDelete={(logId) => {
+            setLogs((prev) => prev.filter((l) => l.id !== logId));
+            setEditTarget(null);
+          }}
         />
       )}
     </>

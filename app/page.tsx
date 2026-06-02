@@ -34,7 +34,9 @@ export default async function Home() {
   // Community data for logged-out landing page
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const [latestAdded, popularAlbums, featuredMixes] = await Promise.all([
+  const sixtyMinutesAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+  const [latestAdded, popularAlbums, featuredMixes, liveNow] = await Promise.all([
     // Latest additions to any collection in last 7 days
     prisma.collection.findMany({
       where: { addedAt: { gte: sevenDaysAgo } },
@@ -53,6 +55,7 @@ export default async function Home() {
     }),
     // Top mixes by item count
     prisma.mix.findMany({
+      where: { isPublic: true },
       orderBy: { updatedAt: "desc" },
       take: 4,
       include: {
@@ -65,6 +68,12 @@ export default async function Home() {
         _count: { select: { items: true } },
       },
     }),
+    // Live now: users spinning within last 60 min
+    prisma.user.findMany({
+      where: { nowSpinning: { not: null }, nowSpinningAt: { gte: sixtyMinutesAgo } },
+      select: { username: true, avatarUrl: true, nowSpinning: true },
+      take: 12,
+    }),
   ]);
 
   // Resolve popular album details
@@ -76,6 +85,17 @@ export default async function Home() {
     album: popularAlbumDetails.find((a) => a.id === p.albumId)!,
     count: p._count.albumId,
   })).filter((p) => p.album);
+
+  // Resolve live-now album details
+  const liveNowAlbumIds = liveNow.map((u) => u.nowSpinning!);
+  const liveNowAlbums = await prisma.album.findMany({
+    where: { id: { in: liveNowAlbumIds } },
+    select: { id: true, title: true, artist: true },
+  });
+  const liveWithAlbum = liveNow.map((u) => ({
+    user: u,
+    album: liveNowAlbums.find((a) => a.id === u.nowSpinning) ?? null,
+  }));
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: C.bg, color: C.text }}>
@@ -209,6 +229,41 @@ export default async function Home() {
                       {mix._count.items} RECORDS · {mix.user.username}
                     </div>
                   </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Live Now */}
+        {liveWithAlbum.length > 0 && (
+          <section>
+            <h2 className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: C.subtle }}>
+              Live Now
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              {liveWithAlbum.map(({ user, album }) => (
+                <Link key={user.username} href={`/${user.username}`}
+                  className="flex items-center gap-2 px-3 py-2 transition-colors duration-100"
+                  style={{ backgroundColor: "#0D0D0D", border: "1px solid #333", borderRadius: 4 }}>
+                  {user.avatarUrl ? (
+                    <Image src={user.avatarUrl} alt={user.username} width={24} height={24}
+                      className="object-cover" style={{ width: 24, height: 24, borderRadius: "50%" }} unoptimized />
+                  ) : (
+                    <div className="flex items-center justify-center text-xs font-bold"
+                      style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: C.surfaceRaised, color: C.subtle }}>
+                      {user.username[0].toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-xs font-bold" style={{ color: "#F7F1E3" }}>{user.username}</div>
+                    {album && (
+                      <div className="text-xs font-mono truncate max-w-36" style={{ color: "#A89F94" }}>
+                        {album.artist} — {album.title}
+                      </div>
+                    )}
+                  </div>
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse ml-1 shrink-0" style={{ backgroundColor: "#FF3E3E" }} />
                 </Link>
               ))}
             </div>

@@ -11,6 +11,8 @@ import FeaturedGrid from "@/components/FeaturedGrid";
 import FollowButton from "@/components/FollowButton";
 import MixesList from "@/components/MixesList";
 import SkinApplicator from "@/components/SkinApplicator";
+import FlipCounter from "@/components/FlipCounter";
+import QuickLogWidget from "@/components/QuickLogWidget";
 import { getSkin, skinToVars } from "@/lib/skins";
 
 interface ProfilePageProps {
@@ -98,11 +100,15 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     ? await prisma.album.findUnique({ where: { id: user.nowSpinning } })
     : null;
 
-  // For visitors: determine if spinning is active (<60 min) or stale (>60 min → "LAST PLAYED")
+  // Active = set within 60 minutes. Applies to both owner and visitor.
+  // Owner: badge hidden entirely when stale; visitor: dimmed "LAST PLAYED"
   const sixtyMinutesAgo = new Date(now.getTime() - 60 * 60 * 1000);
-  const nowSpinningIsActive = !isOwnProfile
-    ? (user.nowSpinningAt ? user.nowSpinningAt > sixtyMinutesAgo : false)
-    : true; // owners always see it as active
+  const nowSpinningIsActive = user.nowSpinningAt ? user.nowSpinningAt > sixtyMinutesAgo : false;
+
+  // Sum durationMs across all logs for the flip counter (BigInt → Number for rendering)
+  const totalListeningMs = user.logs.reduce((sum, log) => {
+    return sum + (log.durationMs ? Number(log.durationMs) : 0);
+  }, 0);
 
   const logs = user.logs.map((log) => ({
     id: log.id,
@@ -143,13 +149,16 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 {currentUser && !isOwnProfile && (
                   <FollowButton targetUserId={user.id} initialIsFollowing={isFollowing} />
                 )}
-                {nowSpinningAlbum && (
+                {/* ON AIR badge:
+                    - Active (<60 min): red pulse, ON AIR / STREAMING label
+                    - Stale (>60 min): owner sees nothing; visitor sees dimmed LAST PLAYED */}
+                {nowSpinningAlbum && (nowSpinningIsActive || !isOwnProfile) && (
                   <span className="flex items-center gap-2 text-xs font-mono px-3 py-1.5"
                     style={{
                       backgroundColor: "#0D0D0D",
                       border: "1px solid #333",
                       borderRadius: 4,
-                      opacity: nowSpinningIsActive ? 1 : 0.65,
+                      opacity: nowSpinningIsActive ? 1 : 0.55,
                     }}>
                     {nowSpinningAlbum.coverUrl && (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -161,7 +170,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     ) : (
                       <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#555" }} />
                     )}
-                    <span style={{ color: nowSpinningIsActive ? "#FF3E3E" : "#777" }}>
+                    <span style={{ color: nowSpinningIsActive ? "#FF3E3E" : "#666" }}>
                       {!nowSpinningIsActive
                         ? "LAST PLAYED"
                         : user.nowSpinningSource === "streaming"
@@ -174,6 +183,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   </span>
                 )}
               </div>
+
+              {/* Listening time flip counter */}
+              {totalListeningMs > 0 && (
+                <div className="mt-3">
+                  <FlipCounter totalMs={totalListeningMs} />
+                </div>
+              )}
 
               {user.bio && <p className="mt-2 text-sm max-w-xl" style={{ color: C.muted }}>{user.bio}</p>}
 
@@ -202,15 +218,26 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               {/* Stats strip */}
               <div className="mt-5 flex flex-wrap gap-3">
                 {[
-                  { label: "RECORDS", value: user.collection.length },
-                  { label: "LOGGED", value: user.logs.length },
-                  { label: "WANTLIST", value: user.wantlist.length },
+                  { label: "RECORDS", value: user.collection.length, href: null },
+                  { label: "LOGGED", value: user.logs.length, href: `/${username}/logs` },
+                  { label: "WANTLIST", value: user.wantlist.length, href: `/${username}/wantlist` },
                 ].map((stat) => (
-                  <div key={stat.label} className="px-5 py-3 text-center"
-                    style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                    <div className="text-xl font-bold font-mono" style={{ color: C.text }}>{stat.value}</div>
-                    <div className="text-xs font-mono mt-0.5" style={{ color: C.subtle }}>{stat.label}</div>
-                  </div>
+                  stat.href ? (
+                    <Link key={stat.label} href={stat.href}
+                      className="px-5 py-3 text-center transition-colors duration-100"
+                      style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
+                      onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = C.accent)}
+                      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = C.border)}>
+                      <div className="text-xl font-bold font-mono" style={{ color: C.text }}>{stat.value}</div>
+                      <div className="text-xs font-mono mt-0.5" style={{ color: C.subtle }}>{stat.label}</div>
+                    </Link>
+                  ) : (
+                    <div key={stat.label} className="px-5 py-3 text-center"
+                      style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
+                      <div className="text-xl font-bold font-mono" style={{ color: C.text }}>{stat.value}</div>
+                      <div className="text-xs font-mono mt-0.5" style={{ color: C.subtle }}>{stat.label}</div>
+                    </div>
+                  )
                 ))}
               </div>
             </div>
@@ -222,6 +249,12 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col lg:flex-row gap-10">
 
         <div className="flex-1 min-w-0 space-y-12">
+
+          {isOwnProfile && (
+            <section>
+              <QuickLogWidget />
+            </section>
+          )}
 
           <section>
             <SectionLabel>Recent Listens</SectionLabel>

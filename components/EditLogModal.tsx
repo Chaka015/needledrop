@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import StarRatingInput from "./StarRatingInput";
 
 const C = {
-  surface: "#3D3834",
-  surfaceRaised: "#4A4540",
-  border: "#524D48",
-  text: "#F7F1E3",
-  muted: "#A89F94",
-  subtle: "#6B6560",
-  accent: "#E67E22",
-  accentHover: "#CF711E",
+  surface:      "var(--skin-surface)",
+  surfaceRaised:"var(--skin-surface-raised)",
+  border:       "var(--skin-border)",
+  text:         "var(--skin-text)",
+  muted:        "var(--skin-muted)",
+  subtle:       "var(--skin-subtle)",
+  accent:       "var(--skin-accent)",
+  accentHover:  "var(--skin-accent-hover)",
+  danger:       "#C0392B",
 };
 
 const FORMATS = ["Vinyl", "CD", "Cassette", "Digital", "Other"];
@@ -31,13 +31,16 @@ interface EditLogModalProps {
   };
   onClose: () => void;
   onSuccess: () => void;
+  onDelete?: (logId: string) => void;
 }
 
-export default function EditLogModal({ log, onClose, onSuccess }: EditLogModalProps) {
+export default function EditLogModal({ log, onClose, onSuccess, onDelete }: EditLogModalProps) {
   const [rating, setRating] = useState<number | null>(log.rating);
   const [review, setReview] = useState(log.review ?? "");
   const [format, setFormat] = useState(log.format ?? "");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSave(e: React.FormEvent) {
@@ -62,14 +65,26 @@ export default function EditLogModal({ log, onClose, onSuccess }: EditLogModalPr
     onSuccess();
   }
 
+  async function handleDelete() {
+    setDeleting(true);
+    const res = await fetch(`/api/logs/${log.id}`, { method: "DELETE" });
+    setDeleting(false);
+    if (res.ok) {
+      onDelete ? onDelete(log.id) : onSuccess();
+    } else {
+      setError("Delete failed.");
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ backgroundColor: "rgba(0,0,0,0.75)" }}>
       <div className="w-full max-w-md p-6" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
 
         <div className="flex items-center gap-4 mb-6">
           {log.album.coverUrl ? (
-            <Image src={log.album.coverUrl} alt={log.album.title} width={56} height={56}
-              className="object-cover shrink-0" style={{ width: 56, height: 56, borderRadius: 4 }} unoptimized />
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={log.album.coverUrl} alt={log.album.title}
+              className="object-cover shrink-0" style={{ width: 56, height: 56, borderRadius: 4 }} />
           ) : (
             <div className="shrink-0" style={{ width: 56, height: 56, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
           )}
@@ -83,7 +98,7 @@ export default function EditLogModal({ log, onClose, onSuccess }: EditLogModalPr
         <form onSubmit={handleSave} className="space-y-5">
           <div>
             <label className="text-xs font-mono uppercase tracking-widest block mb-2" style={{ color: C.subtle }}>
-              Rating <span style={{ textTransform: "none", color: C.subtle }}>(min 1★)</span>
+              Rating <span style={{ textTransform: "none", color: C.subtle }}>(optional)</span>
             </label>
             <StarRatingInput rating={rating} onChange={setRating} />
           </div>
@@ -118,7 +133,7 @@ export default function EditLogModal({ log, onClose, onSuccess }: EditLogModalPr
               onBlur={(e) => (e.currentTarget.style.borderColor = C.border)} />
           </div>
 
-          {error && <p className="text-xs font-mono" style={{ color: "#C0392B" }}>{error}</p>}
+          {error && <p className="text-xs font-mono" style={{ color: C.danger }}>{error}</p>}
 
           <button type="submit" disabled={saving}
             className="w-full py-3 text-sm font-medium transition-colors duration-100"
@@ -128,6 +143,39 @@ export default function EditLogModal({ log, onClose, onSuccess }: EditLogModalPr
             {saving ? "SAVING..." : "SAVE"}
           </button>
         </form>
+
+        {/* Delete section */}
+        <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${C.border}` }}>
+          {!confirmDelete ? (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="text-xs font-mono transition-colors duration-100"
+              style={{ color: C.subtle }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = C.danger)}
+              onMouseLeave={(e) => (e.currentTarget.style.color = C.subtle)}>
+              DELETE THIS LOG
+            </button>
+          ) : (
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono" style={{ color: C.muted }}>
+                This cannot be undone.
+              </span>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="text-xs font-mono transition-colors duration-100"
+                style={{ color: C.danger, opacity: deleting ? 0.4 : 1 }}>
+                {deleting ? "DELETING..." : "YES, DELETE"}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="text-xs font-mono"
+                style={{ color: C.subtle }}>
+                CANCEL
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
