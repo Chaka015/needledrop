@@ -46,6 +46,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
   const [spotifyConnected, setSpotifyConnected] = useState(!!user.spotifyId);
   const [spotifySyncing, setSpotifySyncing] = useState(false);
   const [spotifySyncResult, setSpotifySyncResult] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(user.spotifyLastSyncedAt ?? null);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -72,13 +73,25 @@ export default function SettingsClient({ user }: SettingsClientProps) {
   async function handleSpotifySync() {
     setSpotifySyncing(true);
     setSpotifySyncResult(null);
-    const res = await fetch("/api/spotify/sync", { method: "POST" });
-    const data = await res.json();
-    setSpotifySyncResult(
-      res.ok
-        ? `✓ Imported ${data.imported} listens (${data.skipped} already logged)`
-        : `Error: ${data.error ?? "Sync failed"}`
-    );
+    const [syncRes] = await Promise.all([
+      fetch("/api/spotify/sync", { method: "POST" }),
+      fetch("/api/spotify/now-playing", { method: "POST" }),
+    ]);
+    const data = await syncRes.json();
+    if (syncRes.ok) {
+      if (data.syncedAt) setLastSyncedAt(new Date(data.syncedAt));
+      if (data.imported === 0) {
+        setSpotifySyncResult(`✓ Up to date — ${data.skipped} already logged`);
+      } else {
+        setSpotifySyncResult(`✓ Imported ${data.imported} new listen${data.imported !== 1 ? "s" : ""}`);
+      }
+      // If token expired, they need to reconnect
+    } else if (syncRes.status === 401) {
+      setSpotifyConnected(false);
+      setSpotifySyncResult("Spotify session expired — please reconnect.");
+    } else {
+      setSpotifySyncResult(`Error: ${data.error ?? "Sync failed"}`);
+    }
     setSpotifySyncing(false);
   }
 
@@ -190,9 +203,9 @@ return (
                 <span className="text-sm font-mono" style={{ color: C.text }}>Spotify connected</span>
                 <span className="text-xs font-mono" style={{ color: C.subtle }}>({user.spotifyId})</span>
               </div>
-              {user.spotifyLastSyncedAt && (
+              {lastSyncedAt && (
                 <p className="text-xs font-mono" style={{ color: C.subtle }}>
-                  Last synced: {new Date(user.spotifyLastSyncedAt).toLocaleString()}
+                  Last synced: {new Date(lastSyncedAt).toLocaleString()}
                 </p>
               )}
               <div className="flex gap-2">

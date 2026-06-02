@@ -5,17 +5,14 @@ import { NextResponse } from "next/server";
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID!;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET!;
 
-async function refreshToken(refreshToken: string): Promise<{ access_token: string; expires_in: number } | null> {
+async function refreshToken(refreshToken: string): Promise<{ access_token: string; expires_in: number; refresh_token?: string } | null> {
   const res = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       Authorization: `Basic ${Buffer.from(`${SPOTIFY_CLIENT_ID}:${SPOTIFY_CLIENT_SECRET}`).toString("base64")}`,
     },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-    }),
+    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: refreshToken }),
   });
   if (!res.ok) return null;
   return res.json();
@@ -50,15 +47,23 @@ export async function POST() {
   let accessToken = user.spotifyAccessToken;
 
   // Refresh if expired
-  if (user.spotifyTokenExpiry && user.spotifyTokenExpiry < new Date()) {
+  if (!user.spotifyTokenExpiry || user.spotifyTokenExpiry < new Date()) {
     const refreshed = await refreshToken(user.spotifyRefreshToken);
-    if (!refreshed) return NextResponse.json({ error: "Token refresh failed" }, { status: 400 });
+    if (!refreshed) {
+      // Refresh token revoked — mark disconnected
+      await prisma.user.update({
+        where: { clerkId },
+        data: { spotifyConnected: false, spotifyAccessToken: null, spotifyRefreshToken: null },
+      });
+      return NextResponse.json({ error: "Spotify token expired. Please reconnect Spotify in settings." }, { status: 401 });
+    }
     accessToken = refreshed.access_token;
     await prisma.user.update({
       where: { clerkId },
       data: {
         spotifyAccessToken: accessToken,
         spotifyTokenExpiry: new Date(Date.now() + refreshed.expires_in * 1000),
+        ...(refreshed.refresh_token ? { spotifyRefreshToken: refreshed.refresh_token } : {}),
       },
     });
   }
@@ -117,10 +122,11 @@ export async function POST() {
     imported++;
   }
 
+  const now = new Date();
   await prisma.user.update({
     where: { clerkId },
-    data: { spotifyLastSyncedAt: new Date() },
+    data: { spotifyLastSyncedAt: now },
   });
 
-  return NextResponse.json({ imported, skipped, total: tracks.length });
+  return NextResponse.json({ imported, skipped, total: tracks.length, syncedAt: now.toISOString() });
 }

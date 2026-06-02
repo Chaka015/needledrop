@@ -57,7 +57,7 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
       fetch("/api/spotify/now-playing", { method: "POST" }),
     ]);
     setSyncing(false);
-    window.location.reload();
+    router.refresh();
   }
 
   function handleSearch(e: React.FormEvent) {
