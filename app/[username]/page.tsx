@@ -8,6 +8,7 @@ import AudioSetupEditor from "@/components/AudioSetupEditor";
 import ImportDiscogs from "@/components/ImportDiscogs";
 import RecentListens from "@/components/RecentListens";
 import FeaturedGrid from "@/components/FeaturedGrid";
+import FollowButton from "@/components/FollowButton";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -43,17 +44,26 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         orderBy: { addedAt: "desc" },
         include: { album: true },
       },
-      wantlist: true,
+      wantlist: {
+        orderBy: { addedAt: "desc" },
+        include: { album: true },
+      },
     },
   });
 
   if (!user) notFound();
 
   const currentUser = clerkId
-    ? await prisma.user.findUnique({ where: { clerkId } })
+    ? await prisma.user.findUnique({
+        where: { clerkId },
+        include: { following: { select: { followingId: true } } },
+      })
     : null;
 
   const isOwnProfile = currentUser?.id === user.id;
+  const isFollowing = currentUser && !isOwnProfile
+    ? currentUser.following.some((f) => f.followingId === user.id)
+    : false;
 
   const totalListens = user.logs.length;
   const now = new Date();
@@ -104,6 +114,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold tracking-tight" style={{ color: C.text }}>{user.username}</h1>
+                {currentUser && !isOwnProfile && (
+                  <FollowButton targetUserId={user.id} initialIsFollowing={isFollowing} />
+                )}
                 {nowSpinningAlbum && (
                   <span className="flex items-center gap-2 text-xs font-mono px-3 py-1"
                     style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, color: C.accent, borderRadius: 4 }}>
@@ -209,6 +222,33 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               isOwnProfile={isOwnProfile}
             />
           </section>
+
+          {user.wantlist.length > 0 && (
+            <section>
+              <SectionLabel>Wantlist</SectionLabel>
+              <div className="grid grid-cols-4 gap-1.5">
+                {user.wantlist.slice(0, 8).map((w) => (
+                  <Link key={w.id} href={`/album/${w.album.discogsId}`} title={`${w.album.title} — ${w.album.artist}`}>
+                    {w.album.coverUrl ? (
+                      <Image src={w.album.coverUrl} alt={w.album.title} width={56} height={56}
+                        className="object-cover aspect-square w-full"
+                        style={{ borderRadius: 4 }} unoptimized />
+                    ) : (
+                      <div className="aspect-square flex items-center justify-center text-xs"
+                        style={{ backgroundColor: C.surface, borderRadius: 4, color: C.subtle }}>
+                        ?
+                      </div>
+                    )}
+                  </Link>
+                ))}
+              </div>
+              {user.wantlist.length > 8 && (
+                <p className="mt-2 text-xs font-mono" style={{ color: C.subtle }}>
+                  +{user.wantlist.length - 8} more
+                </p>
+              )}
+            </section>
+          )}
 
           <section>
             <SectionLabel>The Setup</SectionLabel>

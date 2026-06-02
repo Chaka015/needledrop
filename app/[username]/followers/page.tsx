@@ -7,15 +7,15 @@ interface Props {
   params: Promise<{ username: string }>;
 }
 
-export default async function FollowingPage({ params }: Props) {
+export default async function FollowersPage({ params }: Props) {
   const { username } = await params;
   const { userId: clerkId } = await auth();
 
   const user = await prisma.user.findUnique({
     where: { username },
     include: {
-      following: {
-        include: { following: { include: { followers: true, collection: { select: { id: true } }, logs: { select: { id: true } } } } },
+      followers: {
+        include: { follower: { include: { followers: true, collection: { select: { id: true } }, logs: { select: { id: true } } } } },
       },
     },
   });
@@ -26,16 +26,16 @@ export default async function FollowingPage({ params }: Props) {
     ? await prisma.user.findUnique({ where: { clerkId }, include: { following: true } })
     : null;
 
-  const people = user.following.map((f) => ({
-    id: f.following.id,
-    username: f.following.username,
-    avatarUrl: f.following.avatarUrl,
-    bio: f.following.bio,
-    followerCount: f.following.followers.length,
-    collectionCount: f.following.collection.length,
-    logCount: f.following.logs.length,
+  const people = user.followers.map((f) => ({
+    id: f.follower.id,
+    username: f.follower.username,
+    avatarUrl: f.follower.avatarUrl,
+    bio: f.follower.bio,
+    followerCount: f.follower.followers.length,
+    collectionCount: f.follower.collection.length,
+    logCount: f.follower.logs.length,
     isFollowing: currentUser
-      ? currentUser.following.some((ff) => ff.followingId === f.following.id)
+      ? currentUser.following.some((ff) => ff.followingId === f.follower.id)
       : false,
   }));
 
@@ -45,7 +45,7 @@ export default async function FollowingPage({ params }: Props) {
     <div className="min-h-screen font-sans" style={{ backgroundColor: C.bg, color: C.text }}>
       <div className="max-w-2xl mx-auto px-6 py-10">
         <h1 className="text-xs font-mono uppercase tracking-widest mb-6" style={{ color: C.subtle }}>
-          {username} — Following
+          {username} — Followers
         </h1>
         <FollowList people={people} isLoggedIn={!!currentUser} />
       </div>

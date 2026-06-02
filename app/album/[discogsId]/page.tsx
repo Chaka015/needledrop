@@ -57,8 +57,8 @@ export default async function AlbumPage({ params }: Props) {
     ? logsWithRating.reduce((sum, l) => sum + (l.rating ?? 0), 0) / logsWithRating.length
     : null;
 
-  const inCollection = currentUser?.collection.length > 0;
-  const inWantlist = currentUser?.wantlist.length > 0;
+  const inCollection = (currentUser?.collection.length ?? 0) > 0;
+  const inWantlist = (currentUser?.wantlist.length ?? 0) > 0;
 
   return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: C.bg, color: C.text }}>
