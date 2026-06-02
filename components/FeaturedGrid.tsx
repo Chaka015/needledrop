@@ -4,10 +4,10 @@ import { useState } from "react";
 import Image from "next/image";
 
 const C = {
-  border: "#524D48",
-  text: "#F7F1E3",
-  accent: "#E67E22",
-  subtle: "#6B6560",
+  border: "var(--skin-border)",
+  text:   "var(--skin-text)",
+  accent: "var(--skin-accent)",
+  subtle: "var(--skin-subtle)",
 };
 
 interface FeaturedItem {
@@ -70,7 +70,7 @@ export default function FeaturedGrid({ items, isOwnProfile }: { items: FeaturedI
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-xs"
-              style={{ backgroundColor: "#3D3834", borderRadius: 4, color: C.subtle }}>
+              style={{ backgroundColor: "var(--skin-surface)", borderRadius: 4, color: C.subtle }}>
               No art
             </div>
           )}

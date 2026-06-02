@@ -4,14 +4,14 @@ import { useState } from "react";
 import Image from "next/image";
 
 const C = {
-  surface: "#3D3834",
-  surfaceRaised: "#4A4540",
-  border: "#524D48",
-  text: "#F7F1E3",
-  muted: "#A89F94",
-  subtle: "#6B6560",
-  accent: "#E67E22",
-  accentHover: "#CF711E",
+  surface:       "var(--skin-surface)",
+  surfaceRaised: "var(--skin-surface-raised)",
+  border:        "var(--skin-border)",
+  text:          "var(--skin-text)",
+  muted:         "var(--skin-muted)",
+  subtle:        "var(--skin-subtle)",
+  accent:        "var(--skin-accent)",
+  accentHover:   "var(--skin-accent-hover)",
 };
 
 interface AudioSetup {
@@ -183,8 +183,8 @@ export default function AudioSetupEditor({ initial }: { initial: AudioSetup | nu
 function SetupItem({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <div>
-      <div className="text-xs font-mono mb-0.5" style={{ color: "#6B6560" }}>{icon} {label}</div>
-      <div style={{ color: "#F7F1E3" }}>{value}</div>
+      <div className="text-xs font-mono mb-0.5" style={{ color: "var(--skin-subtle)" }}>{icon} {label}</div>
+      <div style={{ color: "var(--skin-text)" }}>{value}</div>
     </div>
   );
 }

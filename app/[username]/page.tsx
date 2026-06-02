@@ -9,20 +9,22 @@ import ImportDiscogs from "@/components/ImportDiscogs";
 import RecentListens from "@/components/RecentListens";
 import FeaturedGrid from "@/components/FeaturedGrid";
 import FollowButton from "@/components/FollowButton";
+import { getSkin, skinToVars } from "@/lib/skins";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
 }
 
+// CSS-variable aliases used in this server component's JSX
 const C = {
-  bg: "#2D2926",
-  surface: "#3D3834",
-  surfaceRaised: "#4A4540",
-  border: "#524D48",
-  text: "#F7F1E3",
-  muted: "#A89F94",
-  subtle: "#6B6560",
-  accent: "#E67E22",
+  bg:           "var(--skin-bg)",
+  surface:      "var(--skin-surface)",
+  surfaceRaised:"var(--skin-surface-raised)",
+  border:       "var(--skin-border)",
+  text:         "var(--skin-text)",
+  muted:        "var(--skin-muted)",
+  subtle:       "var(--skin-subtle)",
+  accent:       "var(--skin-accent)",
 };
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
@@ -65,6 +67,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     ? currentUser.following.some((f) => f.followingId === user.id)
     : false;
 
+  const skin = getSkin(user.skin);
+  const skinVars = skinToVars(skin) as React.CSSProperties;
+
   const totalListens = user.logs.length;
   const now = new Date();
   const startOfYear = new Date(now.getFullYear(), 0, 1);
@@ -92,7 +97,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   }));
 
   return (
-    <div className="min-h-screen font-sans" style={{ backgroundColor: C.bg, color: C.text }}>
+    <div className="min-h-screen font-sans" style={{ ...skinVars, backgroundColor: C.bg, color: C.text }}>
 
       {/* HEADER */}
       <div style={{ borderBottom: `1px solid ${C.border}` }}>
@@ -273,7 +278,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: "#6B6560" }}>
+    <h2 className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: "var(--skin-subtle)" }}>
       {children}
     </h2>
   );
@@ -288,7 +293,7 @@ function AlbumTile({ album, size }: { album: { title: string; artist: string; co
       unoptimized />
   ) : (
     <div className="flex items-center justify-center text-xs"
-      style={{ width: size === "lg" ? "100%" : 48, height: size === "lg" ? "100%" : 48, aspectRatio: "1", backgroundColor: "#3D3834", borderRadius: 4, color: "#6B6560", flexShrink: 0 }}>
+      style={{ width: size === "lg" ? "100%" : 48, height: size === "lg" ? "100%" : 48, aspectRatio: "1", backgroundColor: "var(--skin-surface)", borderRadius: 4, color: "var(--skin-subtle)", flexShrink: 0 }}>
       No art
     </div>
   );
@@ -297,15 +302,16 @@ function AlbumTile({ album, size }: { album: { title: string; artist: string; co
 function SetupItem({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <div>
-      <div className="text-xs font-mono mb-0.5" style={{ color: "#6B6560" }}>{icon} {label}</div>
-      <div style={{ color: "#F7F1E3" }}>{value}</div>
+      <div className="text-xs font-mono mb-0.5" style={{ color: "var(--skin-subtle)" }}>{icon} {label}</div>
+      <div style={{ color: "var(--skin-text)" }}>{value}</div>
     </div>
   );
 }
 
 function EmptyState({ text }: { text: string }) {
   return (
-    <div className="p-8 text-center text-sm font-mono" style={{ border: `1px dashed #524D48`, color: "#6B6560" }}>
+    <div className="p-8 text-center text-sm font-mono"
+      style={{ border: "1px dashed var(--skin-border)", color: "var(--skin-subtle)" }}>
       {text}
     </div>
   );

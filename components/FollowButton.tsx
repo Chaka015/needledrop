@@ -3,13 +3,12 @@
 import { useState } from "react";
 
 const C = {
-  surface: "#3D3834",
-  surfaceRaised: "#4A4540",
-  border: "#524D48",
-  text: "#F7F1E3",
-  muted: "#A89F94",
-  accent: "#E67E22",
-  accentHover: "#CF711E",
+  surfaceRaised: "var(--skin-surface-raised)",
+  border:        "var(--skin-border)",
+  text:          "var(--skin-text)",
+  muted:         "var(--skin-muted)",
+  accent:        "var(--skin-accent)",
+  accentHover:   "var(--skin-accent-hover)",
 };
 
 export default function FollowButton({

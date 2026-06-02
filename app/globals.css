@@ -3,6 +3,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Skin tokens — default to Analog Warmth */
+  --skin-bg:             #2D2926;
+  --skin-surface:        #3D3834;
+  --skin-surface-raised: #4A4540;
+  --skin-border:         #524D48;
+  --skin-text:           #F7F1E3;
+  --skin-muted:          #A89F94;
+  --skin-subtle:         #6B6560;
+  --skin-accent:         #E67E22;
+  --skin-accent-hover:   #CF711E;
 }
 
 @theme inline {

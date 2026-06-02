@@ -5,13 +5,13 @@ import Image from "next/image";
 import EditLogModal from "./EditLogModal";
 
 const C = {
-  surface: "#3D3834",
-  surfaceRaised: "#4A4540",
-  border: "#524D48",
-  text: "#F7F1E3",
-  muted: "#A89F94",
-  subtle: "#6B6560",
-  accent: "#E67E22",
+  surface:       "var(--skin-surface)",
+  surfaceRaised: "var(--skin-surface-raised)",
+  border:        "var(--skin-border)",
+  text:          "var(--skin-text)",
+  muted:         "var(--skin-muted)",
+  subtle:        "var(--skin-subtle)",
+  accent:        "var(--skin-accent)",
 };
 
 interface Log {
@@ -52,7 +52,8 @@ export default function RecentListens({ logs, isOwnProfile }: { logs: Log[]; isO
 
   if (logs.length === 0) {
     return (
-      <div className="p-8 text-center text-sm font-mono" style={{ border: `1px dashed #524D48`, color: "#6B6560" }}>
+      <div className="p-8 text-center text-sm font-mono"
+        style={{ border: `1px dashed ${C.border}`, color: C.subtle }}>
         No listens logged yet.
       </div>
     );
@@ -143,9 +144,9 @@ function StarRating({ rating }: { rating: number }) {
         const half = !full && star === Math.ceil(rating) && rating % 1 !== 0;
         return (
           <span key={star} className="text-xs" style={{ position: "relative", display: "inline-block" }}>
-            <span style={{ color: "#524D48" }}>★</span>
+            <span style={{ color: "var(--skin-border)" }}>★</span>
             {(full || half) && (
-              <span style={{ position: "absolute", left: 0, top: 0, overflow: "hidden", width: full ? "100%" : "50%", color: "#E67E22" }}>★</span>
+              <span style={{ position: "absolute", left: 0, top: 0, overflow: "hidden", width: full ? "100%" : "50%", color: "var(--skin-accent)" }}>★</span>
             )}
           </span>
         );
