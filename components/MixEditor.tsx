@@ -137,17 +137,15 @@ export default function MixEditor({ mixId, username, isPublic: initialIsPublic, 
           onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
           {isPublic ? "PUBLIC" : "PRIVATE"}
         </button>
-        {isPremium && (
-          <label
-            className="px-4 py-2 text-xs font-mono transition-colors duration-100 cursor-pointer"
-            style={{ backgroundColor: C.surfaceRaised, color: uploading ? C.subtle : C.muted, borderRadius: 4, border: `1px solid ${C.border}` }}
-            onMouseEnter={(e) => !uploading && ((e.currentTarget as HTMLLabelElement).style.color = C.text)}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLLabelElement).style.color = C.muted)}>
-            {uploading ? "UPLOADING…" : coverUrl ? "CHANGE COVER" : "◎ UPLOAD COVER"}
-            <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} disabled={uploading} />
-          </label>
-        )}
-        {isPremium && coverUrl && (
+        <label
+          className="px-4 py-2 text-xs font-mono transition-colors duration-100 cursor-pointer"
+          style={{ backgroundColor: C.surfaceRaised, color: uploading ? C.subtle : C.muted, borderRadius: 4, border: `1px solid ${C.border}` }}
+          onMouseEnter={(e) => !uploading && ((e.currentTarget as HTMLLabelElement).style.color = C.text)}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLLabelElement).style.color = C.muted)}>
+          {uploading ? "UPLOADING…" : coverUrl ? "CHANGE COVER" : "◎ UPLOAD COVER"}
+          <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} disabled={uploading} />
+        </label>
+        {coverUrl && (
           <button
             onClick={handleRemoveCover}
             className="px-4 py-2 text-xs font-mono transition-colors duration-100"
@@ -166,9 +164,6 @@ export default function MixEditor({ mixId, username, isPublic: initialIsPublic, 
           DELETE MIX
         </button>
       </div>
-      {isPremium && !coverUrl && (
-        <p className="text-xs font-mono" style={{ color: C.subtle }}>◎ Upload a custom cover image for this mix</p>
-      )}
 
       {open && (
         <div className="p-4 space-y-3" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>

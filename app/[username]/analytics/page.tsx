@@ -46,26 +46,6 @@ export default async function AnalyticsPage({ params }: Props) {
   const isOwner = viewer?.id === profileUser.id;
   if (!isOwner) redirect(`/${username}`);
 
-  if (!profileUser.isPremium) {
-    return (
-      <div className="min-h-screen font-sans flex items-center justify-center px-6"
-        style={{ backgroundColor: C.bg, color: C.text }}>
-        <div className="max-w-md w-full text-center space-y-6">
-          <div className="text-4xl">◈</div>
-          <h1 className="text-xl font-bold">Analytics is a Premium feature</h1>
-          <p className="text-sm" style={{ color: C.muted }}>
-            Upgrade to NeedleDrop Premium to unlock listening trends, top artists, format breakdowns, and more.
-          </p>
-          <Link href="/settings#premium"
-            className="inline-block px-6 py-3 text-sm font-mono transition-colors duration-100"
-            style={{ backgroundColor: C.accent, color: C.text, borderRadius: 4 }}>
-            UPGRADE TO PREMIUM
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   const now = new Date();
   const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
@@ -153,10 +133,6 @@ export default async function AnalyticsPage({ params }: Props) {
             </Link>
             <h1 className="text-2xl font-bold tracking-tight" style={{ color: C.text }}>Listening Analytics</h1>
             <p className="text-xs font-mono mt-1" style={{ color: C.muted }}>Last 12 months</p>
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono"
-            style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, color: C.accent }}>
-            ◈ PREMIUM
           </div>
         </div>
 

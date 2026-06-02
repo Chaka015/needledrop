@@ -32,9 +32,6 @@ interface SettingsClientProps {
     bio: string | null;
     skin: string | null;
     spotifyId: string | null;
-    isPremium: boolean;
-    premiumSince: Date | null;
-    stripeCustomerId: string | null;
   };
 }
 
@@ -48,7 +45,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
   const [spotifyConnected, setSpotifyConnected] = useState(!!user.spotifyId);
   const [spotifySyncing, setSpotifySyncing] = useState(false);
   const [spotifySyncResult, setSpotifySyncResult] = useState<string | null>(null);
-  const [premiumLoading, setPremiumLoading] = useState(false);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -91,23 +87,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
     setSpotifySyncResult(null);
   }
 
-  async function handleUpgrade() {
-    setPremiumLoading(true);
-    const res = await fetch("/api/stripe/checkout", { method: "POST" });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else setPremiumLoading(false);
-  }
-
-  async function handleManageBilling() {
-    setPremiumLoading(true);
-    const res = await fetch("/api/stripe/portal", { method: "POST" });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else setPremiumLoading(false);
-  }
-
-  return (
+return (
     <div className="min-h-screen font-sans" style={{ backgroundColor: C.bg, color: C.text }}>
       <div className="max-w-2xl mx-auto px-6 py-12">
         <h1 className="text-xl font-bold mb-8" style={{ color: C.text }}>Settings</h1>
@@ -242,85 +222,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
           )}
         </section>
 
-        {/* Premium */}
-        <section id="premium" className="mt-12 pt-8" style={{ borderTop: `1px solid ${C.border}` }}>
-          <h2 className="text-xs font-mono uppercase tracking-widest mb-1" style={{ color: C.subtle }}>Premium</h2>
-
-          {user.isPremium ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4"
-                style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                <span className="text-lg" style={{ color: C.accent }}>◈</span>
-                <div>
-                  <div className="text-sm font-semibold" style={{ color: C.text }}>NeedleDrop Premium</div>
-                  <div className="text-xs font-mono" style={{ color: C.muted }}>
-                    Active since {user.premiumSince ? new Date(user.premiumSince).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "—"}
-                  </div>
-                </div>
-                <span className="ml-auto text-xs font-mono px-2 py-1"
-                  style={{ backgroundColor: C.accentHover + "33", color: C.accent, borderRadius: 4 }}>
-                  ACTIVE
-                </span>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <a href={`/${user.username}/analytics`}
-                  className="px-4 py-2 text-xs font-mono transition-colors duration-100"
-                  style={{ backgroundColor: C.surfaceRaised, color: C.muted, borderRadius: 4, border: `1px solid ${C.border}` }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
-                  VIEW ANALYTICS
-                </a>
-                {user.stripeCustomerId && (
-                  <button onClick={handleManageBilling} disabled={premiumLoading}
-                    className="px-4 py-2 text-xs font-mono transition-colors duration-100"
-                    style={{ backgroundColor: "transparent", color: C.subtle, borderRadius: 4, border: `1px solid ${C.border}`, opacity: premiumLoading ? 0.4 : 1 }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = C.subtle)}>
-                    MANAGE BILLING
-                  </button>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <p className="text-xs font-mono" style={{ color: C.muted }}>
-                Support NeedleDrop and unlock creator tools.
-              </p>
-
-              {/* Feature list */}
-              <div className="p-5 space-y-3"
-                style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                <div className="text-sm font-semibold mb-4" style={{ color: C.text }}>
-                  What you get with Premium
-                </div>
-                {[
-                  { icon: "◈", label: "Listening Analytics", desc: "Monthly trends, top artists, format breakdown, rating history" },
-                  { icon: "◎", label: "Custom Mix Covers", desc: "Upload your own cover art for any mix" },
-                  { icon: "◉", label: "Early Access", desc: "First look at new NeedleDrop features before they ship" },
-                ].map((f) => (
-                  <div key={f.label} className="flex gap-3">
-                    <span className="text-base shrink-0 mt-0.5" style={{ color: C.accent }}>{f.icon}</span>
-                    <div>
-                      <div className="text-sm font-medium" style={{ color: C.text }}>{f.label}</div>
-                      <div className="text-xs font-mono" style={{ color: C.muted }}>{f.desc}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button onClick={handleUpgrade} disabled={premiumLoading}
-                className="w-full py-3 text-sm font-mono font-semibold transition-colors duration-100"
-                style={{ backgroundColor: C.accent, color: C.text, borderRadius: 4, opacity: premiumLoading ? 0.4 : 1 }}
-                onMouseEnter={(e) => !premiumLoading && (e.currentTarget.style.backgroundColor = C.accentHover)}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = C.accent)}>
-                {premiumLoading ? "REDIRECTING..." : "UPGRADE TO PREMIUM →"}
-              </button>
-              <p className="text-xs font-mono text-center" style={{ color: C.subtle }}>
-                Billed monthly via Stripe. Cancel anytime.
-              </p>
-            </div>
-          )}
-        </section>
       </div>
     </div>
   );

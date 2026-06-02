@@ -237,7 +237,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     </div>
                   )
                 ))}
-                {isOwnProfile && user.isPremium && (
+                {isOwnProfile && (
                   <Link href={`/${username}/analytics`}
                     className="px-5 py-3 text-center transition-colors duration-100"
                     style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>

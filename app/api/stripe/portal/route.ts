@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -12,6 +12,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No billing account" }, { status: 404 });
   }
 
+  const stripe = getStripe();
   const { origin } = new URL(req.url);
 
   const session = await stripe.billingPortal.sessions.create({

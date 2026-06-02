@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { stripe, PREMIUM_PRICE_ID } from "@/lib/stripe";
+import { getStripe, PREMIUM_PRICE_ID } from "@/lib/stripe";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -14,6 +14,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Already premium" }, { status: 400 });
   }
 
+  const stripe = getStripe();
   const { origin } = new URL(req.url);
 
   let customerId = user.stripeCustomerId;

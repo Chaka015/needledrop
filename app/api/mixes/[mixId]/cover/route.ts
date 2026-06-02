@@ -11,7 +11,6 @@ export async function POST(req: Request, { params }: Params) {
 
   const user = await prisma.user.findUnique({ where: { clerkId } });
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-  if (!user.isPremium) return NextResponse.json({ error: "Premium required" }, { status: 403 });
 
   const { mixId } = await params;
   const mix = await prisma.mix.findUnique({ where: { id: mixId }, include: { user: true } });
