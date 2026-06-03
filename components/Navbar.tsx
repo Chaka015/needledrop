@@ -3,24 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { SignOutButton } from "@clerk/nextjs";
 import NowSpinningModal from "./NowSpinningModal";
 import AddModal from "./AddModal";
 import NotificationBell from "./NotificationBell";
 import MessageBadge from "./MessageBadge";
-
-const C = {
-  bg: "var(--skin-bg)",
-  surface: "var(--skin-surface)",
-  surfaceRaised: "var(--skin-surface-raised)",
-  border: "var(--skin-border)",
-  text: "var(--skin-text)",
-  muted: "var(--skin-muted)",
-  subtle: "var(--skin-subtle)",
-  accent: "var(--skin-accent)",
-  accentHover: "var(--skin-accent-hover)",
-};
 
 interface NavbarProps {
   username?: string | null;
@@ -31,6 +19,7 @@ interface NavbarProps {
 
 export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnected }: NavbarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [showNowSpinning, setShowNowSpinning] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [showAvatar, setShowAvatar] = useState(false);
@@ -68,161 +57,178 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
     }
   }
 
+  // Determine active nav link
+  const isActive = (path: string) => {
+    if (path === "/activity") return pathname === "/activity";
+    if (path === "/market") return pathname === "/market";
+    if (path === "/search") return pathname === "/search";
+    if (username && path === `/${username}`) return pathname === `/${username}`;
+    return false;
+  };
+
   return (
     <>
-      <nav
-        className="sticky top-0 z-40 w-full flex items-center gap-3 px-6 h-14"
-        style={{ backgroundColor: C.bg, borderBottom: `1px solid ${C.border}` }}
-      >
-        {/* Logo */}
-        <Link href={username ? `/${username}` : "/"} className="flex items-center shrink-0">
-          <span className="font-bold tracking-tight text-sm" style={{ color: C.text }}>
-            NEEDLE<span style={{ color: C.accent }}>DROP</span>
-          </span>
-        </Link>
+      <nav className="ms-nav">
+        <div className="ms-nav-inner">
 
-        {username && (
-          <>
-            {/* Search */}
-            <form onSubmit={handleSearch} className="flex-1 max-w-xs">
+          {/* Logo */}
+          <Link href={username ? "/activity" : "/"} className="ms-logo">
+            <span className="ms-logo-mark">
+              <span className="ms-logo-disc" />
+              <span className="ms-logo-arm" />
+            </span>
+            <span className="ms-wordmark">
+              Needle<span className="drop">Drop</span>
+            </span>
+          </Link>
+
+          {/* Nav links */}
+          {username && (
+            <div className="ms-nav-links">
+              <Link href="/activity" className={"ms-nav-link" + (isActive("/activity") ? " active" : "")}>
+                E-Zine
+              </Link>
+              <Link href={`/${username}`} className={"ms-nav-link" + (isActive(`/${username}`) ? " active" : "")}>
+                Collection
+              </Link>
+              <Link href="/search" className={"ms-nav-link" + (isActive("/search") ? " active" : "")}>
+                Dig
+              </Link>
+              <Link href="/market" className={"ms-nav-link" + (isActive("/market") ? " active" : "")}>
+                Market<span className="ms-soon">soon</span>
+              </Link>
+            </div>
+          )}
+
+          {/* Search */}
+          {username && (
+            <form onSubmit={handleSearch} className="ms-nav-search">
+              <span style={{ fontSize: 13, flexShrink: 0 }}>⚲</span>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search users or albums..."
-                className="w-full text-xs px-3 py-1.5 outline-none transition-colors duration-100 font-mono"
-                style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, color: C.text, borderRadius: 4 }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = C.accent)}
-                onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
+                placeholder="Search records, artists, fans…"
               />
             </form>
+          )}
 
-            {/* Now Spinning */}
-            {nowSpinning ? (
-              <button
-                onClick={() => setShowNowSpinning(true)}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-mono transition-opacity duration-100 shrink-0"
-                style={{ backgroundColor: "#0D0D0D", border: "1px solid #333", borderRadius: 4 }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-              >
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ backgroundColor: "#FF3E3E" }} />
-                <span className="font-bold" style={{ color: "#FF3E3E" }}>ON AIR</span>
-                <span className="max-w-40 truncate" style={{ color: "#F7F1E3" }}>
-                  {nowSpinning.artist} — {nowSpinning.title}
-                </span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setShowNowSpinning(true)}
-                className="flex items-center gap-2 px-4 py-1.5 text-xs font-mono transition-colors duration-100 shrink-0"
-                style={{ backgroundColor: C.accent, color: C.text, borderRadius: 4 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.accentHover)}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = C.accent)}
-              >
-                ▶ WHAT ARE YOU SPINNING?
-              </button>
-            )}
+          {username ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
 
-            {/* Add dropdown */}
-            <div ref={addRef} className="relative shrink-0">
-              <button
-                onClick={() => setShowAdd((v) => !v)}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-mono transition-colors duration-100"
-                style={{
-                  backgroundColor: showAdd ? C.surfaceRaised : C.surface,
-                  color: C.muted,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 4,
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
-                onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}
-              >
-                ADD ▾
-              </button>
-
-              {showAdd && (
-                <div className="absolute top-full mt-1 right-0 w-52 py-1 z-50"
-                  style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                  <DropdownItem onClick={() => { setShowAdd(false); setShowNowSpinning(true); }}>
-                    ▶ Now Spinning
-                  </DropdownItem>
-                  <div style={{ height: 1, backgroundColor: C.border, margin: "4px 0" }} />
-                  <div className="px-4 py-2 text-xs font-mono cursor-pointer transition-colors duration-100"
-                    style={{ color: C.muted }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = C.surfaceRaised; (e.currentTarget as HTMLDivElement).style.color = C.text; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLDivElement).style.color = C.muted; }}>
-                    <AddModal trigger="search" />
-                  </div>
-                  <DropdownItem onClick={() => { setShowAdd(false); if (username) router.push(`/${username}`); }}>
-                    ↓ Import from Discogs
-                  </DropdownItem>
-                  {spotifyConnected && (
-                    <>
-                      <div style={{ height: 1, backgroundColor: C.border, margin: "4px 0" }} />
-                      <DropdownItem onClick={handleSpotifySync}>
-                        {syncing ? "⟳ Syncing…" : "⟳ Sync Spotify"}
-                      </DropdownItem>
-                    </>
-                  )}
-                </div>
+              {/* ON AIR / Log a listen CTA */}
+              {nowSpinning ? (
+                <button
+                  onClick={() => setShowNowSpinning(true)}
+                  className="ms-onair"
+                  style={{ padding: "7px 12px", background: "var(--skin-surface)", border: "2px solid var(--skin-border)", borderRadius: 4, cursor: "pointer", gap: 8 }}
+                >
+                  <span className="d" />
+                  <span style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {nowSpinning.artist} — {nowSpinning.title}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowNowSpinning(true)}
+                  className="ms-btn hot sm"
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  + Log a listen
+                </button>
               )}
-            </div>
 
-            {/* Activity */}
-            <Link href="/activity"
-              className="px-3 py-1.5 text-xs font-mono transition-colors duration-100 shrink-0"
-              style={{ color: C.muted }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = C.text)}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = C.muted)}>
-              SOCIAL FEED
-            </Link>
-
-            {/* Messages */}
-            <MessageBadge />
-
-            {/* Notification Bell */}
-            <NotificationBell />
-
-            {/* Avatar dropdown */}
-            <div ref={avatarRef} className="relative shrink-0">
-              <button onClick={() => setShowAvatar((v) => !v)} className="flex items-center">
-                {avatarUrl ? (
-                  <Image src={avatarUrl} alt={username} width={28} height={28}
-                    className="object-cover"
-                    style={{ width: 28, height: 28, borderRadius: "50%", border: `1px solid ${C.border}` }} />
-                ) : (
-                  <div className="flex items-center justify-center text-xs font-bold"
-                    style={{ width: 28, height: 28, borderRadius: "50%", backgroundColor: C.surface, color: C.subtle, border: `1px solid ${C.border}` }}>
-                    {username[0].toUpperCase()}
+              {/* Add menu (import/sync) */}
+              <div ref={addRef} style={{ position: "relative" }}>
+                <button
+                  onClick={() => setShowAdd((v) => !v)}
+                  className="ms-icon-btn"
+                  title="Add / Import"
+                  style={{ fontSize: 18 }}
+                >
+                  +
+                </button>
+                {showAdd && (
+                  <div style={{
+                    position: "absolute", top: "calc(100% + 6px)", right: 0, minWidth: 200, zIndex: 50,
+                    background: "var(--skin-surface)", border: "2px solid var(--skin-border)",
+                    borderRadius: 4, boxShadow: "3px 3px 0 var(--skin-shadow-soft)", overflow: "hidden",
+                  }}>
+                    <DropItem onClick={() => { setShowAdd(false); setShowNowSpinning(true); }}>▶ Now Spinning</DropItem>
+                    <div style={{ height: 1, background: "var(--skin-line)" }} />
+                    <div style={{ padding: "8px 16px", fontSize: 13, cursor: "pointer", color: "var(--skin-muted)" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "var(--skin-surface-raised)"; (e.currentTarget as HTMLDivElement).style.color = "var(--skin-text)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; (e.currentTarget as HTMLDivElement).style.color = "var(--skin-muted)"; }}>
+                      <AddModal trigger="search" />
+                    </div>
+                    <DropItem onClick={() => { setShowAdd(false); if (username) router.push(`/${username}`); }}>↓ Import from Discogs</DropItem>
+                    {spotifyConnected && (
+                      <>
+                        <div style={{ height: 1, background: "var(--skin-line)" }} />
+                        <DropItem onClick={handleSpotifySync}>
+                          {syncing ? "⟳ Syncing…" : "⟳ Sync Spotify"}
+                        </DropItem>
+                      </>
+                    )}
                   </div>
                 )}
-              </button>
+              </div>
 
-              {showAvatar && (
-                <div className="absolute top-full mt-1 right-0 w-40 py-1 z-50"
-                  style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                  <DropdownItem onClick={() => setShowAvatar(false)}>
-                    <Link href={`/${username}`} className="block w-full">MY PROFILE</Link>
-                  </DropdownItem>
-                  <DropdownItem onClick={() => setShowAvatar(false)}>
-                    <Link href="/messages" className="block w-full">MESSAGES</Link>
-                  </DropdownItem>
-                  <DropdownItem onClick={() => setShowAvatar(false)}>
-                    <Link href="/settings" className="block w-full">SETTINGS</Link>
-                  </DropdownItem>
-                  <div style={{ height: 1, backgroundColor: C.border, margin: "4px 0" }} />
-                  <div className="px-4 py-2 text-xs font-mono cursor-pointer transition-colors duration-100"
-                    style={{ color: C.muted }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.color = C.text; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.color = C.muted; }}>
-                    <SignOutButton>SIGN OUT</SignOutButton>
+              {/* Messages */}
+              <MessageBadge />
+
+              {/* Notifications */}
+              <NotificationBell />
+
+              {/* Avatar menu */}
+              <div ref={avatarRef} style={{ position: "relative" }}>
+                <button onClick={() => setShowAvatar((v) => !v)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                  {avatarUrl ? (
+                    <Image src={avatarUrl} alt={username} width={34} height={34}
+                      className="object-cover"
+                      style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid var(--skin-border)", display: "block" }} />
+                  ) : (
+                    <div className="ms-avatar" style={{ width: 34, height: 34, fontSize: 13 }}>
+                      {username[0].toUpperCase()}
+                    </div>
+                  )}
+                </button>
+
+                {showAvatar && (
+                  <div style={{
+                    position: "absolute", top: "calc(100% + 6px)", right: 0, minWidth: 160, zIndex: 50,
+                    background: "var(--skin-surface)", border: "2px solid var(--skin-border)",
+                    borderRadius: 4, boxShadow: "3px 3px 0 var(--skin-shadow-soft)", overflow: "hidden",
+                  }}>
+                    <DropItem onClick={() => setShowAvatar(false)}>
+                      <Link href={`/${username}`} style={{ display: "block", color: "inherit" }}>My Liner Notes</Link>
+                    </DropItem>
+                    <DropItem onClick={() => setShowAvatar(false)}>
+                      <Link href="/messages" style={{ display: "block", color: "inherit" }}>Notes</Link>
+                    </DropItem>
+                    <DropItem onClick={() => setShowAvatar(false)}>
+                      <Link href={`/${username}/analytics`} style={{ display: "block", color: "inherit" }}>Record Room</Link>
+                    </DropItem>
+                    <DropItem onClick={() => setShowAvatar(false)}>
+                      <Link href="/settings" style={{ display: "block", color: "inherit" }}>Preferences</Link>
+                    </DropItem>
+                    <div style={{ height: 1, background: "var(--skin-line)" }} />
+                    <div style={{ padding: "8px 16px", fontSize: 13, cursor: "pointer", color: "var(--skin-muted)" }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "var(--skin-surface-raised)"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; }}>
+                      <SignOutButton>Sign out</SignOutButton>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </>
-        )}
+          ) : (
+            <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+              <Link href="/sign-in" className="ms-btn sm">Sign in</Link>
+              <Link href="/sign-up" className="ms-btn sm fill">Join</Link>
+            </div>
+          )}
+        </div>
       </nav>
 
       {showNowSpinning && (
@@ -235,13 +241,14 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
   );
 }
 
-function DropdownItem({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
+function DropItem({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
   return (
-    <div className="px-4 py-2 text-xs font-mono cursor-pointer transition-colors duration-100"
-      style={{ color: C.muted }}
+    <div
       onClick={onClick}
-      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = C.surfaceRaised; (e.currentTarget as HTMLDivElement).style.color = C.text; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLDivElement).style.color = C.muted; }}>
+      style={{ padding: "8px 16px", fontSize: 13, cursor: "pointer", color: "var(--skin-muted)", transition: "background 100ms, color 100ms" }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "var(--skin-surface-raised)"; (e.currentTarget as HTMLDivElement).style.color = "var(--skin-text)"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "transparent"; (e.currentTarget as HTMLDivElement).style.color = "var(--skin-muted)"; }}
+    >
       {children}
     </div>
   );

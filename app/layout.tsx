@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Newsreader, Hanken_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
@@ -8,19 +8,31 @@ import Navbar from "@/components/Navbar";
 import SpotifyAutoSync from "@/components/SpotifyAutoSync";
 import { getSkin, skinToVars } from "@/lib/skins";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const newsreader = Newsreader({
+  variable: "--font-nd-serif",
   subsets: ["latin"],
+  style: ["normal", "italic"],
+  weight: ["400", "600"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const hankenGrotesk = Hanken_Grotesk({
+  variable: "--font-nd-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const spaceMono = Space_Mono({
+  variable: "--font-nd-mono",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "NeedleDrop",
-  description: "Log your listening",
+  description: "The social network for record collectors",
 };
 
 export default async function RootLayout({
@@ -57,7 +69,6 @@ export default async function RootLayout({
       avatarUrl = user.avatarUrl ?? null;
       userSkin = user.skin ?? null;
 
-      // Auto-sync if Spotify connected and last sync > 15 min ago (or never)
       if (user.spotifyConnected) {
         spotifyConnected = true;
         const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000);
@@ -65,7 +76,6 @@ export default async function RootLayout({
       }
 
       if (user.nowSpinning) {
-        // Only treat as active if set within the last 60 minutes
         const sixtyMinutesAgo = new Date(Date.now() - 60 * 60 * 1000);
         nowSpinningActive = user.nowSpinningAt ? user.nowSpinningAt > sixtyMinutesAgo : false;
 
@@ -82,15 +92,13 @@ export default async function RootLayout({
     }
   }
 
-  // Apply the logged-in user's skin as CSS variables globally on <html>
-  // Profile pages override this via SkinApplicator (for the viewed profile's skin)
   const globalSkinVars = skinToVars(getSkin(userSkin)) as React.CSSProperties;
 
   return (
     <ClerkProvider>
       <html
         lang="en"
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+        className={`${newsreader.variable} ${hankenGrotesk.variable} ${spaceMono.variable} h-full`}
         style={globalSkinVars}
       >
         <body className="min-h-full flex flex-col">
