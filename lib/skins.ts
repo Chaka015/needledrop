@@ -20,7 +20,32 @@ export interface SkinTokens {
   live: string;
 }
 
-// Light-mode base shared by the 6 MS accent themes
+// ── MS Modern accent definitions ─────────────────────────────────
+export const MS_ACCENTS = [
+  { id: "blue",   name: "Electric Blue", color: "#2540e6", hot: "#ff5a1f", hover: "#1d35c4" },
+  { id: "orange", name: "Tangerine",     color: "#ff5a1f", hot: "#2540e6", hover: "#e04d18" },
+  { id: "pink",   name: "Hot Pink",      color: "#ec2d7b", hot: "#08b5cf", hover: "#d0246a" },
+  { id: "green",  name: "Acid Green",    color: "#12a150", hot: "#ff5a1f", hover: "#0e8a44" },
+  { id: "purple", name: "Grape",         color: "#7b3ff2", hot: "#f5a300", hover: "#6a35d4" },
+  { id: "cyan",   name: "Cyan",          color: "#08a5c4", hot: "#ff4d8d", hover: "#0790aa" },
+] as const;
+
+export type AccentId = typeof MS_ACCENTS[number]["id"];
+export type ThemeMode = "light" | "dark";
+
+// Encode accent + mode into a single skin ID: "ms-blue-light"
+export function buildSkinId(accent: AccentId | string, mode: ThemeMode): string {
+  return `ms-${accent}-${mode}`;
+}
+
+// Decode a skin ID back to accent + mode
+export function parseSkinId(skinId: string | null | undefined): { accent: string; mode: ThemeMode } {
+  const match = (skinId ?? "").match(/^ms-(\w+)-(light|dark)$/);
+  if (match) return { accent: match[1], mode: match[2] as ThemeMode };
+  return { accent: "blue", mode: "light" };
+}
+
+// Light-mode base shared by all 6 MS accent themes
 function msLight(accent: string, accentHover: string, hot: string): SkinTokens {
   return {
     bg:           "#e9e7e2",
@@ -44,122 +69,53 @@ function msLight(accent: string, accentHover: string, hot: string): SkinTokens {
   };
 }
 
-export const SKINS: Record<string, SkinTokens> = {
-  // ── Dark / "Analog" themes ──────────────────────────────────────────
-  "analog-warmth": {
-    bg:           "#2D2926",
-    surface:      "#3D3834",
-    surfaceRaised:"#4A4540",
-    border:       "#524D48",
-    text:         "#F7F1E3",
-    muted:        "#A89F94",
-    subtle:       "#6B6560",
-    accent:       "#E67E22",
-    accentHover:  "#CF711E",
-    hot:          "#E67E22",
-    hotInk:       "#F7F1E3",
-    accentInk:    "#F7F1E3",
-    card:         "#3D3834",
-    sunk:         "#2D2926",
-    line:         "#3D3834",
-    shadowSoft:   "rgba(0,0,0,0.4)",
-    star:         "#F3A712",
-    live:         "#5E9E6E",
-  },
-  "silver-face": {
-    bg:           "#1C1C1C",
-    surface:      "#2A2A2A",
-    surfaceRaised:"#363636",
-    border:       "#444444",
-    text:         "#EFEFEF",
-    muted:        "#9E9E9E",
-    subtle:       "#666666",
-    accent:       "#C0C0C0",
-    accentHover:  "#A8A8A8",
-    hot:          "#C0C0C0",
-    hotInk:       "#1C1C1C",
-    accentInk:    "#1C1C1C",
-    card:         "#2A2A2A",
-    sunk:         "#1C1C1C",
-    line:         "#363636",
-    shadowSoft:   "rgba(0,0,0,0.5)",
-    star:         "#F3A712",
-    live:         "#4CAF82",
-  },
-  "midnight-black": {
-    bg:           "#0D0D0D",
-    surface:      "#1A1A1A",
-    surfaceRaised:"#252525",
-    border:       "#333333",
-    text:         "#F0F0F0",
-    muted:        "#999999",
-    subtle:       "#555555",
-    accent:       "#FF3E3E",
-    accentHover:  "#E63535",
-    hot:          "#FF3E3E",
-    hotInk:       "#F0F0F0",
-    accentInk:    "#F0F0F0",
-    card:         "#1A1A1A",
-    sunk:         "#0D0D0D",
-    line:         "#252525",
-    shadowSoft:   "rgba(0,0,0,0.6)",
-    star:         "#F3A712",
-    live:         "#4CAF82",
-  },
-  "wood-grain": {
-    bg:           "#3B2F2F",
-    surface:      "#4A3B35",
-    surfaceRaised:"#5A4A42",
-    border:       "#6A5A50",
-    text:         "#F5EDD8",
-    muted:        "#C4AC8E",
-    subtle:       "#8A7560",
-    accent:       "#D4A96A",
-    accentHover:  "#BE9458",
-    hot:          "#D4A96A",
-    hotInk:       "#3B2F2F",
-    accentInk:    "#3B2F2F",
-    card:         "#4A3B35",
-    sunk:         "#3B2F2F",
-    line:         "#4A3B35",
-    shadowSoft:   "rgba(0,0,0,0.45)",
-    star:         "#F3A712",
-    live:         "#5E9E6E",
-  },
-  "studio-console": {
-    bg:           "#1A2420",
-    surface:      "#243530",
-    surfaceRaised:"#2E4038",
-    border:       "#3A5044",
-    text:         "#F0EDDE",
-    muted:        "#A8B09A",
-    subtle:       "#6A7860",
-    accent:       "#4CAF82",
-    accentHover:  "#3D9A70",
-    hot:          "#4CAF82",
-    hotInk:       "#1A2420",
-    accentInk:    "#1A2420",
-    card:         "#243530",
-    sunk:         "#1A2420",
-    line:         "#2E4038",
-    shadowSoft:   "rgba(0,0,0,0.45)",
-    star:         "#F3A712",
-    live:         "#4CAF82",
-  },
+// Dark-mode base (MS dark palette from the design handoff)
+function msDark(accent: string, accentHover: string, hot: string): SkinTokens {
+  return {
+    bg:           "#131217",
+    surface:      "#1e1c25",
+    surfaceRaised:"#252330",
+    border:       "#3b3845",
+    text:         "#f1eef6",
+    muted:        "#a8a5b2",
+    subtle:       "#76737e",
+    accent,
+    accentHover,
+    hot,
+    hotInk:       "#ffffff",
+    accentInk:    "#ffffff",
+    card:         "#1e1c25",
+    sunk:         "#17161c",
+    line:         "#2c2a35",
+    shadowSoft:   "rgba(0,0,0,.55)",
+    star:         "#f3a712",
+    live:         "#16a34a",
+  };
+}
 
-  // ── MS Modern light-mode accent themes ──────────────────────────────
-  "ms-blue":   msLight("#2540e6", "#1d35c4", "#ff5a1f"),
-  "ms-orange": msLight("#ff5a1f", "#e04d18", "#2540e6"),
-  "ms-pink":   msLight("#ec2d7b", "#d0246a", "#08b5cf"),
-  "ms-green":  msLight("#12a150", "#0e8a44", "#ff5a1f"),
-  "ms-purple": msLight("#7b3ff2", "#6a35d4", "#f5a300"),
-  "ms-cyan":   msLight("#08a5c4", "#0790aa", "#ff4d8d"),
+export const SKINS: Record<string, SkinTokens> = {
+  // ── Light themes ──────────────────────────────────────────────
+  "ms-blue-light":   msLight("#2540e6", "#1d35c4", "#ff5a1f"),
+  "ms-orange-light": msLight("#ff5a1f", "#e04d18", "#2540e6"),
+  "ms-pink-light":   msLight("#ec2d7b", "#d0246a", "#08b5cf"),
+  "ms-green-light":  msLight("#12a150", "#0e8a44", "#ff5a1f"),
+  "ms-purple-light": msLight("#7b3ff2", "#6a35d4", "#f5a300"),
+  "ms-cyan-light":   msLight("#08a5c4", "#0790aa", "#ff4d8d"),
+
+  // ── Dark themes ───────────────────────────────────────────────
+  "ms-blue-dark":    msDark("#2540e6", "#1d35c4", "#ff5a1f"),
+  "ms-orange-dark":  msDark("#ff5a1f", "#e04d18", "#2540e6"),
+  "ms-pink-dark":    msDark("#ec2d7b", "#d0246a", "#08b5cf"),
+  "ms-green-dark":   msDark("#12a150", "#0e8a44", "#ff5a1f"),
+  "ms-purple-dark":  msDark("#7b3ff2", "#6a35d4", "#f5a300"),
+  "ms-cyan-dark":    msDark("#08a5c4", "#0790aa", "#ff4d8d"),
 };
 
-export const DEFAULT_SKIN = SKINS["analog-warmth"];
+export const DEFAULT_SKIN_ID = "ms-blue-light";
+export const DEFAULT_SKIN = SKINS[DEFAULT_SKIN_ID];
 
 export function getSkin(id: string | null | undefined): SkinTokens {
-  return SKINS[id ?? "analog-warmth"] ?? DEFAULT_SKIN;
+  return SKINS[id ?? DEFAULT_SKIN_ID] ?? DEFAULT_SKIN;
 }
 
 export function skinToVars(skin: SkinTokens): Record<string, string> {

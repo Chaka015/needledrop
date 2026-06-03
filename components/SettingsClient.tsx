@@ -2,28 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-
-const C = {
-  bg: "#2D2926",
-  surface: "#3D3834",
-  surfaceRaised: "#4A4540",
-  border: "#524D48",
-  text: "#F7F1E3",
-  muted: "#A89F94",
-  subtle: "#6B6560",
-  accent: "#E67E22",
-  accentHover: "#CF711E",
-  success: "#5E9E6E",
-  danger: "#C0392B",
-};
-
-const SKINS = [
-  { id: "analog-warmth", name: "Analog Warmth", bg: "#2D2926", surface: "#3D3834", accent: "#E67E22", description: "Espresso & terracotta" },
-  { id: "silver-face", name: "Silver Face", bg: "#1A1A1A", surface: "#2A2A2A", accent: "#C0C0C0", description: "Brushed aluminum" },
-  { id: "midnight-black", name: "Midnight Black", bg: "#0D0D0D", surface: "#1A1A1A", accent: "#FF3E3E", description: "Matte black & red" },
-  { id: "wood-grain", name: "Wood Grain", bg: "#3B2F2F", surface: "#4A3B35", accent: "#D4A96A", description: "Warm oak & cream" },
-  { id: "studio-console", name: "Studio Console", bg: "#1A2420", surface: "#243530", accent: "#4CAF82", description: "Forest green & cream" },
-];
+import SkinPicker from "./SkinPicker";
 
 interface SettingsClientProps {
   user: {
@@ -39,10 +18,10 @@ interface SettingsClientProps {
 export default function SettingsClient({ user }: SettingsClientProps) {
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl ?? "");
   const [bio, setBio] = useState(user.bio ?? "");
-  const [selectedSkin, setSelectedSkin] = useState(user.skin ?? "analog-warmth");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [currentSkin, setCurrentSkin] = useState(user.skin);
   const [spotifyConnected, setSpotifyConnected] = useState(!!user.spotifyId);
   const [spotifySyncing, setSpotifySyncing] = useState(false);
   const [spotifySyncResult, setSpotifySyncResult] = useState<string | null>(null);
@@ -57,7 +36,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
     const res = await fetch("/api/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ avatarUrl: avatarUrl || null, bio: bio || null, skin: selectedSkin }),
+      body: JSON.stringify({ avatarUrl: avatarUrl || null, bio: bio || null, skin: currentSkin }),
     });
 
     if (!res.ok) {
@@ -85,7 +64,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
       } else {
         setSpotifySyncResult(`✓ Imported ${data.imported} new listen${data.imported !== 1 ? "s" : ""}`);
       }
-      // If token expired, they need to reconnect
     } else if (syncRes.status === 401) {
       setSpotifyConnected(false);
       setSpotifySyncResult("Spotify session expired — please reconnect.");
@@ -101,145 +79,173 @@ export default function SettingsClient({ user }: SettingsClientProps) {
     setSpotifySyncResult(null);
   }
 
-return (
-    <div className="min-h-screen font-sans" style={{ backgroundColor: C.bg, color: C.text }}>
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        <h1 className="text-xl font-bold mb-8" style={{ color: C.text }}>Settings</h1>
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: "var(--skin-bg)", color: "var(--skin-text)" }}>
+      <div className="ms-page" style={{ maxWidth: 640 }}>
 
-        <form onSubmit={handleSave} className="space-y-10">
+        <h1 style={{ fontFamily: "var(--font-nd-serif)", fontSize: 30, fontWeight: 600, margin: "0 0 32px", color: "var(--skin-text)" }}>
+          Preferences
+        </h1>
 
-          {/* Profile Picture */}
-          <section>
-            <h2 className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: C.subtle }}>Profile Picture</h2>
-            <div className="flex items-center gap-4 mb-3">
-              {avatarUrl ? (
-                <Image src={avatarUrl} alt="Avatar preview" width={64} height={64}
-                  className="object-cover" style={{ width: 64, height: 64, borderRadius: "50%", border: `2px solid ${C.border}` }}
-                  unoptimized />
-              ) : (
-                <div className="flex items-center justify-center text-2xl font-bold"
-                  style={{ width: 64, height: 64, borderRadius: "50%", backgroundColor: C.surface, color: C.subtle, border: `2px solid ${C.border}` }}>
-                  {user.username[0].toUpperCase()}
+        <form onSubmit={handleSave}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+
+            {/* Profile Picture */}
+            <div className="ms-box" style={{ marginBottom: 16 }}>
+              <div className="ms-bar">Profile picture</div>
+              <div className="ms-pad">
+                <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 12 }}>
+                  {avatarUrl ? (
+                    <Image src={avatarUrl} alt="Avatar preview" width={64} height={64}
+                      className="object-cover"
+                      style={{ width: 64, height: 64, borderRadius: "50%", border: "2px solid var(--skin-border)", flexShrink: 0 }}
+                      unoptimized />
+                  ) : (
+                    <div className="ms-avatar" style={{ width: 64, height: 64, fontSize: 24, flexShrink: 0 }}>
+                      {user.username[0].toUpperCase()}
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <input
+                      type="url"
+                      value={avatarUrl}
+                      onChange={(e) => setAvatarUrl(e.target.value)}
+                      placeholder="https://i.imgur.com/yourphoto.jpg"
+                      style={{
+                        width: "100%", fontSize: 13, padding: "8px 12px",
+                        background: "var(--skin-surface)", border: "2px solid var(--skin-border)",
+                        borderRadius: 4, color: "var(--skin-text)", outline: "none",
+                        fontFamily: "inherit",
+                      }}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = "var(--skin-accent)")}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "var(--skin-border)")}
+                    />
+                    <p style={{ fontSize: 11, color: "var(--skin-subtle)", marginTop: 4, fontFamily: "var(--font-nd-mono)" }}>
+                      Paste an image URL — upload to imgur.com for free hosting
+                    </p>
+                  </div>
                 </div>
-              )}
-              <div className="flex-1">
-                <input type="url" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="https://i.imgur.com/yourphoto.jpg"
-                  className="w-full text-sm px-3 py-2 outline-none transition-colors duration-100"
-                  style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, color: C.text, borderRadius: 0 }}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = C.accent)}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = C.border)} />
-                <p className="text-xs font-mono mt-1" style={{ color: C.subtle }}>
-                  Paste an image URL — upload to imgur.com for free hosting
-                </p>
               </div>
             </div>
-          </section>
 
-          {/* Bio */}
-          <section>
-            <h2 className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: C.subtle }}>Bio</h2>
-            <textarea value={bio} onChange={(e) => setBio(e.target.value)}
-              placeholder="Tell people about your taste..."
-              rows={3}
-              className="w-full text-sm px-3 py-2 outline-none transition-colors duration-100 resize-none"
-              style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, color: C.text, borderRadius: 0 }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = C.accent)}
-              onBlur={(e) => (e.currentTarget.style.borderColor = C.border)} />
-          </section>
-
-          {/* Profile Skin */}
-          <section>
-            <h2 className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: C.subtle }}>Profile Skin</h2>
-            <div className="grid grid-cols-1 gap-3">
-              {SKINS.map((skin) => (
-                <button key={skin.id} type="button" onClick={() => setSelectedSkin(skin.id)}
-                  className="flex items-center gap-4 p-4 text-left transition-colors duration-100"
+            {/* Bio */}
+            <div className="ms-box" style={{ marginBottom: 16 }}>
+              <div className="ms-bar">Bio · mood line</div>
+              <div className="ms-pad">
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell people about your taste…"
+                  rows={3}
                   style={{
-                    backgroundColor: selectedSkin === skin.id ? C.surfaceRaised : C.surface,
-                    border: `1px solid ${selectedSkin === skin.id ? C.accent : C.border}`,
-                    borderRadius: 0,
-                  }}>
-                  <div className="flex gap-1 shrink-0">
-                    <div style={{ width: 32, height: 32, backgroundColor: skin.bg, border: `1px solid ${C.border}` }} />
-                    <div style={{ width: 32, height: 32, backgroundColor: skin.surface, border: `1px solid ${C.border}` }} />
-                    <div style={{ width: 32, height: 32, backgroundColor: skin.accent, border: `1px solid ${C.border}` }} />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium" style={{ color: C.text }}>{skin.name}</div>
-                    <div className="text-xs font-mono" style={{ color: C.muted }}>{skin.description}</div>
-                  </div>
-                  {selectedSkin === skin.id && (
-                    <span className="ml-auto text-xs font-mono" style={{ color: C.accent }}>✓ ACTIVE</span>
-                  )}
-                </button>
-              ))}
+                    width: "100%", fontSize: 13, padding: "8px 12px", resize: "none",
+                    background: "var(--skin-surface)", border: "2px solid var(--skin-border)",
+                    borderRadius: 4, color: "var(--skin-text)", outline: "none",
+                    fontFamily: "inherit", lineHeight: 1.55,
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = "var(--skin-accent)")}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = "var(--skin-border)")}
+                />
+              </div>
             </div>
-          </section>
 
-          {error && <p className="text-xs font-mono" style={{ color: C.danger }}>{error}</p>}
-          {saved && <p className="text-xs font-mono" style={{ color: C.success }}>✓ Settings saved</p>}
+          </div>
 
-          <button type="submit" disabled={saving}
-            className="px-8 py-3 text-sm font-medium transition-colors duration-100"
-            style={{ backgroundColor: C.accent, color: C.text, borderRadius: 4, opacity: saving ? 0.4 : 1 }}
-            onMouseEnter={(e) => !saving && (e.currentTarget.style.backgroundColor = C.accentHover)}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = C.accent)}>
-            {saving ? "SAVING..." : "SAVE SETTINGS"}
+          {error && (
+            <p style={{ fontSize: 12, color: "var(--skin-live)", fontFamily: "var(--font-nd-mono)", margin: "0 0 12px" }}>
+              {error}
+            </p>
+          )}
+          {saved && (
+            <p style={{ fontSize: 12, color: "var(--skin-live)", fontFamily: "var(--font-nd-mono)", margin: "0 0 12px" }}>
+              ✓ Preferences saved
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="ms-btn fill"
+            style={{ opacity: saving ? 0.4 : 1, width: "100%", marginBottom: 32 }}
+          >
+            {saving ? "Saving…" : "Save preferences"}
           </button>
         </form>
 
-        {/* Spotify Integration — outside the form */}
-        <section className="mt-12 pt-8" style={{ borderTop: `1px solid ${C.border}` }}>
-          <h2 className="text-xs font-mono uppercase tracking-widest mb-1" style={{ color: C.subtle }}>Streaming</h2>
-          <p className="text-xs font-mono mb-4" style={{ color: C.muted }}>
-            Connect Spotify to auto-import your recent plays as streaming logs.
-          </p>
+        {/* Theme */}
+        <div className="ms-box" style={{ marginBottom: 16 }}>
+          <div className="ms-bar hot">Customize · Theme <span className="cta">your page</span></div>
+          <div className="ms-pad">
+            <SkinPicker
+              currentSkin={currentSkin}
+              onSave={(skinId) => setCurrentSkin(skinId)}
+            />
+          </div>
+        </div>
 
-          {spotifyConnected ? (
-            <div className="p-4 space-y-3" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: C.success }} />
-                <span className="text-sm font-mono" style={{ color: C.text }}>Spotify connected</span>
-                <span className="text-xs font-mono" style={{ color: C.subtle }}>({user.spotifyId})</span>
+        {/* Streaming */}
+        <div className="ms-box" style={{ marginBottom: 16 }}>
+          <div className="ms-bar">Streaming · Spotify</div>
+          <div className="ms-pad">
+            <p style={{ fontSize: 13, color: "var(--skin-muted)", marginBottom: 16, lineHeight: 1.5 }}>
+              Connect Spotify to auto-import your recent plays as streaming logs.
+            </p>
+
+            {spotifyConnected ? (
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--skin-live)", display: "inline-block" }} />
+                  <span style={{ fontSize: 13, fontFamily: "var(--font-nd-mono)", color: "var(--skin-text)" }}>
+                    Spotify connected
+                  </span>
+                  <span style={{ fontSize: 11, color: "var(--skin-subtle)", fontFamily: "var(--font-nd-mono)" }}>
+                    ({user.spotifyId})
+                  </span>
+                </div>
+                {lastSyncedAt && (
+                  <p style={{ fontSize: 11, color: "var(--skin-subtle)", fontFamily: "var(--font-nd-mono)", marginBottom: 12 }}>
+                    Last synced: {new Date(lastSyncedAt).toLocaleString()}
+                  </p>
+                )}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={handleSpotifySync}
+                    disabled={spotifySyncing}
+                    className="ms-btn sm"
+                    style={{ opacity: spotifySyncing ? 0.4 : 1 }}
+                  >
+                    {spotifySyncing ? "Syncing…" : "⟳ Sync now"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSpotifyDisconnect}
+                    className="ms-btn sm"
+                    style={{ color: "var(--skin-subtle)" }}
+                  >
+                    Disconnect
+                  </button>
+                </div>
+                {spotifySyncResult && (
+                  <p style={{ fontSize: 12, color: spotifySyncResult.startsWith("✓") ? "var(--skin-live)" : "var(--skin-hot)", fontFamily: "var(--font-nd-mono)", marginTop: 10 }}>
+                    {spotifySyncResult}
+                  </p>
+                )}
               </div>
-              {lastSyncedAt && (
-                <p className="text-xs font-mono" style={{ color: C.subtle }}>
-                  Last synced: {new Date(lastSyncedAt).toLocaleString()}
-                </p>
-              )}
-              <div className="flex gap-2">
-                <button onClick={handleSpotifySync} disabled={spotifySyncing}
-                  className="px-4 py-2 text-xs font-mono transition-colors duration-100"
-                  style={{ backgroundColor: C.surfaceRaised, color: C.muted, borderRadius: 4, border: `1px solid ${C.border}`, opacity: spotifySyncing ? 0.4 : 1 }}
-                  onMouseEnter={(e) => !spotifySyncing && (e.currentTarget.style.color = C.text)}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
-                  {spotifySyncing ? "SYNCING..." : "SYNC NOW"}
-                </button>
-                <button onClick={handleSpotifyDisconnect}
-                  className="px-4 py-2 text-xs font-mono transition-colors duration-100"
-                  style={{ backgroundColor: "transparent", color: C.subtle, borderRadius: 4, border: `1px solid ${C.border}` }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = C.danger; (e.currentTarget as HTMLButtonElement).style.borderColor = C.danger; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = C.subtle; (e.currentTarget as HTMLButtonElement).style.borderColor = C.border; }}>
-                  DISCONNECT
-                </button>
-              </div>
-              {spotifySyncResult && (
-                <p className="text-xs font-mono" style={{ color: spotifySyncResult.startsWith("✓") ? C.success : C.danger }}>
-                  {spotifySyncResult}
-                </p>
-              )}
-            </div>
-          ) : (
-            <a href="/api/auth/spotify"
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-mono transition-colors duration-100"
-              style={{ backgroundColor: "#1DB954", color: "#FFFFFF", borderRadius: 4 }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1AA34A")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1DB954")}>
-              ▶ CONNECT SPOTIFY
-            </a>
-          )}
-        </section>
+            ) : (
+              <a
+                href="/api/auth/spotify"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 16px",
+                  fontSize: 13, fontWeight: 600, borderRadius: 4, textDecoration: "none",
+                  background: "#1DB954", color: "#ffffff",
+                }}
+              >
+                ▶ Connect Spotify
+              </a>
+            )}
+          </div>
+        </div>
 
       </div>
     </div>

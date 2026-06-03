@@ -16,6 +16,7 @@ import FlipCounter from "@/components/FlipCounter";
 import QuickLogWidget from "@/components/QuickLogWidget";
 import { getSkin, skinToVars } from "@/lib/skins";
 import { refreshNowPlaying, type NowPlayingInfo } from "@/lib/spotify-server";
+import SkinPicker from "@/components/SkinPicker";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -33,16 +34,6 @@ const C = {
   hot:          "var(--skin-hot)",
 };
 
-// MS accent swatches for the customize box
-const MS_ACCENT_SWATCHES = [
-  { id: "ms-blue",   color: "#2540e6", name: "Electric Blue" },
-  { id: "ms-orange", color: "#ff5a1f", name: "Tangerine" },
-  { id: "ms-pink",   color: "#ec2d7b", name: "Hot Pink" },
-  { id: "ms-green",  color: "#12a150", name: "Acid Green" },
-  { id: "ms-purple", color: "#7b3ff2", name: "Grape" },
-  { id: "ms-cyan",   color: "#08a5c4", name: "Cyan" },
-  { id: "analog-warmth", color: "#E67E22", name: "Analog Warmth" },
-];
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { username } = await params;
@@ -297,18 +288,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <div className="ms-box">
                 <div className="ms-bar hot">Customize · Theme <span className="cta">your page</span></div>
                 <div className="ms-pad">
-                  <div className="ms-cust-sec">Profile color</div>
-                  <div className="ms-swatches">
-                    {MS_ACCENT_SWATCHES.map((s) => (
-                      <button
-                        key={s.id}
-                        title={s.name}
-                        className={"ms-swatch" + (user.skin === s.id || (!user.skin && s.id === "analog-warmth") ? " on" : "")}
-                        style={{ background: s.color }}
-                        // Skin change handled client-side via SkinPicker (future)
-                      />
-                    ))}
-                  </div>
+                  <SkinPicker currentSkin={user.skin} />
                 </div>
               </div>
             )}
