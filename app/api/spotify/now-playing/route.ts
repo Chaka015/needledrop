@@ -91,14 +91,24 @@ export async function POST() {
   const albumId = data.item.album.id;
   const discogsId = `spotify:album:${albumId}`;
   const coverUrl = data.item.album.images?.[0]?.url ?? null;
+  // Prefer album-level artists; fall back to track artist
+  const albumArtist =
+    data.item.album.artists?.[0]?.name ??
+    data.item.artists?.[0]?.name ??
+    "Unknown Artist";
 
   const album = await prisma.album.upsert({
     where: { discogsId },
-    update: { coverUrl },
+    update: {
+      title:       data.item.album.name,
+      artist:      albumArtist,
+      coverUrl,
+      releaseYear: data.item.album.release_date ? parseInt(data.item.album.release_date.slice(0, 4)) : null,
+    },
     create: {
       discogsId,
-      title: data.item.album.name,
-      artist: data.item.artists?.[0]?.name ?? "Unknown Artist",
+      title:       data.item.album.name,
+      artist:      albumArtist,
       releaseYear: data.item.album.release_date ? parseInt(data.item.album.release_date.slice(0, 4)) : null,
       coverUrl,
     },

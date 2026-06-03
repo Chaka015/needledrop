@@ -31,6 +31,7 @@ interface SpotifyTrack {
       images: { url: string }[];
       release_date: string;
       label?: string;
+      artists?: { name: string }[]; // album-level artists (correct for compilations)
     };
   };
 }
@@ -88,17 +89,27 @@ export async function POST() {
     const playedAt = new Date(item.played_at);
     const discogsId = `spotify:album:${track.album.id}`;
 
+    // Prefer album-level artists (correct for compilations); fall back to track artist
+    const albumArtist =
+      track.album.artists?.[0]?.name ?? track.artists[0]?.name ?? "Unknown Artist";
+
     const album = await prisma.album.upsert({
       where: { discogsId },
-      update: { coverUrl: track.album.images[0]?.url ?? null },
+      update: {
+        title:       track.album.name,
+        artist:      albumArtist,
+        coverUrl:    track.album.images[0]?.url ?? null,
+        releaseYear: track.album.release_date ? parseInt(track.album.release_date.slice(0, 4)) : null,
+        label:       track.album.label ?? null,
+      },
       create: {
         discogsId,
-        title: track.album.name,
-        artist: track.artists[0]?.name ?? "Unknown Artist",
+        title:       track.album.name,
+        artist:      albumArtist,
         releaseYear: track.album.release_date ? parseInt(track.album.release_date.slice(0, 4)) : null,
-        coverUrl: track.album.images[0]?.url ?? null,
-        genre: null,
-        label: null,
+        coverUrl:    track.album.images[0]?.url ?? null,
+        genre:       null,
+        label:       track.album.label ?? null,
       },
     });
 

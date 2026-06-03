@@ -64,7 +64,6 @@ interface DiscogsVersion {
 }
 
 async function fetchDiscogsVersions(discogsId: string): Promise<DiscogsVersion[]> {
-  // Only fetch for Discogs IDs (not spotify: or mb: prefixed)
   if (!discogsId.match(/^\d+$/)) return [];
   try {
     const DISCOGS_TOKEN = process.env.DISCOGS_TOKEN;
@@ -79,40 +78,142 @@ async function fetchDiscogsVersions(discogsId: string): Promise<DiscogsVersion[]
   } catch { return []; }
 }
 
+// Reusable include block so we don't repeat it in two places
+const ALBUM_INCLUDES = {
+  logs: { orderBy: { playedAt: "desc" as const }, include: { user: true, spins: true } },
+  collection: { include: { user: true } },
+  wantlist: { include: { user: true } },
+  comments: {
+    where: { parentId: null, deleted: false },
+    orderBy: { createdAt: "desc" as const },
+    take: 50,
+    include: {
+      user: { select: { username: true, avatarUrl: true } },
+      CommentSpin: { select: { userId: true } },
+      replies: {
+        where: { deleted: false },
+        orderBy: { createdAt: "asc" as const },
+        include: {
+          user: { select: { username: true, avatarUrl: true } },
+          CommentSpin: { select: { userId: true } },
+        },
+      },
+    },
+  },
+};
+
+// When a spotify:album: discogsId isn't in the DB yet, fetch from Spotify
+// using client credentials (no user auth needed) and upsert it.
+async function ensureSpotifyAlbum(discogsId: string): Promise<void> {
+  if (!discogsId.startsWith("spotify:album:")) return;
+  const spotifyId = discogsId.slice("spotify:album:".length);
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  if (!clientId || !clientSecret || !spotifyId) return;
+
+  try {
+    const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials",
+      cache: "no-store",
+    });
+    if (!tokenRes.ok) return;
+    const { access_token } = await tokenRes.json();
+
+    const albumRes = await fetch(`https://api.spotify.com/v1/albums/${spotifyId}`, {
+      headers: { Authorization: `Bearer ${access_token}` },
+      next: { revalidate: 86400 },
+    });
+    if (!albumRes.ok) return;
+    const data = await albumRes.json();
+
+    const artist =
+      data.artists?.[0]?.name ??
+      data.album_artists?.[0]?.name ??
+      "Unknown Artist";
+
+    await prisma.album.upsert({
+      where: { discogsId },
+      update: {
+        title:       data.name,
+        artist,
+        coverUrl:    data.images?.[0]?.url ?? null,
+        releaseYear: data.release_date ? parseInt(data.release_date.slice(0, 4)) : null,
+        label:       data.label ?? null,
+      },
+      create: {
+        discogsId,
+        title:       data.name,
+        artist,
+        coverUrl:    data.images?.[0]?.url ?? null,
+        releaseYear: data.release_date ? parseInt(data.release_date.slice(0, 4)) : null,
+        label:       data.label ?? null,
+        genre:       null,
+      },
+    });
+  } catch {
+    // Spotify unreachable — graceful fallback page will render instead
+  }
+}
+
 export default async function AlbumPage({ params }: Props) {
   const { discogsId } = await params;
   const { userId: clerkId } = await auth();
 
-  const album = await prisma.album.findUnique({
+  let album = await prisma.album.findUnique({
     where: { discogsId },
-    include: {
-      logs: {
-        orderBy: { playedAt: "desc" },
-        include: { user: true, spins: true },
-      },
-      collection: { include: { user: true } },
-      wantlist: { include: { user: true } },
-      comments: {
-        where: { parentId: null, deleted: false },
-        orderBy: { createdAt: "desc" },
-        take: 50,
-        include: {
-          user: { select: { username: true, avatarUrl: true } },
-          CommentSpin: { select: { userId: true } },
-          replies: {
-            where: { deleted: false },
-            orderBy: { createdAt: "asc" },
-            include: {
-              user: { select: { username: true, avatarUrl: true } },
-              CommentSpin: { select: { userId: true } },
-            },
-          },
-        },
-      },
-    },
+    include: ALBUM_INCLUDES,
   });
 
-  if (!album) notFound();
+  // Self-heal: if a spotify:album: record is missing, fetch it from
+  // Spotify (client credentials) and upsert it, then retry the query.
+  if (!album && discogsId.startsWith("spotify:album:")) {
+    await ensureSpotifyAlbum(discogsId);
+    album = await prisma.album.findUnique({
+      where: { discogsId },
+      include: ALBUM_INCLUDES,
+    });
+  }
+
+  // Complete fallback — show a graceful "not catalogued" page instead of 404
+  if (!album) {
+    const isStreaming = discogsId.startsWith("spotify:") || discogsId.startsWith("mb:");
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: C.bg, color: C.text }}>
+        <div className="ms-page">
+          <Link href="/activity" className="ms-back">← Back to E-Zine</Link>
+          <div className="ms-box" style={{ maxWidth: 560, margin: "40px auto" }}>
+            <div className="ms-bar hot">Album not catalogued yet</div>
+            <div className="ms-pad" style={{ padding: 32, textAlign: "center" }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>💿</div>
+              <h2 style={{ fontFamily: "var(--font-nd-serif)", fontSize: 24, fontWeight: 600, margin: "0 0 12px", color: C.text }}>
+                {isStreaming ? "Streaming album" : "Album not found"}
+              </h2>
+              <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.6, margin: "0 0 24px" }}>
+                {isStreaming
+                  ? "This album was logged from a streaming service but hasn't been fully catalogued on NeedleDrop yet."
+                  : "This album isn't in the NeedleDrop catalogue yet."}
+                {" "}Add it to your collection to give it a proper home.
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+                <Link href="/search" className="ms-btn fill" style={{ textDecoration: "none" }}>
+                  + Find &amp; Add to Collection
+                </Link>
+                <Link href="/activity" className="ms-btn" style={{ textDecoration: "none" }}>
+                  Back to E-Zine
+                </Link>
+              </div>
+              <p className="ms-time" style={{ marginTop: 20 }}>ID: {discogsId}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const currentUser = clerkId
     ? await prisma.user.findUnique({
