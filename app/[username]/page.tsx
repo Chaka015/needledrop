@@ -14,7 +14,8 @@ import MixesList from "@/components/MixesList";
 import SkinApplicator from "@/components/SkinApplicator";
 import FlipCounter from "@/components/FlipCounter";
 import QuickLogWidget from "@/components/QuickLogWidget";
-import { getSkin, skinToVars, SKINS } from "@/lib/skins";
+import { getSkin, skinToVars } from "@/lib/skins";
+import { refreshNowPlaying, type NowPlayingInfo } from "@/lib/spotify-server";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -106,13 +107,40 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const featured = user.collection.filter((c) => c.isFeatured).slice(0, 8);
   const latestAdded = user.collection.filter((c) => !c.isFeatured).slice(0, 8);
 
-  const nowSpinningAlbum = user.nowSpinning
-    ? await prisma.album.findUnique({ where: { id: user.nowSpinning } })
-    : null;
-
   const now = new Date();
   const sixtyMinutesAgo = new Date(now.getTime() - 60 * 60 * 1000);
-  const nowSpinningIsActive = user.nowSpinningAt ? user.nowSpinningAt > sixtyMinutesAgo : false;
+
+  // Server-side: always call Spotify currently-playing before rendering so
+  // every page load (not just every 15 min) reflects the live track.
+  let nowPlaying: NowPlayingInfo | null = null;
+  if (user.spotifyConnected) {
+    try { nowPlaying = await refreshNowPlaying(user.id); } catch { /* Spotify unreachable */ }
+  }
+
+  // Prefer live Spotify data; fall back to whatever is in DB
+  let nowSpinningAlbum: { discogsId: string; title: string; artist: string; coverUrl: string | null } | null = null;
+  let nowSpinningIsActive = false;
+
+  if (nowPlaying) {
+    nowSpinningAlbum = {
+      discogsId: nowPlaying.discogsId,
+      title:     nowPlaying.title,
+      artist:    nowPlaying.artist,
+      coverUrl:  nowPlaying.coverUrl,
+    };
+    nowSpinningIsActive = true;
+  } else if (user.nowSpinning) {
+    const dbAlbum = await prisma.album.findUnique({ where: { id: user.nowSpinning } });
+    if (dbAlbum) {
+      nowSpinningAlbum = {
+        discogsId: dbAlbum.discogsId,
+        title:     dbAlbum.title,
+        artist:    dbAlbum.artist,
+        coverUrl:  dbAlbum.coverUrl,
+      };
+      nowSpinningIsActive = user.nowSpinningAt ? user.nowSpinningAt > sixtyMinutesAgo : false;
+    }
+  }
 
   const logs = user.logs.map((log) => ({
     id: log.id,

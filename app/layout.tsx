@@ -108,7 +108,7 @@ export default async function RootLayout({
             nowSpinning={nowSpinning}
             spotifyConnected={spotifyConnected}
           />
-          <SpotifyAutoSync shouldSync={shouldSpotifySync} />
+          <SpotifyAutoSync shouldSync={shouldSpotifySync} spotifyConnected={spotifyConnected} />
           {children}
         </body>
       </html>
