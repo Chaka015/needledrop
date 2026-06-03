@@ -192,7 +192,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 {isOwnProfile ? (
                   <>
                     <Link href="/settings" className="ms-cbtn">Edit</Link>
-                    <button className="ms-cbtn" onClick={() => {}}>Share</button>
                     <Link href={`/${username}/analytics`} className="ms-cbtn">Record Room</Link>
                     <ImportDiscogs />
                   </>
@@ -200,8 +199,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   <>
                     <FollowButton targetUserId={user.id} initialIsFollowing={isFollowing} />
                     <MessageButton username={user.username} />
-                    <button className="ms-cbtn fill">↻ Spin</button>
-                    <button className="ms-cbtn">Block</button>
                   </>
                 )}
               </div>
