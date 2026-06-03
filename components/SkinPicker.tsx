@@ -6,10 +6,13 @@ import type { ThemeMode } from "@/lib/skins";
 
 interface Props {
   currentSkin: string | null;
-  onSave?: (skinId: string) => void; // called after DB save succeeds
+  // onChange: called on every selection change (live preview + notifies parent)
+  // onSave: called after explicit DB save (standalone use, e.g. profile page future)
+  onChange?: (skinId: string) => void;
+  onSave?: (skinId: string) => void;
 }
 
-export default function SkinPicker({ currentSkin, onSave }: Props) {
+export default function SkinPicker({ currentSkin, onChange, onSave }: Props) {
   const parsed = parseSkinId(currentSkin ?? DEFAULT_SKIN_ID);
   const [accent, setAccent] = useState(parsed.accent);
   const [mode, setMode] = useState<ThemeMode>(parsed.mode);
@@ -27,13 +30,16 @@ export default function SkinPicker({ currentSkin, onSave }: Props) {
   function handleAccent(id: string) {
     setAccent(id);
     applyPreview(id, mode);
+    onChange?.(buildSkinId(id, mode));
   }
 
   function handleMode(m: ThemeMode) {
     setMode(m);
     applyPreview(accent, m);
+    onChange?.(buildSkinId(accent, m));
   }
 
+  // Standalone save (used when SkinPicker is its own save action, e.g. future profile page)
   async function handleSave() {
     const skinId = buildSkinId(accent, mode);
     setSaving(true);
@@ -90,8 +96,8 @@ export default function SkinPicker({ currentSkin, onSave }: Props) {
         </button>
       </div>
 
-      {/* Save — only shown when selection differs from saved value */}
-      {activeSkinId !== (currentSkin ?? DEFAULT_SKIN_ID) && (
+      {/* Standalone save — only shown when no parent form handles saving */}
+      {!onChange && activeSkinId !== (currentSkin ?? DEFAULT_SKIN_ID) && (
         <button
           type="button"
           className="ms-btn fill sm"
