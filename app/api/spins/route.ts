@@ -39,6 +39,7 @@ export async function POST(req: Request) {
         fromId: user.id,
         logId,
         message: `${user.username} spun your listen of ${log.album.title}`,
+        url: `/album/${log.album.discogsId}`,
       },
     });
   }

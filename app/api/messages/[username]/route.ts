@@ -72,6 +72,7 @@ export async function POST(req: Request, { params }: Params) {
       type: "message",
       fromId: me.id,
       message: `${me.username} sent you a message`,
+      url: `/messages/${me.username}`,
     },
   });
 

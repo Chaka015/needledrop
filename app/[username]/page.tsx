@@ -120,7 +120,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     playedAt: log.playedAt.toISOString(),
     spinCount: log.spins.length,
     userHasSpun: currentUser ? log.spins.some((s) => s.userId === currentUser.id) : false,
-    album: { title: log.album.title, artist: log.album.artist, coverUrl: log.album.coverUrl },
+    album: { discogsId: log.album.discogsId, title: log.album.title, artist: log.album.artist, coverUrl: log.album.coverUrl },
   }));
 
   return (
@@ -189,11 +189,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               </div>
 
               {/* Listening time flip counter */}
-              {totalListeningMs > 0 && (
-                <div className="mt-3">
-                  <FlipCounter totalMs={totalListeningMs} />
-                </div>
-              )}
+              <div className="mt-3">
+                <FlipCounter totalMs={totalListeningMs} />
+              </div>
 
               {/* Member since */}
               <p className="mt-2 text-xs font-mono" style={{ color: C.muted }}>
@@ -385,9 +383,9 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function AlbumTile({ album, size }: { album: { title: string; artist: string; coverUrl: string | null }; size: "sm" | "lg" }) {
+function AlbumTile({ album, size }: { album: { discogsId: string; title: string; artist: string; coverUrl: string | null }; size: "sm" | "lg" }) {
   const dim = size === "lg" ? 120 : 48;
-  return album.coverUrl ? (
+  const inner = album.coverUrl ? (
     <Image src={album.coverUrl} alt={`${album.title} by ${album.artist}`} width={dim} height={dim}
       className="object-cover aspect-square"
       style={{ width: size === "lg" ? "100%" : 48, height: size === "lg" ? "100%" : 48, borderRadius: 4, flexShrink: 0 }}
@@ -397,6 +395,11 @@ function AlbumTile({ album, size }: { album: { title: string; artist: string; co
       style={{ width: size === "lg" ? "100%" : 48, height: size === "lg" ? "100%" : 48, aspectRatio: "1", backgroundColor: "var(--skin-surface)", borderRadius: 4, color: "var(--skin-subtle)", flexShrink: 0 }}>
       No art
     </div>
+  );
+  return (
+    <Link href={`/album/${album.discogsId}`} title={`${album.title} — ${album.artist}`}>
+      {inner}
+    </Link>
   );
 }
 

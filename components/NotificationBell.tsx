@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 
 const C = {
   surface: "#3D3834",
@@ -18,6 +19,7 @@ interface Notification {
   read: boolean;
   createdAt: string;
   type: string;
+  url: string | null;
 }
 
 export default function NotificationBell() {
@@ -89,22 +91,42 @@ export default function NotificationBell() {
               No notifications yet.
             </p>
           ) : (
-            notifications.map((n) => (
-              <div
-                key={n.id}
-                className="px-4 py-3 text-xs font-mono"
-                style={{
-                  backgroundColor: n.read ? "transparent" : C.surfaceRaised,
-                  borderBottom: `1px solid ${C.border}`,
-                  color: n.read ? C.muted : C.text,
-                }}
-              >
-                <div>{n.message}</div>
-                <div className="mt-0.5" style={{ color: C.subtle }}>
-                  {new Date(n.createdAt).toLocaleDateString()}
+            notifications.map((n) => {
+              const inner = (
+                <>
+                  <div>{n.message}</div>
+                  <div className="mt-0.5" style={{ color: C.subtle }}>
+                    {new Date(n.createdAt).toLocaleDateString()}
+                  </div>
+                </>
+              );
+              const itemStyle = {
+                backgroundColor: n.read ? "transparent" : C.surfaceRaised,
+                borderBottom: `1px solid ${C.border}`,
+                color: n.read ? C.muted : C.text,
+              };
+              return n.url ? (
+                <Link
+                  key={n.id}
+                  href={n.url}
+                  className="block px-4 py-3 text-xs font-mono transition-colors duration-100"
+                  style={itemStyle}
+                  onClick={() => setOpen(false)}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = n.read ? "transparent" : C.surfaceRaised)}
+                >
+                  {inner}
+                </Link>
+              ) : (
+                <div
+                  key={n.id}
+                  className="px-4 py-3 text-xs font-mono"
+                  style={itemStyle}
+                >
+                  {inner}
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}

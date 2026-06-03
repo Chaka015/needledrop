@@ -414,14 +414,18 @@ function FeedCard({
       <div className="flex gap-4 p-4" style={cardStyle}>
         <Link href={`/${item.user.username}`} className="shrink-0"><Avatar user={item.user} /></Link>
         <div className="flex-1 min-w-0 flex items-center gap-3">
-          <AlbumArt coverUrl={item.album.coverUrl} title={item.album.title} />
+          <Link href={`/album/${item.album.discogsId}`} className="shrink-0">
+            <AlbumArt coverUrl={item.album.coverUrl} title={item.album.title} />
+          </Link>
           <div className="flex-1 min-w-0">
             <div className="text-xs font-mono mb-0.5" style={{ color: C.muted }}>
               <Link href={`/${item.user.username}`} className="font-bold hover:underline" style={{ color: C.text }}>
                 {item.user.username}
               </Link>{" "}↻ spun a listen
             </div>
-            <div className="font-semibold text-sm truncate" style={{ color: C.text }}>{item.album.title}</div>
+            <Link href={`/album/${item.album.discogsId}`}>
+              <div className="font-semibold text-sm truncate hover:underline" style={{ color: C.text }}>{item.album.title}</div>
+            </Link>
             <div className="text-xs font-mono" style={{ color: C.muted }}>{item.album.artist}</div>
             <div className="mt-1 text-xs font-mono" style={{ color: C.subtle }}>
               {new Date(item.timestamp).toLocaleDateString()}

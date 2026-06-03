@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 const C = {
   border:  "var(--skin-border)",
@@ -14,10 +15,10 @@ const C = {
 interface FeaturedItem {
   id: string;
   album: {
+    discogsId: string;
     title: string;
     artist: string;
     coverUrl: string | null;
-    discogsId?: string;
   };
 }
 
@@ -45,21 +46,23 @@ function Tile({
       onMouseEnter={() => isOwnProfile && onHover(item.id)}
       onMouseLeave={() => onHover(null)}
     >
-      {item.album.coverUrl ? (
-        <Image
-          src={item.album.coverUrl}
-          alt={`${item.album.title} by ${item.album.artist}`}
-          fill
-          className="object-cover"
-          style={{ borderRadius: 4 }}
-          unoptimized
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center text-xs"
-          style={{ backgroundColor: C.surface, borderRadius: 4, color: C.subtle }}>
-          No art
-        </div>
-      )}
+      <Link href={`/album/${item.album.discogsId}`} className="block w-full h-full" title={`${item.album.title} — ${item.album.artist}`}>
+        {item.album.coverUrl ? (
+          <Image
+            src={item.album.coverUrl}
+            alt={`${item.album.title} by ${item.album.artist}`}
+            fill
+            className="object-cover"
+            style={{ borderRadius: 4 }}
+            unoptimized
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-xs"
+            style={{ backgroundColor: C.surface, borderRadius: 4, color: C.subtle }}>
+            No art
+          </div>
+        )}
+      </Link>
       {isOwnProfile && hovered && (
         <div className="absolute inset-0 flex items-start justify-end p-1"
           style={{ borderRadius: 4, background: "rgba(0,0,0,0.4)" }}>

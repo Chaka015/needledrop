@@ -37,6 +37,7 @@ export async function POST(req: Request) {
         type: "follow",
         fromId: currentUser.id,
         message: `${currentUser.username} started following you`,
+        url: `/${currentUser.username}`,
       },
     });
 
