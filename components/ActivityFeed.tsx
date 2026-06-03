@@ -201,33 +201,26 @@ export default function ActivityFeed({
   return (
     <div>
       {/* Tabs */}
-      <div className="flex gap-0 mb-4" style={{ borderBottom: `1px solid ${C.border}` }}>
-        {(["friends", "community"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className="px-5 py-2 text-xs font-mono uppercase tracking-widest transition-colors duration-100"
-            style={{
-              color: tab === t ? C.text : C.subtle,
-              borderBottom: tab === t ? `2px solid ${C.accent}` : "2px solid transparent",
-              marginBottom: -1,
-            }}>
-            {t}
-          </button>
-        ))}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div className="ms-tabs" style={{ border: "none", margin: 0 }}>
+          <button className={"ms-tab" + (tab === "friends" ? " on" : "")} onClick={() => setTab("friends")}>Following</button>
+          <button className={"ms-tab" + (tab === "community" ? " on" : "")} onClick={() => setTab("community")}>Community</button>
+        </div>
       </div>
 
       {/* Filter pills */}
       {prefsLoaded && (
-        <div className="flex flex-wrap gap-1.5 mb-5">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
           {FILTER_LABELS.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => togglePref(key)}
-              className="px-2.5 py-1 text-xs font-mono transition-colors duration-100"
+              className="ms-fmt"
               style={{
-                backgroundColor: prefs[key] ? C.accent : C.surfaceRaised,
-                color: prefs[key] ? C.text : C.subtle,
-                borderRadius: 4,
-                border: `1px solid ${prefs[key] ? C.accent : C.border}`,
+                background: prefs[key] ? "var(--skin-accent)" : "var(--skin-surface)",
+                color: prefs[key] ? "var(--skin-accent-ink)" : "var(--skin-muted)",
+                borderColor: prefs[key] ? "var(--skin-accent)" : "var(--skin-border)",
+                cursor: "pointer",
               }}>
               {label}
             </button>
@@ -236,14 +229,13 @@ export default function ActivityFeed({
       )}
 
       {items.length === 0 ? (
-        <div className="p-8 text-center text-sm font-mono"
-          style={{ border: `1px dashed ${C.border}`, color: C.subtle }}>
+        <div style={{ padding: 32, textAlign: "center", fontSize: 13, border: "1px dashed var(--skin-border)", color: "var(--skin-subtle)", fontFamily: "var(--font-nd-mono)" }}>
           {tab === "friends"
-            ? "Nothing from friends yet. Follow some listeners!"
+            ? "Nothing from fans you follow yet. Find some listeners!"
             : "No activity yet."}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {items.map((item) => (
             <FeedCard key={`${item.type}-${item.id}`} item={item} spinStates={spinStates} onSpin={handleSpin} />
           ))}
@@ -286,124 +278,104 @@ function FeedCard({
   spinStates: Record<string, { count: number; spun: boolean }>;
   onSpin: (logId: string) => void;
 }) {
-  const cardStyle = { backgroundColor: C.surface, border: `1px solid ${C.border}` };
+  const verb = item.type === "listen"
+    ? (item.source === "streaming" ? "streamed" : "logged a listen")
+    : "";
 
   if (item.type === "listen") {
     const spin = spinStates[item.id];
     return (
-      <div className="flex gap-4 p-4" style={cardStyle}>
-        <Link href={`/${item.user.username}`} className="shrink-0">
-          <Avatar user={item.user} />
-        </Link>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start gap-3">
-            <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`}>
-              <AlbumArt coverUrl={item.album.coverUrl} title={item.album.title} />
-            </Link>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-mono mb-0.5" style={{ color: C.muted }}>
-                <Link href={`/${item.user.username}`} className="font-bold hover:underline" style={{ color: C.text }}>
-                  {item.user.username}
-                </Link>{" "}logged a listen
-              </div>
-              <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`}>
-                <div className="font-semibold text-sm truncate hover:underline" style={{ color: C.text }}>{item.album.title}</div>
-              </Link>
-              <div className="text-xs font-mono" style={{ color: C.muted }}>{item.album.artist}</div>
-              {item.rating != null && <StarRating rating={item.rating} />}
-              {item.review && <p className="mt-1 text-sm line-clamp-2" style={{ color: C.muted }}>{item.review}</p>}
-              <div className="mt-1 text-xs font-mono" style={{ color: C.subtle }}>
-                {item.source === "streaming" ? (
-                  <span className="mr-3" style={{ color: C.muted }}>▶ STREAMING</span>
-                ) : item.format ? (
-                  <span className="mr-3">{item.format}</span>
-                ) : null}
-                {new Date(item.timestamp).toLocaleDateString()}
-              </div>
-            </div>
+      <article className="ms-box ms-listen">
+        <div className="ms-listen-cover">
+          <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`}>
+            <AlbumArt coverUrl={item.album.coverUrl} title={item.album.title} size={104} />
+          </Link>
+        </div>
+        <div>
+          <div className="ms-listen-head">
+            <Link href={`/${item.user.username}`} style={{ flexShrink: 0 }}><Avatar user={item.user} size={30} /></Link>
+            <span className="ms-listen-who">
+              <b><Link href={`/${item.user.username}`} style={{ color: "inherit" }}>{item.user.username}</Link></b>{" "}
+              <span className="v">{verb}</span>
+            </span>
+            <span className="ms-time" style={{ marginLeft: "auto" }}>{relTime(item.timestamp)}</span>
+          </div>
+          <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`} style={{ textDecoration: "none" }}>
+            <div className="ms-listen-title">{item.album.title}</div>
+          </Link>
+          <div className="ms-listen-artist">{item.album.artist}</div>
+          <div className="ms-listen-meta">
+            {item.rating != null && <StarRating rating={item.rating} />}
+            {item.format && (
+              <span className={"ms-fmt" + (item.source === "streaming" ? " stream" : "")}>
+                {item.source === "streaming" ? "STREAM" : item.format}
+              </span>
+            )}
+          </div>
+          {item.review && <p className="ms-listen-text">{item.review}</p>}
+          <div className="ms-listen-foot">
+            <button
+              className={"ms-spin" + (spin?.spun ? " on" : "")}
+              onClick={() => onSpin(item.id)}
+            >
+              <span className="g">↻</span>
+              <span>{spin?.count ?? 0}</span>
+            </button>
+            <button className="ms-act">notes</button>
+            <button className="ms-act" style={{ marginLeft: "auto" }}>+ Add to Mix</button>
           </div>
         </div>
-        <button onClick={() => onSpin(item.id)}
-          className="shrink-0 flex items-center gap-1 px-2 py-1.5 text-xs font-mono transition-colors duration-100 self-start"
-          style={{
-            backgroundColor: spin?.spun ? C.accent : C.surfaceRaised,
-            color: spin?.spun ? C.text : C.muted,
-            borderRadius: 4,
-            border: `1px solid ${spin?.spun ? C.accent : C.border}`,
-          }}>
-          ↻ {spin?.count ?? 0}
-        </button>
-      </div>
+      </article>
     );
   }
 
   if (item.type === "add") {
     return (
-      <div className="flex gap-4 p-4" style={cardStyle}>
-        <Link href={`/${item.user.username}`} className="shrink-0"><Avatar user={item.user} /></Link>
-        <div className="flex-1 min-w-0 flex items-center gap-3">
-          <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`}>
-            <AlbumArt coverUrl={item.album.coverUrl} title={item.album.title} />
-          </Link>
-          <div className="flex-1 min-w-0">
-            <div className="text-xs font-mono mb-0.5" style={{ color: C.muted }}>
-              <Link href={`/${item.user.username}`} className="font-bold hover:underline" style={{ color: C.text }}>
-                {item.user.username}
-              </Link>{" "}added to collection
-            </div>
-            <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`}>
-              <div className="font-semibold text-sm truncate hover:underline" style={{ color: C.text }}>{item.album.title}</div>
-            </Link>
-            <div className="text-xs font-mono" style={{ color: C.muted }}>{item.album.artist}</div>
-            <div className="mt-1 text-xs font-mono" style={{ color: C.subtle }}>
-              {new Date(item.timestamp).toLocaleDateString()}
-            </div>
+      <div className="ms-box" style={{ display: "flex", gap: 16, padding: 16, alignItems: "center" }}>
+        <Link href={`/${item.user.username}`} style={{ flexShrink: 0 }}><Avatar user={item.user} /></Link>
+        <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`} style={{ flexShrink: 0 }}>
+          <AlbumArt coverUrl={item.album.coverUrl} title={item.album.title} />
+        </Link>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, color: C.muted, marginBottom: 2 }}>
+            <Link href={`/${item.user.username}`} style={{ fontWeight: 700, color: C.text }}>{item.user.username}</Link>
+            {" "}added to collection
           </div>
+          <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`} style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{item.album.title}</Link>
+          <div style={{ fontSize: 12, color: C.muted, fontFamily: "var(--font-nd-mono)" }}>{item.album.artist}</div>
         </div>
+        <span className="ms-time">{relTime(item.timestamp)}</span>
       </div>
     );
   }
 
   if (item.type === "follow") {
     return (
-      <div className="flex gap-4 p-4" style={cardStyle}>
-        <Link href={`/${item.follower.username}`} className="shrink-0"><Avatar user={item.follower} /></Link>
-        <div className="flex-1 min-w-0 flex items-center gap-2 text-sm">
-          <Link href={`/${item.follower.username}`} className="font-bold hover:underline" style={{ color: C.text }}>
-            {item.follower.username}
-          </Link>
-          <span style={{ color: C.muted }}>started following</span>
-          <Link href={`/${item.following.username}`}>
-            <Avatar user={item.following} size={24} />
-          </Link>
-          <Link href={`/${item.following.username}`} className="font-bold hover:underline" style={{ color: C.text }}>
-            {item.following.username}
-          </Link>
-          <span className="ml-auto text-xs font-mono" style={{ color: C.subtle }}>
-            {new Date(item.timestamp).toLocaleDateString()}
-          </span>
-        </div>
+      <div className="ms-box" style={{ display: "flex", gap: 12, padding: 16, alignItems: "center", flexWrap: "wrap" }}>
+        <Link href={`/${item.follower.username}`} style={{ flexShrink: 0 }}><Avatar user={item.follower} size={32} /></Link>
+        <Link href={`/${item.follower.username}`} style={{ fontWeight: 700, color: C.text }}>{item.follower.username}</Link>
+        <span style={{ color: C.muted, fontSize: 13 }}>is now listening to</span>
+        <Link href={`/${item.following.username}`} style={{ flexShrink: 0 }}><Avatar user={item.following} size={24} /></Link>
+        <Link href={`/${item.following.username}`} style={{ fontWeight: 700, color: C.text }}>{item.following.username}</Link>
+        <span className="ms-time" style={{ marginLeft: "auto" }}>{relTime(item.timestamp)}</span>
       </div>
     );
   }
 
   if (item.type === "mix") {
     return (
-      <div className="flex gap-4 p-4" style={cardStyle}>
-        <Link href={`/${item.user.username}`} className="shrink-0"><Avatar user={item.user} /></Link>
-        <div className="flex-1 min-w-0">
-          <div className="text-xs font-mono mb-0.5" style={{ color: C.muted }}>
-            <Link href={`/${item.user.username}`} className="font-bold hover:underline" style={{ color: C.text }}>
-              {item.user.username}
-            </Link>{" "}created a mix
+      <div className="ms-box" style={{ display: "flex", gap: 16, padding: 16, alignItems: "center" }}>
+        <Link href={`/${item.user.username}`} style={{ flexShrink: 0 }}><Avatar user={item.user} /></Link>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, color: C.muted, marginBottom: 2 }}>
+            <Link href={`/${item.user.username}`} style={{ fontWeight: 700, color: C.text }}>{item.user.username}</Link>
+            {" "}dropped a new mix
           </div>
           <Link href={`/${item.user.username}/mixes/${item.mix.id}`}
-            className="font-semibold text-sm hover:underline" style={{ color: C.text }}>
+            style={{ fontFamily: "var(--font-nd-serif)", fontSize: 17, fontWeight: 600, color: C.text }}>
             {item.mix.title}
           </Link>
-          <div className="mt-0.5 text-xs font-mono" style={{ color: C.subtle }}>
-            {item.mix.itemCount} RECORDS · {new Date(item.timestamp).toLocaleDateString()}
-          </div>
+          <div className="ms-time" style={{ marginTop: 2 }}>{item.mix.itemCount} RECORDS · {relTime(item.timestamp)}</div>
         </div>
       </div>
     );
@@ -411,27 +383,20 @@ function FeedCard({
 
   if (item.type === "spin") {
     return (
-      <div className="flex gap-4 p-4" style={cardStyle}>
-        <Link href={`/${item.user.username}`} className="shrink-0"><Avatar user={item.user} /></Link>
-        <div className="flex-1 min-w-0 flex items-center gap-3">
-          <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`} className="shrink-0">
-            <AlbumArt coverUrl={item.album.coverUrl} title={item.album.title} />
-          </Link>
-          <div className="flex-1 min-w-0">
-            <div className="text-xs font-mono mb-0.5" style={{ color: C.muted }}>
-              <Link href={`/${item.user.username}`} className="font-bold hover:underline" style={{ color: C.text }}>
-                {item.user.username}
-              </Link>{" "}↻ spun a listen
-            </div>
-            <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`}>
-              <div className="font-semibold text-sm truncate hover:underline" style={{ color: C.text }}>{item.album.title}</div>
-            </Link>
-            <div className="text-xs font-mono" style={{ color: C.muted }}>{item.album.artist}</div>
-            <div className="mt-1 text-xs font-mono" style={{ color: C.subtle }}>
-              {new Date(item.timestamp).toLocaleDateString()}
-            </div>
+      <div className="ms-box" style={{ display: "flex", gap: 16, padding: 16, alignItems: "center" }}>
+        <Link href={`/${item.user.username}`} style={{ flexShrink: 0 }}><Avatar user={item.user} /></Link>
+        <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`} style={{ flexShrink: 0 }}>
+          <AlbumArt coverUrl={item.album.coverUrl} title={item.album.title} />
+        </Link>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, color: C.muted, marginBottom: 2 }}>
+            <Link href={`/${item.user.username}`} style={{ fontWeight: 700, color: C.text }}>{item.user.username}</Link>
+            {" "}↻ spun a listen
           </div>
+          <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`} style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{item.album.title}</Link>
+          <div style={{ fontSize: 12, color: C.muted, fontFamily: "var(--font-nd-mono)" }}>{item.album.artist}</div>
         </div>
+        <span className="ms-time">{relTime(item.timestamp)}</span>
       </div>
     );
   }
@@ -439,29 +404,25 @@ function FeedCard({
   if (item.type === "digest") {
     const day = new Date(item.timestamp).toLocaleDateString(undefined, { month: "short", day: "numeric" });
     return (
-      <div className="flex gap-4 p-4" style={{ ...cardStyle, borderLeft: "3px solid #4A4540" }}>
-        <Link href={`/${item.user.username}`} className="shrink-0"><Avatar user={item.user} /></Link>
-        <div className="flex-1 min-w-0">
-          <div className="text-xs font-mono mb-2" style={{ color: C.muted }}>
-            <Link href={`/${item.user.username}`} className="font-bold hover:underline" style={{ color: C.text }}>
-              {item.user.username}
-            </Link>{" "}streamed{" "}
+      <div className="ms-box" style={{ display: "flex", gap: 16, padding: 16, borderLeft: "4px solid var(--skin-surface-raised)" }}>
+        <Link href={`/${item.user.username}`} style={{ flexShrink: 0 }}><Avatar user={item.user} /></Link>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, color: C.muted, marginBottom: 8 }}>
+            <Link href={`/${item.user.username}`} style={{ fontWeight: 700, color: C.text }}>{item.user.username}</Link>
+            {" "}▶ streamed{" "}
             <span style={{ color: C.text }}>{item.count} album{item.count !== 1 ? "s" : ""}</span>
             {" "}on {day}
           </div>
-          <div className="flex gap-1.5 mb-2">
+          <div style={{ display: "flex", gap: 6 }}>
             {item.albums.slice(0, 4).map((a, i) => (
               a.coverUrl ? (
                 <Image key={i} src={a.coverUrl} alt={a.title} width={36} height={36}
-                  className="object-cover shrink-0" style={{ width: 36, height: 36, borderRadius: 4 }} unoptimized />
+                  className="object-cover" style={{ width: 36, height: 36, borderRadius: 4, flexShrink: 0 }} unoptimized />
               ) : (
-                <div key={i} className="shrink-0" style={{ width: 36, height: 36, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
+                <div key={i} style={{ width: 36, height: 36, background: C.surfaceRaised, borderRadius: 4, flexShrink: 0 }} />
               )
             ))}
           </div>
-          <p className="text-xs font-mono" style={{ color: C.subtle }}>
-            Add any to your collection? → Visit their profile
-          </p>
         </div>
       </div>
     );
@@ -472,6 +433,16 @@ function FeedCard({
   }
 
   return null;
+}
+
+function relTime(ts: string): string {
+  const delta = Date.now() - new Date(ts).getTime();
+  const m = Math.floor(delta / 60000);
+  if (m < 1) return "now";
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
 }
 
 function JoinCard({ item }: { item: Extract<FeedItem, { type: "join" }> }) {

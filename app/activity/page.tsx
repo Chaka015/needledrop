@@ -6,17 +6,6 @@ import Image from "next/image";
 import Link from "next/link";
 import type { FeedItem } from "@/components/ActivityFeed";
 
-const C = {
-  bg:            "var(--skin-bg)",
-  surface:       "var(--skin-surface)",
-  surfaceRaised: "var(--skin-surface-raised)",
-  border:        "var(--skin-border)",
-  text:          "var(--skin-text)",
-  muted:         "var(--skin-muted)",
-  subtle:        "var(--skin-subtle)",
-  accent:        "var(--skin-accent)",
-};
-
 export default async function ActivityPage() {
   const { userId: clerkId } = await auth();
   if (!clerkId) redirect("/");
@@ -157,55 +146,116 @@ export default async function ActivityPage() {
     return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 60);
   }
 
+  // Popular this week (top albums by listen count last 7 days)
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const popularAlbums = await prisma.album.findMany({
+    where: { logs: { some: { playedAt: { gte: sevenDaysAgo } } } },
+    include: { _count: { select: { logs: true } } },
+    orderBy: { logs: { _count: "desc" } },
+    take: 5,
+  });
+
+  // User's wantlist for rail
+  const wantlist = await prisma.wantlist.findMany({
+    where: { userId: currentUser.id },
+    take: 5,
+    include: { album: true },
+  });
+
   const [friendItems, globalItems] = await Promise.all([
     followingIds.length > 0 ? fetchStream(followingIds) : Promise.resolve([] as FeedItem[]),
     fetchStream(null),
   ]);
 
   return (
-    <div className="min-h-screen font-sans" style={{ backgroundColor: C.bg, color: C.text }}>
-      <div className="max-w-2xl mx-auto px-6 py-10">
+    <div className="min-h-screen" style={{ backgroundColor: "var(--skin-bg)", color: "var(--skin-text)" }}>
+      <div className="ms-page">
+        <h1 className="ms-h1">What&apos;s spinning</h1>
 
-        {/* Live Listeners */}
-        {liveListenersWithAlbum.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-xs font-mono uppercase tracking-widest mb-3" style={{ color: C.subtle }}>
-              Live Now
-            </h2>
-            <div className="flex flex-wrap gap-3">
-              {liveListenersWithAlbum.map(({ user, album }) => (
-                <Link key={user.id} href={`/${user.username}`}
-                  className="flex items-center gap-2 px-3 py-2 transition-colors duration-100"
-                  style={{ backgroundColor: "#0D0D0D", border: "1px solid #333", borderRadius: 4 }}>
-                  {user.avatarUrl ? (
-                    <Image src={user.avatarUrl} alt={user.username} width={24} height={24}
-                      className="object-cover"
-                      style={{ width: 24, height: 24, borderRadius: "50%" }} unoptimized />
-                  ) : (
-                    <div className="flex items-center justify-center text-xs font-bold"
-                      style={{ width: 24, height: 24, borderRadius: "50%", backgroundColor: C.surfaceRaised, color: C.subtle }}>
-                      {user.username[0].toUpperCase()}
-                    </div>
-                  )}
-                  <div>
-                    <div className="text-xs font-bold" style={{ color: C.text }}>{user.username}</div>
-                    {album && (
-                      <div className="text-xs font-mono truncate max-w-32" style={{ color: C.muted }}>
-                        {album.artist} — {album.title}
-                      </div>
+        <div className="ms-cols feed">
+          {/* MAIN FEED */}
+          <div>
+            <ActivityFeed friendItems={friendItems} globalItems={globalItems} />
+          </div>
+
+          {/* RIGHT RAIL */}
+          <aside className="ms-stack">
+
+            {/* ON AIR NOW */}
+            {liveListenersWithAlbum.length > 0 && (
+              <div className="ms-box">
+                <div className="ms-bar hot">
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                    <span className="ms-onair"><span className="d" /></span> ON AIR NOW
+                  </span>
+                </div>
+                {liveListenersWithAlbum.map(({ user, album }) => (
+                  <Link key={user.id} href={`/${user.username}`} className="ms-rail-row" style={{ textDecoration: "none" }}>
+                    {user.avatarUrl ? (
+                      <Image src={user.avatarUrl} alt={user.username} width={36} height={36}
+                        className="object-cover" style={{ width: 36, height: 36, borderRadius: "50%", border: "1.5px solid var(--skin-border)", flexShrink: 0 }} unoptimized />
+                    ) : (
+                      <div className="ms-avatar" style={{ width: 36, height: 36, fontSize: 14 }}>{user.username[0].toUpperCase()}</div>
                     )}
-                  </div>
-                  <span className="w-1.5 h-1.5 rounded-full animate-pulse ml-1" style={{ backgroundColor: "#FF3E3E" }} />
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
+                    <div>
+                      <div className="nm">{user.username}</div>
+                      <div className="sub">{album ? `${album.artist} — ${album.title}` : "spinning now"}</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
 
-        <h1 className="text-xs font-mono uppercase tracking-widest mb-6" style={{ color: C.subtle }}>
-          Social Feed
-        </h1>
-        <ActivityFeed friendItems={friendItems} globalItems={globalItems} />
+            {/* Popular this week */}
+            {popularAlbums.length > 0 && (
+              <div className="ms-box">
+                <div className="ms-bar">Hot Right Now</div>
+                {popularAlbums.map((a, i) => (
+                  <Link key={a.id} href={`/album/${encodeURIComponent(a.discogsId)}`} className="ms-rail-row" style={{ textDecoration: "none" }}>
+                    <span className="rk">{String(i + 1).padStart(2, "0")}</span>
+                    {a.coverUrl ? (
+                      <Image src={a.coverUrl} alt={a.title} width={40} height={40}
+                        className="object-cover" style={{ width: 40, height: 40, borderRadius: 4, border: "1.5px solid var(--skin-border)", flexShrink: 0 }} unoptimized />
+                    ) : (
+                      <div style={{ width: 40, height: 40, borderRadius: 4, background: "var(--skin-surface-raised)", flexShrink: 0 }} />
+                    )}
+                    <div>
+                      <div className="nm">{a.title}</div>
+                      <div className="sub">{a.artist}</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Wantlist */}
+            {wantlist.length > 0 && (
+              <div className="ms-box">
+                <div className="ms-bar">On your wantlist</div>
+                {wantlist.map((w) => (
+                  <Link key={w.id} href={`/album/${encodeURIComponent(w.album.discogsId)}`} className="ms-rail-row" style={{ textDecoration: "none" }}>
+                    {w.album.coverUrl ? (
+                      <Image src={w.album.coverUrl} alt={w.album.title} width={40} height={40}
+                        className="object-cover" style={{ width: 40, height: 40, borderRadius: 4, border: "1.5px solid var(--skin-border)", flexShrink: 0 }} unoptimized />
+                    ) : (
+                      <div style={{ width: 40, height: 40, borderRadius: 4, background: "var(--skin-surface-raised)", flexShrink: 0 }} />
+                    )}
+                    <div>
+                      <div className="nm">{w.album.title}</div>
+                      <div className="sub">{w.album.artist}</div>
+                    </div>
+                  </Link>
+                ))}
+                <div className="ms-pad">
+                  <Link href={`/${currentUser.username}/wantlist`} className="ms-btn sm" style={{ display: "block", textAlign: "center", textDecoration: "none", width: "100%" }}>
+                    View full wantlist
+                  </Link>
+                </div>
+              </div>
+            )}
+
+          </aside>
+        </div>
       </div>
     </div>
   );
