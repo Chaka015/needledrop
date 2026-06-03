@@ -21,6 +21,22 @@ const C = {
   accent:        "var(--skin-accent)",
 };
 
+function MiniStars({ value }: { value: number }) {
+  return (
+    <span style={{ display: "inline-flex", gap: 2, fontSize: 20, lineHeight: 1 }}>
+      {[1, 2, 3, 4, 5].map((i) => {
+        const fill = value >= i ? 1 : value >= i - 0.5 ? 0.5 : 0;
+        return (
+          <span key={i} style={{ position: "relative", width: 20, height: 20, display: "inline-block" }}>
+            <span style={{ position: "absolute", inset: 0, color: "var(--skin-border)" }}>★</span>
+            <span style={{ position: "absolute", inset: 0, color: "var(--skin-star)", overflow: "hidden", width: `${fill * 100}%` }}>★</span>
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
 interface MBTrack { number: string; title: string; length?: number }
 interface MBMedium { tracks: MBTrack[] }
 interface MBRelease { media?: MBMedium[]; "artist-credit"?: { artist: { id: string } }[] }
@@ -168,87 +184,234 @@ export default async function AlbumPage({ params }: Props) {
     })),
   }));
 
+  // Build ratings histogram (10 buckets, 0.5–5 stars)
+  const histData: number[] = Array(10).fill(0);
+  album.logs.forEach((l) => {
+    if (l.rating != null) {
+      const bucket = Math.min(9, Math.round((l.rating / 0.5) - 1));
+      histData[Math.max(0, bucket)]++;
+    }
+  });
+  const histMax = Math.max(...histData, 1);
+
+  // Who's spinning now (live listeners from collection)
+  const spinningNow = album.collection.filter((c) => c.user.nowSpinning === album.id).slice(0, 5);
+
+  function fmtK(n: number) {
+    return n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, "") + "k" : String(n);
+  }
+
   return (
-    <div className="min-h-screen font-sans" style={{ backgroundColor: C.bg, color: C.text }}>
-      <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="min-h-screen" style={{ backgroundColor: C.bg, color: C.text }}>
+      <div className="ms-page">
 
-        {/* Album header */}
-        <div className="flex gap-8 mb-10">
-          {album.coverUrl ? (
-            <Image src={album.coverUrl} alt={album.title} width={180} height={180}
-              className="object-cover shrink-0"
-              style={{ width: 180, height: 180, borderRadius: 4 }} unoptimized />
-          ) : (
-            <div className="shrink-0 flex items-center justify-center text-sm font-mono"
-              style={{ width: 180, height: 180, backgroundColor: C.surface, borderRadius: 4, color: C.subtle }}>
-              No art
+        <Link href="/activity" className="ms-back">← Back to E-Zine</Link>
+
+        {/* ── Album hero ──────────────────────────── */}
+        <div className="ms-album-hero">
+          <div>
+            {album.coverUrl ? (
+              <Image src={album.coverUrl} alt={album.title} width={280} height={280}
+                className="object-cover"
+                style={{ width: "100%", borderRadius: 4, border: `2px solid ${C.border}`, display: "block" }} unoptimized />
+            ) : (
+              <div style={{ width: "100%", aspectRatio: "1", background: C.surface, borderRadius: 4, border: `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontFamily: "var(--font-nd-mono)", fontSize: 13, color: C.subtle }}>No art</span>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+              {currentUser ? (
+                <AlbumActions
+                  albumId={album.id}
+                  discogsId={album.discogsId}
+                  title={album.title}
+                  artist={album.artist}
+                  releaseYear={album.releaseYear}
+                  coverUrl={album.coverUrl}
+                  label={album.label}
+                  genre={album.genre}
+                  inCollection={inCollection}
+                  inWantlist={inWantlist}
+                />
+              ) : (
+                <>
+                  <button className="ms-btn hot" style={{ flex: 1 }}>+ Log a listen</button>
+                  <button className="ms-btn">♡ Want</button>
+                </>
+              )}
             </div>
-          )}
+          </div>
 
-          <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-bold tracking-tight mb-1" style={{ color: C.text }}>{album.title}</h1>
+          <div>
+            <div className="ms-label">{[album.genre, album.label].filter(Boolean).join(" · ")}</div>
+            <h1 className="ms-album-title">{album.title}</h1>
             {album.artistMbid ? (
-              <Link href={`/artist/${album.artistMbid}`}
-                className="text-lg font-mono hover:underline" style={{ color: C.muted }}>
+              <Link href={`/artist/${album.artistMbid}`} className="ms-album-artist" style={{ textDecoration: "none" }}>
                 {album.artist}
               </Link>
             ) : (
-              <p className="text-lg font-mono" style={{ color: C.muted }}>{album.artist}</p>
+              <div className="ms-album-artist">{album.artist}</div>
             )}
-            <div className="flex gap-4 text-xs font-mono mt-1 mb-4" style={{ color: C.subtle }}>
-              {album.releaseYear && <span>{album.releaseYear}</span>}
-              {album.label && <span>{album.label}</span>}
-              {album.genre && <span>{album.genre}</span>}
-            </div>
 
-            <div className="flex gap-4 mb-6">
-              {[
-                { label: "LOGGED", value: album.logs.length },
-                { label: "COLLECTED", value: album.collection.length },
-                { label: "WANTLISTED", value: album.wantlist.length },
-              ].map((s) => (
-                <div key={s.label} className="px-4 py-2 text-center"
-                  style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                  <div className="text-lg font-bold font-mono" style={{ color: C.text }}>{s.value}</div>
-                  <div className="text-xs font-mono" style={{ color: C.subtle }}>{s.label}</div>
-                </div>
-              ))}
-              {avgRating !== null && (
-                <div className="px-4 py-2 text-center"
-                  style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                  <div className="text-lg font-bold font-mono" style={{ color: C.accent }}>
-                    {avgRating.toFixed(1)}
+            {/* Rating + listens */}
+            {avgRating !== null && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "12px 0 4px", flexWrap: "wrap" }}>
+                <MiniStars value={avgRating} />
+                <span style={{ fontFamily: "var(--font-nd-serif)", fontSize: 22, fontWeight: 600, color: C.text }}>{avgRating.toFixed(1)}</span>
+                <span className="ms-time">from {fmtK(logsWithRating.length)} listens</span>
+              </div>
+            )}
+
+            {album.releaseYear && (
+              <div className="ms-time" style={{ marginTop: 4 }}>{album.releaseYear}</div>
+            )}
+
+            {/* Stat strip */}
+            <div className="ms-stat-strip" style={{ marginTop: 20 }}>
+              <div className="ms-stat">
+                <div className="n">{fmtK(album.collection.length)}</div>
+                <div className="k">Own it</div>
+              </div>
+              <div className="ms-stat">
+                <div className="n">{fmtK(album.logs.length)}</div>
+                <div className="k">Listens</div>
+              </div>
+              <div className="ms-stat">
+                <div className="n">{fmtK(album.wantlist.length)}</div>
+                <div className="k">Want it</div>
+              </div>
+              {logsWithRating.length > 0 && (
+                <div className="ms-stat" style={{ minWidth: 120 }}>
+                  <div className="k" style={{ marginBottom: 8 }}>Ratings</div>
+                  <div className="ms-hist">
+                    {histData.map((h, i) => (
+                      <i key={i} style={{ height: `${(h / histMax) * 100}%`, opacity: 0.4 + (i / 10) * 0.5 }} />
+                    ))}
                   </div>
-                  <div className="text-xs font-mono" style={{ color: C.subtle }}>AVG RATING</div>
                 </div>
               )}
             </div>
-
-            {currentUser && (
-              <AlbumActions
-                albumId={album.id}
-                discogsId={album.discogsId}
-                title={album.title}
-                artist={album.artist}
-                releaseYear={album.releaseYear}
-                coverUrl={album.coverUrl}
-                label={album.label}
-                genre={album.genre}
-                inCollection={inCollection}
-                inWantlist={inWantlist}
-              />
-            )}
           </div>
         </div>
 
-        <AlbumTabsClient
-          albumId={album.id}
-          logs={formattedLogs}
-          tracks={formattedTracks}
-          pressings={formattedPressings}
-          initialComments={formattedComments}
-          currentUsername={currentUser?.username ?? null}
-        />
+        {/* ── Two-column body ─────────────────────── */}
+        <div className="ms-cols album">
+          <div className="ms-stack">
+            {/* Pressings — the collector signature feature */}
+            {formattedPressings.length > 0 && (
+              <div className="ms-box">
+                <div className="ms-bar">
+                  Pressings{" "}
+                  <span className="cta">{formattedPressings.length} known · {formattedPressings.filter((p) => p.id).length} in system</span>
+                </div>
+                <div className="ms-pad">
+                  <table className="ms-press">
+                    <thead>
+                      <tr>
+                        <th>Country / Year</th>
+                        <th>Label</th>
+                        <th>Catalog №</th>
+                        <th>Format</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {formattedPressings.map((p, i) => (
+                        <tr key={i}>
+                          <td>
+                            <span className="flag">{p.country}</span>{" "}
+                            <span style={{ color: C.muted }}>{p.year}</span>
+                            {inCollection && i === 0 && <span className="ms-owned">OWNED</span>}
+                          </td>
+                          <td style={{ color: C.muted }}>{p.label}</td>
+                          <td className="catno">{p.catno}</td>
+                          <td>
+                            {p.format && (
+                              <span className="ms-fmt" style={{ fontSize: 10 }}>{p.format}</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Reviews + Discussion + Tracklist */}
+            <div className="ms-box">
+              <AlbumTabsClient
+                albumId={album.id}
+                logs={formattedLogs}
+                tracks={formattedTracks}
+                pressings={formattedPressings}
+                initialComments={formattedComments}
+                currentUsername={currentUser?.username ?? null}
+              />
+            </div>
+          </div>
+
+          {/* RIGHT RAIL */}
+          <aside className="ms-stack">
+            {/* Spinning Now */}
+            <div className="ms-box">
+              <div className="ms-bar hot">
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                  <span className="ms-onair"><span className="d" /></span> SPINNING NOW
+                </span>
+              </div>
+              {spinningNow.length > 0 ? spinningNow.map((c) => (
+                <Link key={c.id} href={`/${c.user.username}`} className="ms-rail-row" style={{ textDecoration: "none" }}>
+                  {c.user.avatarUrl ? (
+                    <Image src={c.user.avatarUrl} alt={c.user.username} width={36} height={36}
+                      className="object-cover" style={{ width: 36, height: 36, borderRadius: "50%", border: `1.5px solid ${C.border}`, flexShrink: 0 }} unoptimized />
+                  ) : (
+                    <div className="ms-avatar" style={{ width: 36, height: 36, fontSize: 14 }}>{c.user.username[0].toUpperCase()}</div>
+                  )}
+                  <div>
+                    <div className="nm">{c.user.username}</div>
+                    <div className="sub">spinning now</div>
+                  </div>
+                </Link>
+              )) : (
+                <div className="ms-pad" style={{ fontSize: 13, color: C.subtle }}>
+                  No one spinning right now.
+                </div>
+              )}
+              <div className="ms-pad">
+                <div style={{ fontSize: 13, color: C.muted }}>{fmtK(album.collection.length)} collectors own this</div>
+              </div>
+            </div>
+
+            {/* Also by artist */}
+            {album.artistMbid && (
+              <div className="ms-box">
+                <div className="ms-bar">Also by {album.artist.split(" ")[0]}</div>
+                <div className="ms-pad">
+                  <p style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.55, margin: "0 0 14px" }}>
+                    Full discography, biography, and upcoming shows on the artist page.
+                  </p>
+                  <Link href={`/artist/${album.artistMbid}`} className="ms-btn" style={{ display: "block", textAlign: "center", width: "100%", textDecoration: "none" }}>
+                    Go to {album.artist} →
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Marketplace teaser */}
+            <div className="ms-mkt-teaser">
+              <div className="hd">
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--skin-hot)", display: "inline-block", flexShrink: 0 }} />
+                Marketplace · Soon
+              </div>
+              <p style={{ fontSize: 13.5, color: C.muted, lineHeight: 1.5, margin: "10px 0 14px" }}>
+                Buy &amp; sell copies of <em>{album.title}</em> peer-to-peer — lower commission than Discogs.
+              </p>
+              <Link href="/market" className="ms-btn" style={{ display: "block", textAlign: "center", width: "100%", textDecoration: "none" }}>
+                Notify me →
+              </Link>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );
