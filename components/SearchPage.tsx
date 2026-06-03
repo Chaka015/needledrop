@@ -211,7 +211,7 @@ export default function SearchPage({ query, initialTab, users, albums, isLoggedI
             ) : (
               <div className="space-y-2">
                 {discogsResults.slice(0, discogsVisible).map((album) => (
-                  <AlbumRow key={album.discogsId} album={album} />
+                  <AlbumRow key={album.discogsId} album={album} noLink />
                 ))}
                 {discogsResults.length > discogsVisible && (
                   <LoadMore
@@ -228,13 +228,9 @@ export default function SearchPage({ query, initialTab, users, albums, isLoggedI
   );
 }
 
-function AlbumRow({ album, showStats }: { album: AlbumResult; showStats?: boolean }) {
-  return (
-    <Link href={`/album/${album.discogsId}`}
-      className="flex items-center gap-4 p-3 transition-colors duration-100"
-      style={{ backgroundColor: "#3D3834", border: `1px solid #524D48`, display: "flex" }}
-      onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#4A4540")}
-      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#3D3834")}>
+function AlbumRow({ album, showStats, noLink }: { album: AlbumResult; showStats?: boolean; noLink?: boolean }) {
+  const inner = (
+    <>
       {album.coverUrl ? (
         <Image src={album.coverUrl} alt={album.title} width={48} height={48}
           className="object-cover shrink-0" style={{ width: 48, height: 48, borderRadius: 4 }} unoptimized />
@@ -257,6 +253,23 @@ function AlbumRow({ album, showStats }: { album: AlbumResult; showStats?: boolea
           </div>
         )}
       </div>
+    </>
+  );
+  if (noLink) {
+    return (
+      <div className="flex items-center gap-4 p-3"
+        style={{ backgroundColor: "#3D3834", border: `1px solid #524D48` }}>
+        {inner}
+      </div>
+    );
+  }
+  return (
+    <Link href={`/album/${encodeURIComponent(album.discogsId)}`}
+      className="flex items-center gap-4 p-3 transition-colors duration-100"
+      style={{ backgroundColor: "#3D3834", border: `1px solid #524D48`, display: "flex" }}
+      onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#4A4540")}
+      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#3D3834")}>
+      {inner}
     </Link>
   );
 }

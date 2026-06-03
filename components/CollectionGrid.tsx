@@ -133,7 +133,7 @@ export default function CollectionGrid({ items }: { items: CollectionItem[] }) {
           {displayed.map((c) => (
             <div key={c.id} className="flex items-center gap-3 p-3"
               style={{ backgroundColor: C.surface, border: `1px solid ${featuredIds.has(c.id) ? C.accent : C.border}` }}>
-              <Link href={`/album/${c.album.discogsId}`} className="shrink-0">
+              <Link href={`/album/${encodeURIComponent(c.album.discogsId)}`} className="shrink-0">
                 {c.album.coverUrl ? (
                   <Image src={c.album.coverUrl} alt={c.album.title} width={48} height={48}
                     className="object-cover shrink-0" style={{ width: 48, height: 48, borderRadius: 4 }} unoptimized />
@@ -142,7 +142,7 @@ export default function CollectionGrid({ items }: { items: CollectionItem[] }) {
                 )}
               </Link>
               <div className="flex-1 min-w-0">
-                <Link href={`/album/${c.album.discogsId}`} className="text-sm font-medium truncate block hover:underline" style={{ color: C.text }}>{c.album.title}</Link>
+                <Link href={`/album/${encodeURIComponent(c.album.discogsId)}`} className="text-sm font-medium truncate block hover:underline" style={{ color: C.text }}>{c.album.title}</Link>
                 <div className="text-xs font-mono truncate" style={{ color: C.muted }}>
                   {c.album.artist}{c.album.releaseYear ? ` · ${c.album.releaseYear}` : ""}
                 </div>

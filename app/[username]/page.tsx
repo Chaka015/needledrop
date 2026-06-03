@@ -323,7 +323,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <SectionLabel>Wantlist</SectionLabel>
               <div className="grid grid-cols-4 gap-1.5">
                 {user.wantlist.slice(0, 8).map((w) => (
-                  <Link key={w.id} href={`/album/${w.album.discogsId}`} title={`${w.album.title} — ${w.album.artist}`}>
+                  <Link key={w.id} href={`/album/${encodeURIComponent(w.album.discogsId)}`} title={`${w.album.title} — ${w.album.artist}`}>
                     {w.album.coverUrl ? (
                       <Image src={w.album.coverUrl} alt={w.album.title} width={56} height={56}
                         className="object-cover aspect-square w-full"
@@ -397,7 +397,7 @@ function AlbumTile({ album, size }: { album: { discogsId: string; title: string;
     </div>
   );
   return (
-    <Link href={`/album/${album.discogsId}`} title={`${album.title} — ${album.artist}`}>
+    <Link href={`/album/${encodeURIComponent(album.discogsId)}`} title={`${album.title} — ${album.artist}`}>
       {inner}
     </Link>
   );

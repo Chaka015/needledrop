@@ -91,7 +91,7 @@ export default async function WantlistPage({ params, searchParams }: Props) {
             {wantlist.map((w) => (
               <div key={w.id} className="flex items-center gap-4 p-3"
                 style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                <Link href={`/album/${w.album.discogsId}`}>
+                <Link href={`/album/${encodeURIComponent(w.album.discogsId)}`}>
                   {w.album.coverUrl ? (
                     <Image src={w.album.coverUrl} alt={w.album.title} width={48} height={48}
                       className="object-cover shrink-0" style={{ width: 48, height: 48, borderRadius: 4 }} unoptimized />
@@ -100,7 +100,7 @@ export default async function WantlistPage({ params, searchParams }: Props) {
                   )}
                 </Link>
                 <div className="flex-1 min-w-0">
-                  <Link href={`/album/${w.album.discogsId}`}>
+                  <Link href={`/album/${encodeURIComponent(w.album.discogsId)}`}>
                     <div className="text-sm font-semibold truncate hover:underline" style={{ color: C.text }}>{w.album.title}</div>
                   </Link>
                   <div className="text-xs font-mono" style={{ color: C.muted }}>{w.album.artist}</div>

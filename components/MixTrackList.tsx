@@ -32,7 +32,7 @@ export default function MixTrackList({ items }: { items: Track[] }) {
       {items.map((item, idx) => (
         <Link
           key={item.id}
-          href={`/album/${item.album.discogsId}`}
+          href={`/album/${encodeURIComponent(item.album.discogsId)}`}
           className="flex items-center gap-4 p-3 transition-colors duration-100"
           style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}

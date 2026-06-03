@@ -146,7 +146,7 @@ export default async function Home() {
             </h2>
             <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
               {latestAdded.map((c) => (
-                <Link key={c.id} href={`/album/${c.album.discogsId}`} title={`${c.album.title} — ${c.album.artist}`}
+                <Link key={c.id} href={`/album/${encodeURIComponent(c.album.discogsId)}`} title={`${c.album.title} — ${c.album.artist}`}
                   className="group">
                   {c.album.coverUrl ? (
                     <Image src={c.album.coverUrl} alt={c.album.title} width={120} height={120}
@@ -172,7 +172,7 @@ export default async function Home() {
             </h2>
             <div className="space-y-1">
               {popularWithCount.map(({ album, count }, idx) => (
-                <Link key={album.id} href={`/album/${album.discogsId}`}
+                <Link key={album.id} href={`/album/${encodeURIComponent(album.discogsId)}`}
                   className="hover-surface-raised flex items-center gap-4 p-3"
                   style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
                   <span className="text-xs font-mono w-5 text-right shrink-0" style={{ color: C.subtle }}>

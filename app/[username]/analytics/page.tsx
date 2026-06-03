@@ -201,7 +201,7 @@ export default async function AnalyticsPage({ params }: Props) {
               {topAlbums.length === 0 ? (
                 <div className="p-4 text-xs font-mono" style={{ border: `1px dashed ${C.border}`, color: C.subtle }}>No listens yet.</div>
               ) : topAlbums.map(([, data], i) => (
-                <Link href={`/album/${data.discogsId}`} key={data.discogsId}
+                <Link href={`/album/${encodeURIComponent(data.discogsId)}`} key={data.discogsId}
                   className="flex items-center gap-3 px-3 py-2 transition-colors duration-100"
                   style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, display: "flex" }}>
                   <span className="text-xs font-mono w-4 shrink-0" style={{ color: C.subtle }}>{i + 1}</span>

@@ -46,7 +46,7 @@ function Tile({
       onMouseEnter={() => isOwnProfile && onHover(item.id)}
       onMouseLeave={() => onHover(null)}
     >
-      <Link href={`/album/${item.album.discogsId}`} className="block w-full h-full" title={`${item.album.title} — ${item.album.artist}`}>
+      <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`} className="block w-full h-full" title={`${item.album.title} — ${item.album.artist}`}>
         {item.album.coverUrl ? (
           <Image
             src={item.album.coverUrl}

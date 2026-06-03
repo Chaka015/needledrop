@@ -297,7 +297,7 @@ function FeedCard({
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-3">
-            <Link href={`/album/${item.album.discogsId}`}>
+            <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`}>
               <AlbumArt coverUrl={item.album.coverUrl} title={item.album.title} />
             </Link>
             <div className="flex-1 min-w-0">
@@ -306,7 +306,7 @@ function FeedCard({
                   {item.user.username}
                 </Link>{" "}logged a listen
               </div>
-              <Link href={`/album/${item.album.discogsId}`}>
+              <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`}>
                 <div className="font-semibold text-sm truncate hover:underline" style={{ color: C.text }}>{item.album.title}</div>
               </Link>
               <div className="text-xs font-mono" style={{ color: C.muted }}>{item.album.artist}</div>
@@ -342,7 +342,7 @@ function FeedCard({
       <div className="flex gap-4 p-4" style={cardStyle}>
         <Link href={`/${item.user.username}`} className="shrink-0"><Avatar user={item.user} /></Link>
         <div className="flex-1 min-w-0 flex items-center gap-3">
-          <Link href={`/album/${item.album.discogsId}`}>
+          <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`}>
             <AlbumArt coverUrl={item.album.coverUrl} title={item.album.title} />
           </Link>
           <div className="flex-1 min-w-0">
@@ -351,7 +351,7 @@ function FeedCard({
                 {item.user.username}
               </Link>{" "}added to collection
             </div>
-            <Link href={`/album/${item.album.discogsId}`}>
+            <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`}>
               <div className="font-semibold text-sm truncate hover:underline" style={{ color: C.text }}>{item.album.title}</div>
             </Link>
             <div className="text-xs font-mono" style={{ color: C.muted }}>{item.album.artist}</div>
@@ -414,7 +414,7 @@ function FeedCard({
       <div className="flex gap-4 p-4" style={cardStyle}>
         <Link href={`/${item.user.username}`} className="shrink-0"><Avatar user={item.user} /></Link>
         <div className="flex-1 min-w-0 flex items-center gap-3">
-          <Link href={`/album/${item.album.discogsId}`} className="shrink-0">
+          <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`} className="shrink-0">
             <AlbumArt coverUrl={item.album.coverUrl} title={item.album.title} />
           </Link>
           <div className="flex-1 min-w-0">
@@ -423,7 +423,7 @@ function FeedCard({
                 {item.user.username}
               </Link>{" "}↻ spun a listen
             </div>
-            <Link href={`/album/${item.album.discogsId}`}>
+            <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`}>
               <div className="font-semibold text-sm truncate hover:underline" style={{ color: C.text }}>{item.album.title}</div>
             </Link>
             <div className="text-xs font-mono" style={{ color: C.muted }}>{item.album.artist}</div>

@@ -103,7 +103,7 @@ export default async function LogsPage({ params, searchParams }: Props) {
         ) : (
           <div className="space-y-1">
             {logs.map((log) => (
-              <Link key={log.id} href={`/album/${log.album.discogsId}`}
+              <Link key={log.id} href={`/album/${encodeURIComponent(log.album.discogsId)}`}
                 className="flex items-center gap-4 p-3 group"
                 style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
                 {log.album.coverUrl ? (

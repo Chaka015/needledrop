@@ -72,7 +72,7 @@ export default function RecentListens({ logs: initialLogs, isOwnProfile }: { log
     return (
       <div className="flex gap-4 p-3 items-start"
         style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-        <Link href={`/album/${log.album.discogsId}`} className="shrink-0">
+        <Link href={`/album/${encodeURIComponent(log.album.discogsId)}`} className="shrink-0">
           {log.album.coverUrl ? (
             <Image src={log.album.coverUrl} alt={log.album.title} width={48} height={48}
               className="object-cover shrink-0" style={{ width: 48, height: 48, borderRadius: 4 }} unoptimized />
@@ -82,7 +82,7 @@ export default function RecentListens({ logs: initialLogs, isOwnProfile }: { log
         </Link>
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <Link href={`/album/${log.album.discogsId}`} className="font-semibold text-sm hover:underline" style={{ color: C.text }}>{log.album.title}</Link>
+            <Link href={`/album/${encodeURIComponent(log.album.discogsId)}`} className="font-semibold text-sm hover:underline" style={{ color: C.text }}>{log.album.title}</Link>
             <span className="text-xs font-mono" style={{ color: C.muted }}>{log.album.artist}</span>
           </div>
           {log.rating != null && <StarRating rating={log.rating} />}
