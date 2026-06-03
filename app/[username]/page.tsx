@@ -14,13 +14,12 @@ import MixesList from "@/components/MixesList";
 import SkinApplicator from "@/components/SkinApplicator";
 import FlipCounter from "@/components/FlipCounter";
 import QuickLogWidget from "@/components/QuickLogWidget";
-import { getSkin, skinToVars } from "@/lib/skins";
+import { getSkin, skinToVars, SKINS } from "@/lib/skins";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
 }
 
-// CSS-variable aliases used in this server component's JSX
 const C = {
   bg:           "var(--skin-bg)",
   surface:      "var(--skin-surface)",
@@ -30,7 +29,19 @@ const C = {
   muted:        "var(--skin-muted)",
   subtle:       "var(--skin-subtle)",
   accent:       "var(--skin-accent)",
+  hot:          "var(--skin-hot)",
 };
+
+// MS accent swatches for the customize box
+const MS_ACCENT_SWATCHES = [
+  { id: "ms-blue",   color: "#2540e6", name: "Electric Blue" },
+  { id: "ms-orange", color: "#ff5a1f", name: "Tangerine" },
+  { id: "ms-pink",   color: "#ec2d7b", name: "Hot Pink" },
+  { id: "ms-green",  color: "#12a150", name: "Acid Green" },
+  { id: "ms-purple", color: "#7b3ff2", name: "Grape" },
+  { id: "ms-cyan",   color: "#08a5c4", name: "Cyan" },
+  { id: "analog-warmth", color: "#E67E22", name: "Analog Warmth" },
+];
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { username } = await params;
@@ -86,30 +97,22 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const skin = getSkin(user.skin);
   const skinVars = skinToVars(skin) as React.CSSProperties;
 
-  const totalListens = user.logs.length;
-  const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
-  const listensThisYear = user.logs.filter((l) => new Date(l.playedAt) >= startOfYear).length;
-  const listensThisWeek = user.logs.filter((l) => new Date(l.playedAt) >= startOfWeek).length;
+  // Stats for odometer
+  const recordsOwned = user.collection.length;
+  const listensLogged = user.logs.length;
+  const totalListeningMs = user.logs.reduce((sum, log) => sum + (log.durationMs ? Number(log.durationMs) : 0), 0);
+  const hoursListened = Math.round(totalListeningMs / 3600000);
 
-  const featured = user.collection.filter((c) => c.isFeatured).slice(0, 5);
-  const latestAdded = user.collection.filter((c) => !c.isFeatured).slice(0, 4);
+  const featured = user.collection.filter((c) => c.isFeatured).slice(0, 8);
+  const latestAdded = user.collection.filter((c) => !c.isFeatured).slice(0, 8);
 
   const nowSpinningAlbum = user.nowSpinning
     ? await prisma.album.findUnique({ where: { id: user.nowSpinning } })
     : null;
 
-  // Active = set within 60 minutes. Applies to both owner and visitor.
-  // Owner: badge hidden entirely when stale; visitor: dimmed "LAST PLAYED"
+  const now = new Date();
   const sixtyMinutesAgo = new Date(now.getTime() - 60 * 60 * 1000);
   const nowSpinningIsActive = user.nowSpinningAt ? user.nowSpinningAt > sixtyMinutesAgo : false;
-
-  // Sum durationMs across all logs for the flip counter (BigInt → Number for rendering)
-  const totalListeningMs = user.logs.reduce((sum, log) => {
-    return sum + (log.durationMs ? Number(log.durationMs) : 0);
-  }, 0);
 
   const logs = user.logs.map((log) => ({
     id: log.id,
@@ -123,300 +126,376 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     album: { discogsId: log.album.discogsId, title: log.album.title, artist: log.album.artist, coverUrl: log.album.coverUrl },
   }));
 
+  // First name for possessives
+  const firstName = user.username;
+
   return (
-    <div className="min-h-screen font-sans" style={{ ...skinVars, backgroundColor: C.bg, color: C.text }}>
+    <div className="min-h-screen" style={{ ...skinVars as React.CSSProperties, backgroundColor: C.bg, color: C.text }}>
       <SkinApplicator vars={skinVars as Record<string, string>} />
 
-      {/* HEADER */}
-      <div style={{ borderBottom: `1px solid ${C.border}` }}>
-        <div className="max-w-6xl mx-auto px-6 py-10">
-          <div className="flex flex-col md:flex-row gap-8 items-start">
-            <div className="shrink-0">
-              {user.avatarUrl ? (
-                <Image src={user.avatarUrl} alt={user.username} width={128} height={128}
-                  className="object-cover"
-                  style={{ width: 128, height: 128, borderRadius: "50%", border: `3px solid ${C.accent}` }} />
+      <div className="ms-page">
+
+        {/* ── Odometer strip ──────────────────────────────── */}
+        <div className="ms-odo-wrap" style={{ marginBottom: 20 }}>
+          <div className="ms-odo-cell">
+            <div className="k">Records owned</div>
+            <OdometerCell value={recordsOwned} />
+          </div>
+          <div className="ms-odo-cell">
+            <div className="k">Listens logged</div>
+            <OdometerCell value={listensLogged} />
+          </div>
+          <div className="ms-odo-cell">
+            <div className="k">Hours with music</div>
+            <span style={{ display: "inline-flex", alignItems: "flex-end" }}>
+              <OdometerCell value={hoursListened} />
+              <span className="ms-odo-suffix">hrs</span>
+            </span>
+          </div>
+          <div className="ms-odo-cell">
+            <div className="k">Following / Fans</div>
+            <OdometerCell value={user.followers.length} />
+          </div>
+        </div>
+
+        {/* ── Two-column layout ───────────────────────────── */}
+        <div className="ms-cols profile">
+
+          {/* LEFT RAIL */}
+          <div className="ms-stack">
+
+            {/* Avatar + identity card */}
+            <div className="ms-box">
+              {/* Avatar */}
+              <div style={{ width: "100%", aspectRatio: "1", background: C.surface, borderBottom: `2px solid ${C.border}`, position: "relative" }}>
+                {user.avatarUrl ? (
+                  <Image src={user.avatarUrl} alt={user.username} fill className="object-cover" unoptimized />
+                ) : (
+                  <div style={{ inset: 0, position: "absolute", display: "grid", placeItems: "center" }}>
+                    <span style={{ fontSize: 60, fontWeight: 700, color: C.subtle }}>
+                      {user.username[0].toUpperCase()}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="ms-pad" style={{ paddingBottom: 8 }}>
+                <div className="ms-prof-name">{user.username}</div>
+                <div className="ms-online" style={{ marginTop: 6 }}>
+                  <span className="d" /> ONLINE NOW
+                </div>
+                {user.bio && <div className="ms-mood"><b>"{user.bio}"</b></div>}
+              </div>
+
+              {/* Contact buttons */}
+              <div className="ms-contact">
+                {isOwnProfile ? (
+                  <>
+                    <Link href="/settings" className="ms-cbtn">Edit</Link>
+                    <button className="ms-cbtn" onClick={() => {}}>Share</button>
+                    <Link href={`/${username}/analytics`} className="ms-cbtn">Record Room</Link>
+                    <ImportDiscogs />
+                  </>
+                ) : (
+                  <>
+                    <FollowButton targetUserId={user.id} initialIsFollowing={isFollowing} />
+                    <MessageButton username={user.username} />
+                    <button className="ms-cbtn fill">↻ Spin</button>
+                    <button className="ms-cbtn">Block</button>
+                  </>
+                )}
+              </div>
+
+              <div className="ms-url">needledrop.fm/{user.username}</div>
+            </div>
+
+            {/* Stats table */}
+            <div className="ms-box">
+              <div className="ms-bar">{firstName}&apos;s Stats</div>
+              <table className="ms-stats-table">
+                <tbody>
+                  <tr>
+                    <td>Member since</td>
+                    <td>{new Date(user.createdAt).getFullYear()}</td>
+                  </tr>
+                  <tr>
+                    <td>Records</td>
+                    <td>{user.collection.length.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <td>Listens</td>
+                    <td><Link href={`/${username}/logs`} style={{ color: "var(--skin-accent)" }}>{user.logs.length.toLocaleString()}</Link></td>
+                  </tr>
+                  <tr>
+                    <td>Wantlist</td>
+                    <td><Link href={`/${username}/wantlist`} style={{ color: "var(--skin-accent)" }}>{user.wantlist.length.toLocaleString()}</Link></td>
+                  </tr>
+                  <tr>
+                    <td>Following</td>
+                    <td><Link href={`/${username}/following`} style={{ color: "var(--skin-accent)" }}>{user.following.length.toLocaleString()}</Link></td>
+                  </tr>
+                  <tr>
+                    <td>Fans</td>
+                    <td><Link href={`/${username}/followers`} style={{ color: "var(--skin-accent)" }}>{user.followers.length.toLocaleString()}</Link></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Listening time */}
+            <div className="ms-box">
+              <div className="ms-bar">Time with music</div>
+              <div className="ms-pad">
+                <FlipCounter totalMs={totalListeningMs} />
+              </div>
+            </div>
+
+            {/* The Setup */}
+            <div className="ms-box">
+              <div className="ms-bar">The Setup</div>
+              {isOwnProfile ? (
+                <div className="ms-pad"><AudioSetupEditor initial={user.audioSetup} /></div>
               ) : (
-                <div className="flex items-center justify-center text-4xl font-bold"
-                  style={{ width: 128, height: 128, borderRadius: "50%", backgroundColor: C.surface, color: C.subtle, border: `3px solid ${C.accent}` }}>
-                  {user.username[0].toUpperCase()}
+                <div className="ms-pad" style={{ paddingTop: 12 }}>
+                  {user.audioSetup?.turntable && <SetupItem icon="💿" label="TURNTABLE" value={user.audioSetup.turntable} />}
+                  {user.audioSetup?.preamp && <SetupItem icon="🎚️" label="PRE-AMP" value={user.audioSetup.preamp} />}
+                  {user.audioSetup?.speakers && <SetupItem icon="🔊" label="SPEAKERS" value={user.audioSetup.speakers} />}
+                  {!user.audioSetup?.turntable && !user.audioSetup?.preamp && !user.audioSetup?.speakers && (
+                    <p style={{ fontSize: 13, color: C.subtle, fontFamily: "var(--font-nd-mono)" }}>No setup listed yet.</p>
+                  )}
                 </div>
               )}
             </div>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold tracking-tight" style={{ color: C.text }}>{user.username}</h1>
-                {currentUser && !isOwnProfile && (
-                  <>
-                    <FollowButton targetUserId={user.id} initialIsFollowing={isFollowing} />
-                    <MessageButton username={user.username} />
-                  </>
-                )}
-                {/* ON AIR badge:
-                    - Active (<60 min): red pulse, ON AIR / STREAMING label
-                    - Stale (>60 min): owner sees nothing; visitor sees dimmed LAST PLAYED */}
-                {nowSpinningAlbum && (nowSpinningIsActive || !isOwnProfile) && (
-                  <span className="flex items-center gap-2 text-xs font-mono px-3 py-1.5"
-                    style={{
-                      backgroundColor: "#0D0D0D",
-                      border: "1px solid #333",
-                      borderRadius: 4,
-                      opacity: nowSpinningIsActive ? 1 : 0.55,
-                    }}>
-                    {nowSpinningAlbum.coverUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={nowSpinningAlbum.coverUrl} alt=""
-                        style={{ width: 24, height: 24, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
-                    )}
-                    {nowSpinningIsActive ? (
-                      <span className="w-2 h-2 rounded-full animate-pulse shrink-0" style={{ backgroundColor: "#FF3E3E" }} />
-                    ) : (
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#555" }} />
-                    )}
-                    <span style={{ color: nowSpinningIsActive ? "#FF3E3E" : "#666" }}>
-                      {!nowSpinningIsActive
-                        ? "LAST PLAYED"
-                        : user.nowSpinningSource === "streaming"
-                        ? "STREAMING"
-                        : "ON AIR"}
-                    </span>
-                    <span style={{ color: "#F7F1E3" }}>
-                      {nowSpinningAlbum.artist} — {nowSpinningAlbum.title}
-                    </span>
+            {/* Customize — own profile only */}
+            {isOwnProfile && (
+              <div className="ms-box">
+                <div className="ms-bar hot">Customize · Theme <span className="cta">your page</span></div>
+                <div className="ms-pad">
+                  <div className="ms-cust-sec">Profile color</div>
+                  <div className="ms-swatches">
+                    {MS_ACCENT_SWATCHES.map((s) => (
+                      <button
+                        key={s.id}
+                        title={s.name}
+                        className={"ms-swatch" + (user.skin === s.id || (!user.skin && s.id === "analog-warmth") ? " on" : "")}
+                        style={{ background: s.color }}
+                        // Skin change handled client-side via SkinPicker (future)
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT COLUMN */}
+          <div className="ms-stack">
+
+            {/* Now Spinning */}
+            {nowSpinningAlbum && (
+              <div className="ms-box">
+                <div className="ms-bar hot">
+                  Now Spinning{" "}
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <span className="ms-eq"><i /><i /><i /><i /></span>
                   </span>
-                )}
-              </div>
-
-              {/* Listening time flip counter */}
-              <div className="mt-3">
-                <FlipCounter totalMs={totalListeningMs} />
-              </div>
-
-              {/* Member since */}
-              <p className="mt-2 text-xs font-mono" style={{ color: C.muted }}>
-                Member since {new Date(user.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "2-digit" })}
-              </p>
-
-              {user.bio && <p className="mt-1 text-sm max-w-xl" style={{ color: C.muted }}>{user.bio}</p>}
-
-              {/* Listen counts */}
-              <div className="mt-4 flex flex-wrap gap-6 text-sm font-mono" style={{ color: C.muted }}>
-                {[
-                  { value: totalListens, label: "TOTAL", href: `/${username}/logs` },
-                  { value: listensThisYear, label: "THIS YEAR", href: `/${username}/logs?filter=year` },
-                  { value: listensThisWeek, label: "THIS WEEK", href: `/${username}/logs?filter=week` },
-                ].map((s) => (
-                  <Link key={s.label} href={s.href} className="hover:underline">
-                    <span className="font-bold" style={{ color: C.text }}>{s.value}</span>{" "}
-                    <span className="text-xs" style={{ color: C.muted }}>{s.label}</span>
-                  </Link>
-                ))}
-                <Link href={`/${username}/following`} className="hover:underline">
-                  <span className="font-bold" style={{ color: C.text }}>{user.following.length}</span>{" "}
-                  <span className="text-xs" style={{ color: C.muted }}>FOLLOWING</span>
-                </Link>
-                <Link href={`/${username}/followers`} className="hover:underline">
-                  <span className="font-bold" style={{ color: C.text }}>{user.followers.length}</span>{" "}
-                  <span className="text-xs" style={{ color: C.muted }}>FOLLOWERS</span>
-                </Link>
-              </div>
-
-              {/* Stats strip */}
-              <div className="mt-5 flex flex-wrap gap-3">
-                {[
-                  { label: "RECORDS", value: user.collection.length, href: null },
-                  { label: "LOGGED", value: user.logs.length, href: `/${username}/logs` },
-                  { label: "WANTLIST", value: user.wantlist.length, href: `/${username}/wantlist` },
-                ].map((stat) => (
-                  stat.href ? (
-                    <Link key={stat.label} href={stat.href}
-                      className="hover-border-accent px-5 py-3 text-center"
-                      style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                      <div className="text-xl font-bold font-mono" style={{ color: C.text }}>{stat.value}</div>
-                      <div className="text-xs font-mono mt-0.5" style={{ color: C.subtle }}>{stat.label}</div>
+                </div>
+                <div className="ms-pad ms-now">
+                  {nowSpinningAlbum.coverUrl && (
+                    <Link href={`/album/${encodeURIComponent(nowSpinningAlbum.discogsId ?? "")}`}>
+                      <Image src={nowSpinningAlbum.coverUrl} alt={nowSpinningAlbum.title}
+                        width={104} height={104} className="object-cover"
+                        style={{ width: 104, height: 104, borderRadius: 4, border: `2px solid var(--skin-border)`, flexShrink: 0 }}
+                        unoptimized />
                     </Link>
-                  ) : (
-                    <div key={stat.label} className="px-5 py-3 text-center"
-                      style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                      <div className="text-xl font-bold font-mono" style={{ color: C.text }}>{stat.value}</div>
-                      <div className="text-xs font-mono mt-0.5" style={{ color: C.subtle }}>{stat.label}</div>
+                  )}
+                  <div>
+                    <div className="t">{nowSpinningAlbum.title}</div>
+                    <div style={{ color: C.muted, fontSize: 15, marginTop: 2 }}>{nowSpinningAlbum.artist}</div>
+                    <div className="nowmeta">
+                      <span className="ms-onair"><span className="d" /> ON AIR</span>
+                      {!nowSpinningIsActive && <span style={{ opacity: 0.55 }}> · LAST PLAYED</span>}
                     </div>
-                  )
-                ))}
-                {isOwnProfile && (
-                  <Link href={`/${username}/analytics`}
-                    className="px-5 py-3 text-center transition-colors duration-100"
-                    style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                    <div className="text-xl font-bold font-mono" style={{ color: C.accent }}>◈</div>
-                    <div className="text-xs font-mono mt-0.5" style={{ color: C.subtle }}>ANALYTICS</div>
-                  </Link>
-                )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isOwnProfile && (
+              <div className="ms-box">
+                <div className="ms-bar hot">+ Log a listen</div>
+                <div className="ms-pad"><QuickLogWidget /></div>
+              </div>
+            )}
+
+            {/* Featured / Top shelf */}
+            <div className="ms-box">
+              <div className="ms-bar">{firstName}&apos;s Top {featured.length > 0 ? featured.length : ""} Records</div>
+              {featured.length > 0 ? (
+                <div className="ms-top8">
+                  {featured.map((c, i) => (
+                    <div className="cell" key={c.id}>
+                      <span className="ms-ribbon">{i + 1}</span>
+                      <Link href={`/album/${encodeURIComponent(c.album.discogsId)}`}>
+                        {c.album.coverUrl ? (
+                          <Image src={c.album.coverUrl} alt={c.album.title} width={118} height={118}
+                            className="object-cover aspect-square w-full"
+                            style={{ borderRadius: 4, border: `2px solid var(--skin-border)`, display: "block" }} unoptimized />
+                        ) : (
+                          <div style={{ aspectRatio: "1", background: C.surface, borderRadius: 4, border: `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <span style={{ fontSize: 11, color: C.subtle, fontFamily: "var(--font-nd-mono)" }}>No art</span>
+                          </div>
+                        )}
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="ms-pad">
+                  <FeaturedGrid
+                    items={[]}
+                    isOwnProfile={isOwnProfile}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Recent listens */}
+            <div className="ms-box">
+              <div className="ms-bar">Recent Listens <span className="cta"><Link href={`/${username}/logs`} style={{ color: "inherit" }}>see all →</Link></span></div>
+              <div style={{ padding: "4px 0" }}>
+                <RecentListens logs={logs} isOwnProfile={isOwnProfile} />
               </div>
             </div>
+
+            {/* Latest added */}
+            {latestAdded.length > 0 && (
+              <div className="ms-box">
+                <div className="ms-bar">Latest Added to Collection</div>
+                <div className="ms-pad">
+                  <div className="ms-shelf">
+                    {latestAdded.map((c) => (
+                      <div className="c" key={c.id}>
+                        <Link href={`/album/${encodeURIComponent(c.album.discogsId)}`}>
+                          {c.album.coverUrl ? (
+                            <Image src={c.album.coverUrl} alt={c.album.title} width={130} height={130}
+                              className="object-cover aspect-square w-full"
+                              style={{ borderRadius: 4, border: `2px solid var(--skin-border)`, display: "block" }} unoptimized />
+                          ) : (
+                            <div style={{ aspectRatio: "1", background: C.surface, borderRadius: 4, border: `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <span style={{ fontSize: 11, color: C.subtle }}>No art</span>
+                            </div>
+                          )}
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mixes */}
+            <div className="ms-box">
+              <div className="ms-bar">Mixes <span className="cta">{user.mixes.length} total</span></div>
+              {user.mixes.length > 0 ? (
+                <div>
+                  {user.mixes.slice(0, 5).map((m) => (
+                    <Link key={m.id} href={`/${username}/mixes/${m.id}`} className="ms-mix" style={{ textDecoration: "none" }}>
+                      <div style={{ display: "flex", flexShrink: 0 }}>
+                        {m.items.slice(0, 3).map((item, i) => (
+                          item.album.coverUrl ? (
+                            <Image key={i} src={item.album.coverUrl} alt={item.album.title} width={50} height={50}
+                              className="object-cover"
+                              style={{ width: 50, height: 50, borderRadius: 4, border: `2px solid var(--skin-border)`, marginLeft: i > 0 ? -14 : 0, boxShadow: i > 0 ? "-2px 0 4px rgba(0,0,0,0.3)" : "none" }} unoptimized />
+                          ) : (
+                            <div key={i} style={{ width: 50, height: 50, borderRadius: 4, background: C.surface, border: `2px solid ${C.border}`, marginLeft: i > 0 ? -14 : 0 }} />
+                          )
+                        ))}
+                      </div>
+                      <div>
+                        <div className="ti">{m.title}</div>
+                        <div className="sub">{m._count.items} records</div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="ms-pad" style={{ paddingTop: 12 }}>
+                  <MixesList mixes={user.mixes} username={username} isOwnProfile={isOwnProfile} />
+                </div>
+              )}
+            </div>
+
+            {/* Wantlist */}
+            {user.wantlist.length > 0 && (
+              <div className="ms-box">
+                <div className="ms-bar">Wantlist <span className="cta"><Link href={`/${username}/wantlist`} style={{ color: "inherit" }}>{user.wantlist.length} records →</Link></span></div>
+                <div className="ms-pad">
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(60px, 1fr))", gap: 6 }}>
+                    {user.wantlist.slice(0, 12).map((w) => (
+                      <Link key={w.id} href={`/album/${encodeURIComponent(w.album.discogsId)}`} title={`${w.album.title} — ${w.album.artist}`}>
+                        {w.album.coverUrl ? (
+                          <Image src={w.album.coverUrl} alt={w.album.title} width={60} height={60}
+                            className="object-cover aspect-square w-full"
+                            style={{ borderRadius: 4, border: `2px solid var(--skin-border)`, display: "block" }} unoptimized />
+                        ) : (
+                          <div style={{ aspectRatio: "1", background: C.surface, borderRadius: 4, border: `2px solid ${C.border}` }} />
+                        )}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Full collection — own profile */}
+            {isOwnProfile && (
+              <div className="ms-box">
+                <div className="ms-bar">My Records <span className="cta">{user.collection.length} total</span></div>
+                <div className="ms-pad">
+                  <CollectionGrid
+                    items={user.collection.map((c) => ({
+                      id: c.id,
+                      isFeatured: c.isFeatured,
+                      album: {
+                        discogsId: c.album.discogsId,
+                        title: c.album.title,
+                        artist: c.album.artist,
+                        releaseYear: c.album.releaseYear,
+                        coverUrl: c.album.coverUrl,
+                        label: c.album.label,
+                        genre: c.album.genre,
+                      },
+                    }))}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {/* MAIN + SIDEBAR */}
-      <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col lg:flex-row gap-10">
-
-        <div className="flex-1 min-w-0 space-y-12">
-
-          {isOwnProfile && (
-            <section>
-              <QuickLogWidget />
-            </section>
-          )}
-
-          <section>
-            <SectionLabel>Recent Listens</SectionLabel>
-            <RecentListens logs={logs} isOwnProfile={isOwnProfile} />
-          </section>
-
-          <section>
-            <SectionLabel>Latest Physical Media Added to My Collection</SectionLabel>
-            {latestAdded.length > 0 ? (
-              <div className="grid grid-cols-4 gap-2">
-                {latestAdded.map((c) => <AlbumTile key={c.id} album={c.album} size="lg" />)}
-              </div>
-            ) : (
-              <EmptyState text="Nothing added to collection yet." />
-            )}
-          </section>
-
-          {isOwnProfile && (
-            <section>
-              <SectionLabel>My Records</SectionLabel>
-              <CollectionGrid
-                items={user.collection.map((c) => ({
-                  id: c.id,
-                  isFeatured: c.isFeatured,
-                  album: {
-                    discogsId: c.album.discogsId,
-                    title: c.album.title,
-                    artist: c.album.artist,
-                    releaseYear: c.album.releaseYear,
-                    coverUrl: c.album.coverUrl,
-                    label: c.album.label,
-                    genre: c.album.genre,
-                  },
-                }))}
-              />
-            </section>
-          )}
-        </div>
-
-        {/* SIDEBAR */}
-        <aside className="w-full lg:w-64 shrink-0 space-y-8">
-
-          <section>
-            <SectionLabel>Featured</SectionLabel>
-            <FeaturedGrid
-              items={featured.map((c) => ({ id: c.id, album: c.album }))}
-              isOwnProfile={isOwnProfile}
-            />
-          </section>
-
-          {user.wantlist.length > 0 && (
-            <section>
-              <SectionLabel>Wantlist</SectionLabel>
-              <div className="grid grid-cols-4 gap-1.5">
-                {user.wantlist.slice(0, 8).map((w) => (
-                  <Link key={w.id} href={`/album/${encodeURIComponent(w.album.discogsId)}`} title={`${w.album.title} — ${w.album.artist}`}>
-                    {w.album.coverUrl ? (
-                      <Image src={w.album.coverUrl} alt={w.album.title} width={56} height={56}
-                        className="object-cover aspect-square w-full"
-                        style={{ borderRadius: 4 }} unoptimized />
-                    ) : (
-                      <div className="aspect-square flex items-center justify-center text-xs"
-                        style={{ backgroundColor: C.surface, borderRadius: 4, color: C.subtle }}>
-                        ?
-                      </div>
-                    )}
-                  </Link>
-                ))}
-              </div>
-              {user.wantlist.length > 8 && (
-                <p className="mt-2 text-xs font-mono" style={{ color: C.subtle }}>
-                  +{user.wantlist.length - 8} more
-                </p>
-              )}
-            </section>
-          )}
-
-          <section>
-            <SectionLabel>Mixes</SectionLabel>
-            <MixesList
-              mixes={user.mixes}
-              username={username}
-              isOwnProfile={isOwnProfile}
-            />
-          </section>
-
-          <section>
-            <SectionLabel>The Setup</SectionLabel>
-            {isOwnProfile ? (
-              <AudioSetupEditor initial={user.audioSetup} />
-            ) : (
-              <div className="p-5 space-y-4 text-sm" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                {user.audioSetup?.turntable && <SetupItem icon="💿" label="TURNTABLE" value={user.audioSetup.turntable} />}
-                {user.audioSetup?.preamp && <SetupItem icon="🎚️" label="PRE-AMP" value={user.audioSetup.preamp} />}
-                {user.audioSetup?.speakers && <SetupItem icon="🔊" label="SPEAKERS" value={user.audioSetup.speakers} />}
-                {!user.audioSetup?.turntable && !user.audioSetup?.preamp && !user.audioSetup?.speakers && (
-                  <p className="text-xs font-mono" style={{ color: C.subtle }}>No setup listed yet.</p>
-                )}
-              </div>
-            )}
-          </section>
-        </aside>
-      </div>
     </div>
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+// Static odometer cell (server-rendered, no animation)
+function OdometerCell({ value }: { value: number }) {
+  const str = value.toLocaleString();
   return (
-    <h2 className="text-xs font-mono uppercase tracking-widest mb-4" style={{ color: "var(--skin-subtle)" }}>
-      {children}
-    </h2>
-  );
-}
-
-function AlbumTile({ album, size }: { album: { discogsId: string; title: string; artist: string; coverUrl: string | null }; size: "sm" | "lg" }) {
-  const dim = size === "lg" ? 120 : 48;
-  const inner = album.coverUrl ? (
-    <Image src={album.coverUrl} alt={`${album.title} by ${album.artist}`} width={dim} height={dim}
-      className="object-cover aspect-square"
-      style={{ width: size === "lg" ? "100%" : 48, height: size === "lg" ? "100%" : 48, borderRadius: 4, flexShrink: 0 }}
-      unoptimized />
-  ) : (
-    <div className="flex items-center justify-center text-xs"
-      style={{ width: size === "lg" ? "100%" : 48, height: size === "lg" ? "100%" : 48, aspectRatio: "1", backgroundColor: "var(--skin-surface)", borderRadius: 4, color: "var(--skin-subtle)", flexShrink: 0 }}>
-      No art
-    </div>
-  );
-  return (
-    <Link href={`/album/${encodeURIComponent(album.discogsId)}`} title={`${album.title} — ${album.artist}`}>
-      {inner}
-    </Link>
+    <span className="ms-odo">
+      {str.split("").map((c, i) => (
+        <span key={i} className={c === "," ? "sep" : "d"}>{c}</span>
+      ))}
+    </span>
   );
 }
 
 function SetupItem({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
-    <div>
-      <div className="text-xs font-mono mb-0.5" style={{ color: "var(--skin-subtle)" }}>{icon} {label}</div>
-      <div style={{ color: "var(--skin-text)" }}>{value}</div>
-    </div>
-  );
-}
-
-function EmptyState({ text }: { text: string }) {
-  return (
-    <div className="p-8 text-center text-sm font-mono"
-      style={{ border: "1px dashed var(--skin-border)", color: "var(--skin-subtle)" }}>
-      {text}
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--skin-subtle)", marginBottom: 2 }}>{icon} {label}</div>
+      <div style={{ color: "var(--skin-text)", fontSize: 13 }}>{value}</div>
     </div>
   );
 }
