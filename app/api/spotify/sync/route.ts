@@ -5,6 +5,9 @@ import { NextResponse } from "next/server";
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID!;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET!;
 
+// 90-minute window: two entries for the same album within this are per-song duplicates
+const SESSION_GAP_MS = 90 * 60 * 1000;
+
 async function refreshToken(refreshToken: string): Promise<{ access_token: string; expires_in: number; refresh_token?: string } | null> {
   const res = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
@@ -21,19 +24,119 @@ async function refreshToken(refreshToken: string): Promise<{ access_token: strin
 interface SpotifyTrack {
   played_at: string;
   track: {
-    type: string;       // "track" for music, "episode" for podcasts
+    type: string;
     name: string;
     artists: { name: string }[];
     album: {
-      album_type: string; // "album" | "single" | "compilation" | "podcast"
+      album_type: string;
       name: string;
       id: string;
       images: { url: string }[];
       release_date: string;
       label?: string;
-      artists?: { name: string }[]; // album-level artists (correct for compilations)
+      artists?: { name: string }[];
     };
   };
+}
+
+interface AlbumSession {
+  spotifyAlbumId: string;
+  albumName: string;
+  albumArtist: string;
+  coverUrl: string | null;
+  releaseYear: number | null;
+  label: string | null;
+  playedAt: Date;
+}
+
+function groupIntoSessions(tracks: SpotifyTrack[]): AlbumSession[] {
+  // Sort oldest-first so consecutive same-album runs are grouped correctly
+  const sorted = [...tracks].sort(
+    (a, b) => new Date(a.played_at).getTime() - new Date(b.played_at).getTime()
+  );
+
+  const sessions: AlbumSession[] = [];
+  let i = 0;
+
+  while (i < sorted.length) {
+    const albumId = sorted[i].track.album.id;
+    let j = i;
+
+    // Consume consecutive tracks from the same album
+    while (j < sorted.length && sorted[j].track.album.id === albumId) {
+      j++;
+    }
+
+    // Use the last (most recent) track in the run for metadata + timestamp
+    const last = sorted[j - 1];
+    const albumArtist =
+      last.track.album.artists?.[0]?.name ??
+      last.track.artists[0]?.name ??
+      "Unknown Artist";
+
+    sessions.push({
+      spotifyAlbumId: albumId,
+      albumName: last.track.album.name,
+      albumArtist,
+      coverUrl: last.track.album.images[0]?.url ?? null,
+      releaseYear: last.track.album.release_date
+        ? parseInt(last.track.album.release_date.slice(0, 4))
+        : null,
+      label: last.track.album.label ?? null,
+      playedAt: new Date(last.played_at),
+    });
+
+    i = j;
+  }
+
+  return sessions;
+}
+
+// Delete per-song duplicate entries created by the old track-level sync.
+// Clusters: auto-imported streaming logs for the same (userId, albumId)
+// whose playedAt values are within SESSION_GAP_MS of each other.
+// In each cluster, keep the most recent entry; delete the rest.
+async function cleanupPerSongDuplicates(userId: string): Promise<number> {
+  const logs = await prisma.listeningLog.findMany({
+    where: { userId, autoImported: true, source: "streaming" },
+    orderBy: [{ albumId: "asc" }, { playedAt: "asc" }],
+    select: { id: true, albumId: true, playedAt: true },
+  });
+
+  const toDelete: string[] = [];
+
+  // Group by albumId
+  const byAlbum = new Map<string, typeof logs>();
+  for (const log of logs) {
+    const group = byAlbum.get(log.albumId) ?? [];
+    group.push(log);
+    byAlbum.set(log.albumId, group);
+  }
+
+  for (const albumLogs of byAlbum.values()) {
+    let clusterStart = 0;
+    for (let i = 1; i <= albumLogs.length; i++) {
+      const isClusterEnd =
+        i === albumLogs.length ||
+        albumLogs[i].playedAt.getTime() - albumLogs[i - 1].playedAt.getTime() >
+          SESSION_GAP_MS;
+
+      if (isClusterEnd) {
+        // Cluster: albumLogs[clusterStart..i-1]. Keep last (i-1), delete [clusterStart..i-2].
+        for (let j = clusterStart; j < i - 1; j++) {
+          toDelete.push(albumLogs[j].id);
+        }
+        clusterStart = i;
+      }
+    }
+  }
+
+  if (toDelete.length > 0) {
+    await prisma.spin.deleteMany({ where: { logId: { in: toDelete } } });
+    await prisma.listeningLog.deleteMany({ where: { id: { in: toDelete } } });
+  }
+
+  return toDelete.length;
 }
 
 export async function POST() {
@@ -47,16 +150,17 @@ export async function POST() {
 
   let accessToken = user.spotifyAccessToken;
 
-  // Refresh if expired
   if (!user.spotifyTokenExpiry || user.spotifyTokenExpiry < new Date()) {
     const refreshed = await refreshToken(user.spotifyRefreshToken);
     if (!refreshed) {
-      // Refresh token revoked — mark disconnected
       await prisma.user.update({
         where: { clerkId },
         data: { spotifyConnected: false, spotifyAccessToken: null, spotifyRefreshToken: null },
       });
-      return NextResponse.json({ error: "Spotify token expired. Please reconnect Spotify in settings." }, { status: 401 });
+      return NextResponse.json(
+        { error: "Spotify token expired. Please reconnect Spotify in settings." },
+        { status: 401 }
+      );
     }
     accessToken = refreshed.access_token;
     await prisma.user.update({
@@ -69,69 +173,71 @@ export async function POST() {
     });
   }
 
-  const res = await fetch("https://api.spotify.com/v1/me/player/recently-played?limit=20", {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
+  const res = await fetch(
+    "https://api.spotify.com/v1/me/player/recently-played?limit=20",
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
   if (!res.ok) return NextResponse.json({ error: "Spotify API error" }, { status: res.status });
 
   const data = await res.json();
-  const tracks: SpotifyTrack[] = data.items ?? [];
+  const rawTracks: SpotifyTrack[] = data.items ?? [];
+
+  // Drop podcasts / episodes before grouping
+  const tracks = rawTracks.filter(
+    (item) =>
+      item.track.type !== "episode" &&
+      item.track.album?.album_type !== "podcast"
+  );
+
+  const sessions = groupIntoSessions(tracks);
 
   let imported = 0;
   let skipped = 0;
 
-  for (const item of tracks) {
-    const track = item.track;
-    // Skip podcasts and episodes
-    if (track.type === "episode" || track.album?.album_type === "podcast") { skipped++; continue; }
-
-    const playedAt = new Date(item.played_at);
-    const discogsId = `spotify:album:${track.album.id}`;
-
-    // Prefer album-level artists (correct for compilations); fall back to track artist
-    const albumArtist =
-      track.album.artists?.[0]?.name ?? track.artists[0]?.name ?? "Unknown Artist";
+  for (const session of sessions) {
+    const discogsId = `spotify:album:${session.spotifyAlbumId}`;
 
     const album = await prisma.album.upsert({
       where: { discogsId },
       update: {
-        title:       track.album.name,
-        artist:      albumArtist,
-        coverUrl:    track.album.images[0]?.url ?? null,
-        releaseYear: track.album.release_date ? parseInt(track.album.release_date.slice(0, 4)) : null,
-        label:       track.album.label ?? null,
+        title:       session.albumName,
+        artist:      session.albumArtist,
+        coverUrl:    session.coverUrl,
+        releaseYear: session.releaseYear,
+        label:       session.label,
       },
       create: {
         discogsId,
-        title:       track.album.name,
-        artist:      albumArtist,
-        releaseYear: track.album.release_date ? parseInt(track.album.release_date.slice(0, 4)) : null,
-        coverUrl:    track.album.images[0]?.url ?? null,
+        title:       session.albumName,
+        artist:      session.albumArtist,
+        releaseYear: session.releaseYear,
+        coverUrl:    session.coverUrl,
         genre:       null,
-        label:       track.album.label ?? null,
+        label:       session.label,
       },
     });
 
-    // Deduplicate: skip if we already logged this album at this exact time
+    // Skip if we already have a log for this exact album+timestamp
     const existing = await prisma.listeningLog.findFirst({
-      where: { userId: user.id, albumId: album.id, playedAt },
+      where: { userId: user.id, albumId: album.id, playedAt: session.playedAt },
     });
-
     if (existing) { skipped++; continue; }
 
     await prisma.listeningLog.create({
       data: {
-        userId: user.id,
-        albumId: album.id,
-        format: null,
-        source: "streaming",
+        userId:       user.id,
+        albumId:      album.id,
+        format:       null,
+        source:       "streaming",
         autoImported: true,
-        playedAt,
+        playedAt:     session.playedAt,
       },
     });
     imported++;
   }
+
+  // One-time cleanup: remove any per-song duplicate entries from old sync behaviour
+  const cleaned = await cleanupPerSongDuplicates(user.id);
 
   const now = new Date();
   await prisma.user.update({
@@ -139,5 +245,11 @@ export async function POST() {
     data: { spotifyLastSyncedAt: now },
   });
 
-  return NextResponse.json({ imported, skipped, total: tracks.length, syncedAt: now.toISOString() });
+  return NextResponse.json({
+    imported,
+    skipped,
+    cleaned,
+    total: sessions.length,
+    syncedAt: now.toISOString(),
+  });
 }
