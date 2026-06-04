@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import LogListenModal from "./LogListenModal";
+import { FanRow, type SearchFan } from "./SearchDropdown";
 
 const C = {
   bg:            "var(--skin-bg)",
@@ -39,7 +41,7 @@ interface MBResult {
   year: string | null;
   hasCover: boolean;
   label: string | null;
-  _spotifyCoverUrl?: string | null; // pre-resolved cover URL (Spotify recently played)
+  _spotifyCoverUrl?: string | null;
 }
 
 interface NowSpinningModalProps {
@@ -62,23 +64,28 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
   const [query, setQuery] = useState("");
   const [collection, setCollection] = useState<CollectionItem[]>([]);
   const [collectionLoading, setCollectionLoading] = useState(true);
+  const [collectionExpanded, setCollectionExpanded] = useState(false);
   const [mbResults, setMbResults] = useState<MBResult[]>([]);
   const [mbLoading, setMbLoading] = useState(false);
+  const [mbExpanded, setMbExpanded] = useState(false);
   const [spotifyRecent, setSpotifyRecent] = useState<SpotifyRecent[]>([]);
+  const [fans, setFans] = useState<SearchFan[]>([]);
+  const [fansExpanded, setFansExpanded] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [selectedSource, setSelectedSource] = useState<"physical" | "streaming">("physical");
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fanTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetch("/api/collection")
       .then((r) => r.json())
       .then((data) => { setCollection(data.items ?? []); setCollectionLoading(false); });
-    // Fetch Spotify recently played if connected
     fetch("/api/spotify/recent")
       .then((r) => r.json())
       .then((data) => setSpotifyRecent(data.tracks ?? []));
   }, []);
 
+  // MusicBrainz search for streaming tab
   useEffect(() => {
     if (tab !== "streaming") return;
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
@@ -89,11 +96,27 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
       const res = await fetch(`/api/musicbrainz?q=${encodeURIComponent(query)}`);
       const data = await res.json();
       setMbResults(data.results ?? []);
+      setMbExpanded(false);
       setMbLoading(false);
     }, 400);
 
     return () => { if (searchTimeout.current) clearTimeout(searchTimeout.current); };
   }, [query, tab]);
+
+  // Fan search for both tabs
+  useEffect(() => {
+    if (fanTimeout.current) clearTimeout(fanTimeout.current);
+    if (!query.trim()) { setFans([]); setFansExpanded(false); return; }
+
+    fanTimeout.current = setTimeout(async () => {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      setFans(data.fans ?? []);
+      setFansExpanded(false);
+    }, 400);
+
+    return () => { if (fanTimeout.current) clearTimeout(fanTimeout.current); };
+  }, [query]);
 
   const filteredCollection = query.trim()
     ? collection.filter(
@@ -102,6 +125,10 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
           c.album.artist.toLowerCase().includes(query.toLowerCase())
       )
     : collection.slice(0, 8);
+
+  const visibleCollection = collectionExpanded ? filteredCollection : filteredCollection.slice(0, 5);
+  const visibleMb = mbExpanded ? mbResults : mbResults.slice(0, 5);
+  const visibleFans = fansExpanded ? fans : fans.slice(0, 5);
 
   async function handlePhysicalSpin(album: Album) {
     await fetch("/api/now-spinning", {
@@ -162,6 +189,10 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
     setTab(t);
     setQuery("");
     setMbResults([]);
+    setFans([]);
+    setCollectionExpanded(false);
+    setMbExpanded(false);
+    setFansExpanded(false);
   }
 
   if (selectedAlbum) {
@@ -214,7 +245,7 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); setCollectionExpanded(false); }}
             placeholder={tab === "collection" ? "Search your collection..." : "Search any album or artist..."}
             autoFocus
             className="w-full text-sm px-3 py-2 outline-none transition-colors duration-100"
@@ -226,15 +257,31 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
 
         <div className="px-5 pb-5 space-y-1 max-h-80 overflow-y-auto">
           {tab === "collection" ? (
-            collectionLoading ? (
-              <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>Loading collection...</p>
-            ) : filteredCollection.length === 0 ? (
-              <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>No matches found.</p>
-            ) : (
-              filteredCollection.map((c) => (
-                <CollectionRow key={c.id} album={c.album} onSelect={() => handlePhysicalSpin(c.album)} />
-              ))
-            )
+            <>
+              {collectionLoading ? (
+                <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>Loading collection...</p>
+              ) : filteredCollection.length === 0 && !query.trim() ? (
+                <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>Your collection is empty.</p>
+              ) : filteredCollection.length === 0 ? (
+                <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>No matches in your collection.</p>
+              ) : (
+                <>
+                  {query.trim() && (
+                    <p className="text-xs font-mono pt-1 pb-1" style={{ color: C.subtle }}>MY RECORDS</p>
+                  )}
+                  {visibleCollection.map((c) => (
+                    <CollectionRow key={c.id} album={c.album} onSelect={() => handlePhysicalSpin(c.album)} />
+                  ))}
+                  {filteredCollection.length > 5 && !collectionExpanded && (
+                    <ExpandButton
+                      count={filteredCollection.length - 5}
+                      onClick={() => setCollectionExpanded(true)}
+                    />
+                  )}
+                </>
+              )}
+              <FansSection query={query} fans={visibleFans} expanded={fansExpanded} total={fans.length} onExpand={() => setFansExpanded(true)} />
+            </>
           ) : (
             <>
               {/* Spotify recently played */}
@@ -258,7 +305,10 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate" style={{ color: C.text }}>{r.title}</div>
-                        <div className="text-xs font-mono truncate" style={{ color: C.muted }}>{r.artist}{r.year ? ` · ${r.year}` : ""}</div>
+                        <div className="text-xs font-mono truncate" style={{ color: C.muted }}>
+                          <ArtistLink artist={r.artist} />
+                          {r.year ? ` · ${r.year}` : ""}
+                        </div>
                       </div>
                     </button>
                   ))}
@@ -277,9 +327,16 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
               {!mbLoading && query.trim() && mbResults.length === 0 && (
                 <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>No results found.</p>
               )}
-              {mbResults.map((r) => (
+              {query.trim() && mbResults.length > 0 && (
+                <p className="text-xs font-mono pt-1 pb-1" style={{ color: C.subtle }}>ALBUMS</p>
+              )}
+              {visibleMb.map((r) => (
                 <StreamingRow key={r.mbid} result={r} onSelect={() => handleStreamingSpin(r)} />
               ))}
+              {mbResults.length > 5 && !mbExpanded && (
+                <ExpandButton count={mbResults.length - 5} onClick={() => setMbExpanded(true)} />
+              )}
+              <FansSection query={query} fans={visibleFans} expanded={fansExpanded} total={fans.length} onExpand={() => setFansExpanded(true)} />
             </>
           )}
         </div>
@@ -296,24 +353,92 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
   );
 }
 
+// ── Shared sub-components ───────────────────────────────────────────────────
+
+function ArtistLink({ artist }: { artist: string }) {
+  return (
+    <Link
+      href={`/search?q=${encodeURIComponent(artist)}`}
+      style={{ color: "inherit", textDecoration: "none" }}
+      onClick={(e) => e.stopPropagation()}
+      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--skin-accent)")}
+      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--skin-muted)")}
+    >
+      {artist}
+    </Link>
+  );
+}
+
+function ExpandButton({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-xs font-mono py-1.5 transition-colors duration-100"
+      style={{ color: "var(--skin-accent)", background: "none", border: "none", cursor: "pointer", textAlign: "left", paddingLeft: 8 }}
+    >
+      +{count} more
+    </button>
+  );
+}
+
+function FansSection({ query, fans, expanded, total, onExpand }: {
+  query: string;
+  fans: SearchFan[];
+  expanded: boolean;
+  total: number;
+  onExpand: () => void;
+}) {
+  if (!query.trim() || fans.length === 0) return null;
+  return (
+    <>
+      <div style={{ height: 1, backgroundColor: "var(--skin-border)", margin: "8px 0" }} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 4 }}>
+        <p className="text-xs font-mono" style={{ color: "var(--skin-subtle)" }}>FANS</p>
+        {total > fans.length && !expanded && (
+          <ExpandButton count={total - fans.length} onClick={onExpand} />
+        )}
+        {expanded && (
+          <Link
+            href={`/search?q=${encodeURIComponent(query)}&tab=fans`}
+            className="text-xs font-mono"
+            style={{ color: "var(--skin-accent)", textDecoration: "none" }}
+          >
+            See all →
+          </Link>
+        )}
+      </div>
+      {fans.map((fan) => (
+        <FanRow
+          key={fan.id}
+          fan={fan}
+          onClick={() => { window.location.href = `/${fan.username}`; }}
+        />
+      ))}
+    </>
+  );
+}
+
 function CollectionRow({ album, onSelect }: { album: Album; onSelect: () => void }) {
   return (
     <button
       onClick={onSelect}
       className="w-full flex items-center gap-3 p-2 text-left transition-colors duration-100"
       style={{ backgroundColor: "transparent", borderRadius: 4 }}
-      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--skin-surface-raised)")}
       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
     >
       {album.coverUrl ? (
         <Image src={album.coverUrl} alt={album.title} width={40} height={40}
           className="object-cover shrink-0" style={{ width: 40, height: 40, borderRadius: 4 }} unoptimized />
       ) : (
-        <div className="shrink-0" style={{ width: 40, height: 40, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
+        <div className="shrink-0" style={{ width: 40, height: 40, backgroundColor: "var(--skin-surface-raised)", borderRadius: 4 }} />
       )}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium truncate" style={{ color: C.text }}>{album.title}</div>
-        <div className="text-xs font-mono truncate" style={{ color: C.muted }}>{album.artist}</div>
+        <div className="text-sm font-medium truncate" style={{ color: "var(--skin-text)" }}>{album.title}</div>
+        <div className="text-xs font-mono truncate" style={{ color: "var(--skin-muted)" }}>
+          <ArtistLink artist={album.artist} />
+          {album.releaseYear ? ` · ${album.releaseYear}` : ""}
+        </div>
       </div>
     </button>
   );
@@ -329,7 +454,7 @@ function StreamingRow({ result, onSelect }: { result: MBResult; onSelect: () => 
       onClick={onSelect}
       className="w-full flex items-center gap-3 p-2 text-left transition-colors duration-100"
       style={{ backgroundColor: "transparent", borderRadius: 4 }}
-      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--skin-surface-raised)")}
       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
     >
       {coverUrl ? (
@@ -338,14 +463,15 @@ function StreamingRow({ result, onSelect }: { result: MBResult; onSelect: () => 
           className="object-cover shrink-0" style={{ width: 40, height: 40, borderRadius: 4 }} />
       ) : (
         <div className="shrink-0 flex items-center justify-center text-xs font-mono"
-          style={{ width: 40, height: 40, backgroundColor: C.surfaceRaised, borderRadius: 4, color: C.subtle }}>
+          style={{ width: 40, height: 40, backgroundColor: "var(--skin-surface-raised)", borderRadius: 4, color: "var(--skin-subtle)" }}>
           ▶
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium truncate" style={{ color: C.text }}>{result.title}</div>
-        <div className="text-xs font-mono truncate" style={{ color: C.muted }}>
-          {result.artist}{result.year ? ` · ${result.year}` : ""}
+        <div className="text-sm font-medium truncate" style={{ color: "var(--skin-text)" }}>{result.title}</div>
+        <div className="text-xs font-mono truncate" style={{ color: "var(--skin-muted)" }}>
+          <ArtistLink artist={result.artist} />
+          {result.year ? ` · ${result.year}` : ""}
         </div>
       </div>
     </button>

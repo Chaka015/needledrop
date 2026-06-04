@@ -9,6 +9,7 @@ import NowSpinningModal from "./NowSpinningModal";
 import AddModal from "./AddModal";
 import NotificationBell from "./NotificationBell";
 import MessageBadge from "./MessageBadge";
+import SearchDropdown from "./SearchDropdown";
 
 interface NavbarProps {
   username?: string | null;
@@ -25,13 +26,16 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
   const [showAvatar, setShowAvatar] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const addRef = useRef<HTMLDivElement>(null);
   const avatarRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (addRef.current && !addRef.current.contains(e.target as Node)) setShowAdd(false);
       if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) setShowAvatar(false);
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowSearchDropdown(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -54,6 +58,7 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery("");
+      setShowSearchDropdown(false);
     }
   }
 
@@ -102,15 +107,24 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
 
           {/* Search */}
           {username && (
-            <form onSubmit={handleSearch} className="ms-nav-search">
-              <span style={{ fontSize: 13, flexShrink: 0 }}>⚲</span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search records, artists, fans…"
-              />
-            </form>
+            <div ref={searchRef} style={{ position: "relative" }}>
+              <form onSubmit={handleSearch} className="ms-nav-search">
+                <span style={{ fontSize: 13, flexShrink: 0 }}>⚲</span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setShowSearchDropdown(true); }}
+                  onFocus={() => setShowSearchDropdown(true)}
+                  placeholder="Dig — records, artists, fans…"
+                />
+              </form>
+              {showSearchDropdown && (
+                <SearchDropdown
+                  query={searchQuery}
+                  onClose={() => { setShowSearchDropdown(false); setSearchQuery(""); }}
+                />
+              )}
+            </div>
           )}
 
           {username ? (

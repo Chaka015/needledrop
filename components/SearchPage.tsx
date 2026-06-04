@@ -41,7 +41,7 @@ interface AlbumResult {
 
 interface Props {
   query: string;
-  initialTab: "users" | "albums";
+  initialTab: "fans" | "albums";
   users: UserResult[];
   albums: AlbumResult[];
   isLoggedIn: boolean;
@@ -49,7 +49,7 @@ interface Props {
 }
 
 export default function SearchPage({ query, initialTab, users, albums, isLoggedIn, discogsToken }: Props) {
-  const [tab, setTab] = useState<"users" | "albums">(initialTab);
+  const [tab, setTab] = useState<"fans" | "albums">(initialTab);
   const [visibleUsers, setVisibleUsers] = useState(5);
   const [visibleAlbums, setVisibleAlbums] = useState(5);
   const [followStates, setFollowStates] = useState<Record<string, boolean>>(
@@ -94,7 +94,7 @@ export default function SearchPage({ query, initialTab, users, albums, isLoggedI
 
       {/* Tabs */}
       <div className="flex gap-0 mb-6" style={{ borderBottom: `1px solid ${C.border}` }}>
-        {(["users", "albums"] as const).map((t) => (
+        {(["fans", "albums"] as const).map((t) => (
           <button key={t} onClick={() => { setTab(t); if (t === "albums") loadDiscogsResults(); }}
             className="px-5 py-2 text-xs font-mono uppercase tracking-widest transition-colors duration-100"
             style={{
@@ -102,13 +102,13 @@ export default function SearchPage({ query, initialTab, users, albums, isLoggedI
               borderBottom: tab === t ? `2px solid ${C.accent}` : "2px solid transparent",
               marginBottom: -1,
             }}>
-            {t} {t === "users" ? `(${users.length})` : `(${albums.length})`}
+            {t} {t === "fans" ? `(${users.length})` : `(${albums.length})`}
           </button>
         ))}
       </div>
 
-      {/* Users tab */}
-      {tab === "users" && (
+      {/* Fans tab */}
+      {tab === "fans" && (
         <div className="space-y-2">
           {users.length === 0 ? (
             <EmptyState text="No users found." />

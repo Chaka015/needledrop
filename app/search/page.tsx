@@ -83,7 +83,7 @@ export default async function Search({ searchParams }: Props) {
       <div className="max-w-3xl mx-auto px-6 py-10">
         <SearchPage
           query={q ?? ""}
-          initialTab={(tab as "users" | "albums") ?? "users"}
+          initialTab={((tab === "albums" ? "albums" : "fans") as "fans" | "albums")}
           users={formattedUsers}
           albums={formattedAlbums}
           isLoggedIn={!!currentUser}
