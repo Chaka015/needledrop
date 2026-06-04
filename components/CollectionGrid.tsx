@@ -119,7 +119,7 @@ export default function CollectionGrid({ items }: { items: CollectionItem[] }) {
       </div>
 
       {maxError && (
-        <p className="text-xs font-mono mb-2" style={{ color: "#C0392B" }}>
+        <p className="text-xs font-mono mb-2" style={{ color: "var(--skin-danger, #C0392B)" }}>
           Max 5 featured. Unfeature one first.
         </p>
       )}

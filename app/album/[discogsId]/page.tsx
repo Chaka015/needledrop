@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import AlbumActions from "@/components/AlbumActions";
 import AlbumTabsClient from "@/components/AlbumTabsClient";
+import AddToDatabaseTrigger from "@/components/AddToDatabaseTrigger";
 
 interface Props {
   params: Promise<{ discogsId: string }>;
@@ -200,9 +201,7 @@ export default async function AlbumPage({ params }: Props) {
                 {" "}Add it to your collection to give it a proper home.
               </p>
               <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                <Link href="/search" className="ms-btn fill" style={{ textDecoration: "none" }}>
-                  + Find &amp; Add to Collection
-                </Link>
+                <AddToDatabaseTrigger />
                 <Link href="/activity" className="ms-btn" style={{ textDecoration: "none" }}>
                   Back to E-Zine
                 </Link>

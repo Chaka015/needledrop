@@ -16,7 +16,6 @@ import FlipCounter from "@/components/FlipCounter";
 import QuickLogWidget from "@/components/QuickLogWidget";
 import { getSkin, skinToVars } from "@/lib/skins";
 import { refreshNowPlaying, type NowPlayingInfo } from "@/lib/spotify-server";
-import SkinPicker from "@/components/SkinPicker";
 
 interface ProfilePageProps {
   params: Promise<{ username: string }>;
@@ -283,15 +282,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               )}
             </div>
 
-            {/* Customize — own profile only */}
-            {isOwnProfile && (
-              <div className="ms-box">
-                <div className="ms-bar hot">Customize · Theme <span className="cta">your page</span></div>
-                <div className="ms-pad">
-                  <SkinPicker currentSkin={user.skin} />
-                </div>
-              </div>
-            )}
           </div>
 
           {/* RIGHT COLUMN */}

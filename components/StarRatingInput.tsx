@@ -1,8 +1,8 @@
 "use client";
 
 const C = {
-  accent: "#E67E22",
-  border: "#524D48",
+  accent: "var(--skin-accent)",
+  border: "var(--skin-border)",
 };
 
 interface StarRatingInputProps {
@@ -73,7 +73,7 @@ export default function StarRatingInput({ rating, onChange }: StarRatingInputPro
         </div>
       ))}
       {rating !== null && (
-        <span className="ml-1 text-xs font-mono" style={{ color: "#A89F94" }}>{rating}/5</span>
+        <span className="ml-1 text-xs font-mono" style={{ color: "var(--skin-muted)" }}>{rating}/5</span>
       )}
     </div>
   );

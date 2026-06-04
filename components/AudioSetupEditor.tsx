@@ -152,7 +152,7 @@ export default function AudioSetupEditor({ initial }: { initial: AudioSetup | nu
             </p>
           </div>
 
-          {error && <p className="text-xs font-mono" style={{ color: "#C0392B" }}>{error}</p>}
+          {error && <p className="text-xs font-mono" style={{ color: "var(--skin-danger, #C0392B)" }}>{error}</p>}
 
           <div className="flex gap-2 pt-1">
             <button

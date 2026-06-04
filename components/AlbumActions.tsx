@@ -4,14 +4,14 @@ import { useState } from "react";
 import LogListenModal from "./LogListenModal";
 
 const C = {
-  surface: "#3D3834",
-  surfaceRaised: "#4A4540",
-  border: "#524D48",
-  text: "#F7F1E3",
-  muted: "#A89F94",
-  subtle: "#6B6560",
-  accent: "#E67E22",
-  accentHover: "#CF711E",
+  surface:       "var(--skin-surface)",
+  surfaceRaised: "var(--skin-surface-raised)",
+  border:        "var(--skin-border)",
+  text:          "var(--skin-text)",
+  muted:         "var(--skin-muted)",
+  subtle:        "var(--skin-subtle)",
+  accent:        "var(--skin-accent)",
+  accentHover:   "var(--skin-accent-hover)",
 };
 
 interface AlbumActionsProps {

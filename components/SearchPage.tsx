@@ -236,18 +236,18 @@ function AlbumRow({ album, showStats, noLink }: { album: AlbumResult; showStats?
           className="object-cover shrink-0" style={{ width: 48, height: 48, borderRadius: 4 }} unoptimized />
       ) : (
         <div className="shrink-0 flex items-center justify-center text-xs"
-          style={{ width: 48, height: 48, backgroundColor: "#4A4540", borderRadius: 4, color: "#6B6560" }}>
+          style={{ width: 48, height: 48, backgroundColor: "var(--skin-surface-raised)", borderRadius: 4, color: "var(--skin-subtle)" }}>
           No art
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <div className="font-semibold text-sm truncate" style={{ color: "#F7F1E3" }}>{album.title}</div>
-        <div className="text-xs font-mono truncate" style={{ color: "#A89F94" }}>
+        <div className="font-semibold text-sm truncate" style={{ color: "var(--skin-text)" }}>{album.title}</div>
+        <div className="text-xs font-mono truncate" style={{ color: "var(--skin-muted)" }}>
           {album.artist}{album.releaseYear ? ` · ${album.releaseYear}` : ""}
           {album.label ? ` · ${album.label}` : ""}
         </div>
         {showStats && (
-          <div className="flex gap-3 mt-0.5 text-xs font-mono" style={{ color: "#6B6560" }}>
+          <div className="flex gap-3 mt-0.5 text-xs font-mono" style={{ color: "var(--skin-subtle)" }}>
             {album.logCount !== undefined && <span>{album.logCount} logged</span>}
             {album.collectionCount !== undefined && <span>{album.collectionCount} collected</span>}
           </div>
@@ -258,7 +258,7 @@ function AlbumRow({ album, showStats, noLink }: { album: AlbumResult; showStats?
   if (noLink) {
     return (
       <div className="flex items-center gap-4 p-3"
-        style={{ backgroundColor: "#3D3834", border: `1px solid #524D48` }}>
+        style={{ backgroundColor: "var(--skin-surface)", border: `1px solid #524D48` }}>
         {inner}
       </div>
     );
@@ -266,9 +266,9 @@ function AlbumRow({ album, showStats, noLink }: { album: AlbumResult; showStats?
   return (
     <Link href={`/album/${encodeURIComponent(album.discogsId)}`}
       className="flex items-center gap-4 p-3 transition-colors duration-100"
-      style={{ backgroundColor: "#3D3834", border: `1px solid #524D48`, display: "flex" }}
-      onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#4A4540")}
-      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#3D3834")}>
+      style={{ backgroundColor: "var(--skin-surface)", border: `1px solid #524D48`, display: "flex" }}
+      onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "var(--skin-surface-raised)")}
+      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "var(--skin-surface)")}>
       {inner}
     </Link>
   );
@@ -278,9 +278,9 @@ function LoadMore({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button onClick={onClick}
       className="w-full py-2 text-xs font-mono transition-colors duration-100"
-      style={{ backgroundColor: "#3D3834", color: "#A89F94", border: `1px solid #524D48`, borderRadius: 4 }}
-      onMouseEnter={(e) => (e.currentTarget.style.color = "#F7F1E3")}
-      onMouseLeave={(e) => (e.currentTarget.style.color = "#A89F94")}>
+      style={{ backgroundColor: "var(--skin-surface)", color: "var(--skin-muted)", border: `1px solid #524D48`, borderRadius: 4 }}
+      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--skin-text)")}
+      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--skin-muted)")}>
       {label}
     </button>
   );
@@ -289,7 +289,7 @@ function LoadMore({ label, onClick }: { label: string; onClick: () => void }) {
 function EmptyState({ text }: { text: string }) {
   return (
     <div className="p-8 text-center text-sm font-mono"
-      style={{ border: `1px dashed #524D48`, color: "#6B6560" }}>
+      style={{ border: `1px dashed #524D48`, color: "var(--skin-subtle)" }}>
       {text}
     </div>
   );

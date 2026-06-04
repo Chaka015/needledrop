@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 const C = {
-  muted:  "#A89F94",
-  accent: "#E67E22",
-  text:   "#F7F1E3",
+  muted:  "var(--skin-muted)",
+  accent: "var(--skin-accent)",
+  text:   "var(--skin-text)",
 };
 
 export default function MessageBadge() {

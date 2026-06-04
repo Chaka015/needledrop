@@ -4,15 +4,15 @@ import { useState } from "react";
 import StarRatingInput from "./StarRatingInput";
 
 const C = {
-  bg: "#2D2926",
-  surface: "#3D3834",
-  surfaceRaised: "#4A4540",
-  border: "#524D48",
-  text: "#F7F1E3",
-  muted: "#A89F94",
-  subtle: "#6B6560",
-  accent: "#E67E22",
-  accentHover: "#CF711E",
+  bg:            "var(--skin-bg)",
+  surface:       "var(--skin-surface)",
+  surfaceRaised: "var(--skin-surface-raised)",
+  border:        "var(--skin-border)",
+  text:          "var(--skin-text)",
+  muted:         "var(--skin-muted)",
+  subtle:        "var(--skin-subtle)",
+  accent:        "var(--skin-accent)",
+  accentHover:   "var(--skin-accent-hover)",
 };
 
 interface Album {
@@ -139,7 +139,7 @@ export default function LogListenModal({ album, onClose, onSuccess, source = "ph
               onBlur={(e) => (e.currentTarget.style.borderColor = C.border)} />
           </div>
 
-          {error && <p className="text-xs font-mono" style={{ color: "#C0392B" }}>{error}</p>}
+          {error && <p className="text-xs font-mono" style={{ color: "var(--skin-danger, #C0392B)" }}>{error}</p>}
 
           <button type="submit" disabled={loading}
             className="w-full py-3 text-sm font-medium transition-colors duration-100"

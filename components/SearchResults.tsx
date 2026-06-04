@@ -5,14 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 
 const C = {
-  surface: "#3D3834",
-  surfaceRaised: "#4A4540",
-  border: "#524D48",
-  text: "#F7F1E3",
-  muted: "#A89F94",
-  subtle: "#6B6560",
-  accent: "#E67E22",
-  accentHover: "#CF711E",
+  surface: "var(--skin-surface)",
+  surfaceRaised: "var(--skin-surface-raised)",
+  border: "var(--skin-border)",
+  text: "var(--skin-text)",
+  muted: "var(--skin-muted)",
+  subtle: "var(--skin-subtle)",
+  accent: "var(--skin-accent)",
+  accentHover: "var(--skin-accent-hover)",
 };
 
 interface UserResult {
@@ -57,7 +57,7 @@ export default function SearchResults({
 
   if (results.length === 0) {
     return (
-      <div className="p-8 text-center text-sm font-mono" style={{ border: `1px dashed #524D48`, color: "#6B6560" }}>
+      <div className="p-8 text-center text-sm font-mono" style={{ border: `1px dashed #524D48`, color: "var(--skin-subtle)" }}>
         No users found.
       </div>
     );

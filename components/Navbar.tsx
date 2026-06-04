@@ -89,7 +89,7 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
                 E-Zine
               </Link>
               <Link href={`/${username}`} className={"ms-nav-link" + (isActive(`/${username}`) ? " active" : "")}>
-                Collection
+                Profile
               </Link>
               <Link href="/search" className={"ms-nav-link" + (isActive("/search") ? " active" : "")}>
                 Dig
@@ -201,7 +201,7 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
                     borderRadius: 4, boxShadow: "3px 3px 0 var(--skin-shadow-soft)", overflow: "hidden",
                   }}>
                     <DropItem onClick={() => setShowAvatar(false)}>
-                      <Link href={`/${username}`} style={{ display: "block", color: "inherit" }}>My Liner Notes</Link>
+                      <Link href={`/${username}`} style={{ display: "block", color: "inherit" }}>Profile</Link>
                     </DropItem>
                     <DropItem onClick={() => setShowAvatar(false)}>
                       <Link href="/messages" style={{ display: "block", color: "inherit" }}>Notes</Link>

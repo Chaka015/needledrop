@@ -19,7 +19,8 @@ export async function GET(req: Request) {
     "artist-credit"?: { name?: string; artist?: { name: string } }[];
     date?: string;
     "cover-art-archive"?: { front?: boolean };
-    "label-info"?: { label?: { name: string } }[];
+    "label-info"?: { label?: { name: string }; "catalog-number"?: string }[];
+    media?: { format?: string }[];
   }) => ({
     mbid: r.id,
     title: r.title,
@@ -27,6 +28,8 @@ export async function GET(req: Request) {
     year: r.date ? r.date.slice(0, 4) : null,
     hasCover: r["cover-art-archive"]?.front ?? false,
     label: r["label-info"]?.[0]?.label?.name ?? null,
+    catalogNumber: r["label-info"]?.[0]?.["catalog-number"] ?? null,
+    formats: r.media ? [...new Set(r.media.map((m) => m.format).filter(Boolean))] : [],
   }));
 
   return NextResponse.json({ results });

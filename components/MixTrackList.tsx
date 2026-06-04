@@ -4,12 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 
 const C = {
-  surface: "#3D3834",
-  surfaceRaised: "#4A4540",
-  border: "#524D48",
-  text: "#F7F1E3",
-  muted: "#A89F94",
-  subtle: "#6B6560",
+  surface: "var(--skin-surface)",
+  surfaceRaised: "var(--skin-surface-raised)",
+  border: "var(--skin-border)",
+  text: "var(--skin-text)",
+  muted: "var(--skin-muted)",
+  subtle: "var(--skin-subtle)",
 };
 
 interface Track {

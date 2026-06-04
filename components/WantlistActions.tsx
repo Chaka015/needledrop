@@ -11,7 +11,7 @@ const C = {
   subtle:        "var(--skin-subtle)",
   accent:        "var(--skin-accent)",
   accentHover:   "var(--skin-accent-hover)",
-  danger:        "#C0392B",
+  danger:        "var(--skin-danger, #C0392B)",
 };
 
 interface Props {

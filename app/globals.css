@@ -24,6 +24,7 @@
   --skin-shadow-soft:    rgba(0,0,0,0.4);
   --skin-star:           #F3A712;
   --skin-live:           #5E9E6E;
+  --skin-danger:         #C0392B;
 }
 
 @theme inline {

@@ -71,22 +71,28 @@ model Notification {
 }
 
 model Album {
-  id          String         @id @default(cuid())
-  discogsId   String         @unique
-  title       String
-  artist      String
-  releaseYear Int?
-  coverUrl    String?
-  label       String?
-  genre       String?
-  artistMbid  String?
-  durationMs  BigInt?
-  mbid        String?
-  comments    AlbumComment[]
-  collection  Collection[]
-  logs        ListeningLog[]
-  mixItems    MixItem[]
-  wantlist    Wantlist[]
+  id            String         @id @default(cuid())
+  discogsId     String         @unique
+  title         String
+  artist        String
+  releaseYear   Int?
+  coverUrl      String?
+  label         String?
+  genre         String?
+  artistMbid    String?
+  durationMs    BigInt?
+  mbid          String?
+  catalogNumber String?
+  formats       Json?
+  genreTags     Json?
+  spotifyId     String?
+  isInCatalog   Boolean        @default(false)
+  visibility    String         @default("hidden")
+  comments      AlbumComment[]
+  collection    Collection[]
+  logs          ListeningLog[]
+  mixItems      MixItem[]
+  wantlist      Wantlist[]
 }
 
 model Spin {
