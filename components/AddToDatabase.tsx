@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import LogListenModal from "./LogListenModal";
 
 const C = {
@@ -60,6 +61,7 @@ interface Props {
 }
 
 export default function AddToDatabase({ onClose }: Props) {
+  const router = useRouter();
   const [step, setStep] = useState<Step>("search");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -189,56 +191,60 @@ export default function AddToDatabase({ onClose }: Props) {
     setSubmitting(true);
     setError("");
 
-    const spotifyId = selected?._source === "spotify" ? (selected as SpotifyResult).spotifyId : undefined;
-    const mbid = selected?._source === "musicbrainz" ? (selected as MBResult).mbid : undefined;
+    try {
+      const spotifyId = selected?._source === "spotify" ? (selected as SpotifyResult).spotifyId : undefined;
+      const mbid = selected?._source === "musicbrainz" ? (selected as MBResult).mbid : undefined;
 
-    const res = await fetch("/api/albums/add-to-database", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: title.trim(),
-        artist: artist.trim(),
-        releaseYear: releaseYear ? parseInt(releaseYear) : null,
-        coverUrl: coverUrl || null,
-        label: label.trim(),
-        catalogNumber: catalogNumber.trim(),
-        formats,
-        genreTags,
-        spotifyId,
-        mbid,
-      }),
-    });
+      const res = await fetch("/api/albums/add-to-database", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          artist: artist.trim(),
+          releaseYear: releaseYear ? parseInt(releaseYear) : null,
+          coverUrl: coverUrl || null,
+          label: label.trim(),
+          catalogNumber: catalogNumber.trim(),
+          formats,
+          genreTags,
+          spotifyId,
+          mbid,
+        }),
+      });
 
-    if (!res.ok) {
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Failed to add album.");
+        return;
+      }
+
       const data = await res.json();
-      setError(data.error ?? "Failed to add album.");
+      const album = data.album;
+
+      // Best-effort — failure here doesn't block the log modal
+      await fetch("/api/now-spinning", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ albumId: album.id, source: "physical" }),
+      }).catch(() => {});
+
+      setCreatedAlbum({
+        id: album.id,
+        discogsId: album.discogsId,
+        title: album.title,
+        artist: album.artist,
+        releaseYear: album.releaseYear,
+        coverUrl: album.coverUrl,
+        label: album.label,
+        genre: album.genre,
+      });
+
+      setStep("logging");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    const data = await res.json();
-    const album = data.album;
-
-    // Set now spinning before opening the log modal
-    await fetch("/api/now-spinning", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ albumId: album.id, source: "physical" }),
-    });
-
-    setCreatedAlbum({
-      id: album.id,
-      discogsId: album.discogsId,
-      title: album.title,
-      artist: album.artist,
-      releaseYear: album.releaseYear,
-      coverUrl: album.coverUrl,
-      label: album.label,
-      genre: album.genre,
-    });
-
-    setSubmitting(false);
-    setStep("logging");
   }
 
   if (step === "logging" && createdAlbum) {
@@ -256,7 +262,7 @@ export default function AddToDatabase({ onClose }: Props) {
         }}
         source="physical"
         onClose={onClose}
-        onSuccess={() => { window.location.href = `/album/${encodeURIComponent(createdAlbum.discogsId)}`; }}
+        onSuccess={() => router.push(`/album/${encodeURIComponent(createdAlbum.discogsId)}`)}
       />
     );
   }

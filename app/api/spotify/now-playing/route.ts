@@ -19,6 +19,13 @@ export async function POST() {
 
   return NextResponse.json({
     ok: true,
-    playing: playing ? { title: playing.title, artist: playing.artist } : null,
+    playing: playing
+      ? {
+          title:     playing.title,
+          artist:    playing.artist,
+          discogsId: playing.discogsId,
+          albumId:   playing.albumDbId,
+        }
+      : null,
   });
 }

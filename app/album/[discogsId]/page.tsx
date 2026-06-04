@@ -161,6 +161,10 @@ async function ensureSpotifyAlbum(discogsId: string): Promise<void> {
   }
 }
 
+// Never serve a cached version — album records can be created moments before
+// this page is first requested (race with the create → redirect flow).
+export const dynamic = "force-dynamic";
+
 export default async function AlbumPage({ params }: Props) {
   const { discogsId } = await params;
   const { userId: clerkId } = await auth();
@@ -170,10 +174,20 @@ export default async function AlbumPage({ params }: Props) {
     include: ALBUM_INCLUDES,
   });
 
-  // Self-heal: if a spotify:album: record is missing, fetch it from
-  // Spotify (client credentials) and upsert it, then retry the query.
+  // Self-heal for spotify: fetch from Spotify API and upsert, then retry.
   if (!album && discogsId.startsWith("spotify:album:")) {
     await ensureSpotifyAlbum(discogsId);
+    album = await prisma.album.findUnique({
+      where: { discogsId },
+      include: ALBUM_INCLUDES,
+    });
+  }
+
+  // Generic retry for any prefix: the album may have just been committed by
+  // the API call that triggered this redirect. One short wait is enough to
+  // let the Neon pooler connection see the committed write.
+  if (!album) {
+    await new Promise((r) => setTimeout(r, 300));
     album = await prisma.album.findUnique({
       where: { discogsId },
       include: ALBUM_INCLUDES,
