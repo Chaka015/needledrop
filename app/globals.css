@@ -343,7 +343,7 @@ body {
   letter-spacing: .08em; display: flex; align-items: center; gap: 8px;
 }
 
-.ms-top8 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 16px; }
+.ms-top8 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; padding: 16px; }
 .ms-top8 .cell { position: relative; cursor: pointer; transition: transform .15s; }
 .ms-top8 .cell:hover { transform: translateY(-3px); }
 .ms-ribbon {
