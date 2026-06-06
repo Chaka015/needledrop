@@ -12,26 +12,26 @@
   --background: #ffffff;
   --foreground: #171717;
 
-  /* Skin tokens — default to Analog Warmth */
-  --skin-bg:             #2D2926;
-  --skin-surface:        #3D3834;
-  --skin-surface-raised: #4A4540;
-  --skin-border:         #524D48;
-  --skin-text:           #F7F1E3;
-  --skin-muted:          #A89F94;
-  --skin-subtle:         #6B6560;
-  --skin-accent:         #E67E22;
-  --skin-accent-hover:   #CF711E;
+  /* Skin tokens — default to MS Modern Light (ms-blue-light) */
+  --skin-bg:             #e9e7e2;
+  --skin-surface:        #ffffff;
+  --skin-surface-raised: #f1efe9;
+  --skin-border:         #18161d;
+  --skin-text:           #18161d;
+  --skin-muted:          #57545f;
+  --skin-subtle:         #8b8893;
+  --skin-accent:         #2540e6;
+  --skin-accent-hover:   #1d35c4;
   /* MS Modern extended tokens */
-  --skin-hot:            #E67E22;
-  --skin-hot-ink:        #F7F1E3;
-  --skin-accent-ink:     #F7F1E3;
-  --skin-card:           #3D3834;
-  --skin-sunk:           #2D2926;
-  --skin-line:           #3D3834;
-  --skin-shadow-soft:    rgba(0,0,0,0.4);
-  --skin-star:           #F3A712;
-  --skin-live:           #5E9E6E;
+  --skin-hot:            #ff5a1f;
+  --skin-hot-ink:        #ffffff;
+  --skin-accent-ink:     #ffffff;
+  --skin-card:           #ffffff;
+  --skin-sunk:           #f1efe9;
+  --skin-line:           #e6e3dc;
+  --skin-shadow-soft:    rgba(24,22,29,0.85);
+  --skin-star:           #f3a712;
+  --skin-live:           #16a34a;
   --skin-danger:         #C0392B;
 }
 
