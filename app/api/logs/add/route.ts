@@ -26,6 +26,8 @@ export async function POST(req: Request) {
   // Fetch duration asynchronously (don't block the response on MusicBrainz)
   const durationMs = await fetchAlbumDurationMs({ mbid: album.mbid, title, artist });
 
+  const logSource = source === "streaming" ? "streaming" : "physical";
+
   const log = await prisma.listeningLog.create({
     data: {
       userId: user.id,
@@ -33,8 +35,18 @@ export async function POST(req: Request) {
       rating: rating ?? null,
       review: review ?? null,
       format: format ?? null,
-      source: source === "streaming" ? "streaming" : "physical",
+      source: logSource,
       durationMs: BigInt(durationMs),
+    },
+  });
+
+  // Keep Now Spinning in sync with the latest manual log
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      nowSpinning:       album.id,
+      nowSpinningAt:     new Date(),
+      nowSpinningSource: logSource,
     },
   });
 

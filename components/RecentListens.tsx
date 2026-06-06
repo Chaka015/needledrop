@@ -32,6 +32,13 @@ interface Log {
   };
 }
 
+function formatTimestamp(iso: string): string {
+  const d = new Date(iso);
+  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+  const date = d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
+  return `${time} · ${date}`;
+}
+
 export default function RecentListens({ logs: initialLogs, isOwnProfile }: { logs: Log[]; isOwnProfile: boolean }) {
   const [logs, setLogs] = useState(initialLogs);
   const [editTarget, setEditTarget] = useState<Log | null>(null);
@@ -95,7 +102,7 @@ export default function RecentListens({ logs: initialLogs, isOwnProfile }: { log
             ) : log.format ? (
               <span>{log.format}</span>
             ) : null}
-            <span>{new Date(log.playedAt).toLocaleDateString()}</span>
+            <span>{formatTimestamp(log.playedAt)}</span>
           </div>
         </div>
         <div className="flex flex-col gap-1.5 shrink-0 items-end">
