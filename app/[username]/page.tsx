@@ -88,11 +88,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const skin = getSkin(user.skin);
   const skinVars = skinToVars(skin) as React.CSSProperties;
 
-  // Stats for odometer
+  // Stats for odometer — aggregate across ALL logs, not just the 10 fetched for display
+  const [totalMsResult, listensLogged] = await Promise.all([
+    prisma.listeningLog.aggregate({ where: { userId: user.id }, _sum: { durationMs: true } }),
+    prisma.listeningLog.count({ where: { userId: user.id } }),
+  ]);
   const recordsOwned = user.collection.length;
-  const listensLogged = user.logs.length;
-  const totalListeningMs = user.logs.reduce((sum, log) => sum + (log.durationMs ? Number(log.durationMs) : 0), 0);
-  const hoursListened = Math.round(totalListeningMs / 3600000);
+  const totalListeningMs = Number(totalMsResult._sum.durationMs ?? BigInt(0));
+  const hoursListened = Math.round(totalListeningMs / 3_600_000);
 
   const featured = user.collection.filter((c) => c.isFeatured).slice(0, 8);
   const latestAdded = user.collection.filter((c) => !c.isFeatured).slice(0, 8);

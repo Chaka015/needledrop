@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { fetchAlbumDurationMs } from "@/lib/duration";
 
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID!;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET!;
@@ -50,46 +51,36 @@ interface AlbumSession {
 }
 
 function groupIntoSessions(tracks: SpotifyTrack[]): AlbumSession[] {
-  // Sort oldest-first so consecutive same-album runs are grouped correctly
-  const sorted = [...tracks].sort(
-    (a, b) => new Date(a.played_at).getTime() - new Date(b.played_at).getTime()
-  );
+  // One session per (albumId, calendar day) — covers non-consecutive listens across a day
+  const map = new Map<string, AlbumSession>();
 
-  const sessions: AlbumSession[] = [];
-  let i = 0;
+  for (const item of tracks) {
+    const album = item.track.album;
+    const playedAt = new Date(item.played_at);
+    const dayKey = `${album.id}::${playedAt.getFullYear()}-${playedAt.getMonth()}-${playedAt.getDate()}`;
 
-  while (i < sorted.length) {
-    const albumId = sorted[i].track.album.id;
-    let j = i;
-
-    // Consume consecutive tracks from the same album
-    while (j < sorted.length && sorted[j].track.album.id === albumId) {
-      j++;
+    if (!map.has(dayKey)) {
+      const albumArtist =
+        album.artists?.[0]?.name ?? item.track.artists[0]?.name ?? "Unknown Artist";
+      map.set(dayKey, {
+        spotifyAlbumId: album.id,
+        albumName: album.name,
+        albumArtist,
+        coverUrl: album.images[0]?.url ?? null,
+        releaseYear: album.release_date
+          ? parseInt(album.release_date.slice(0, 4))
+          : null,
+        label: album.label ?? null,
+        playedAt,
+      });
+    } else {
+      // Track the most recent play time within the day
+      const session = map.get(dayKey)!;
+      if (playedAt > session.playedAt) session.playedAt = playedAt;
     }
-
-    // Use the last (most recent) track in the run for metadata + timestamp
-    const last = sorted[j - 1];
-    const albumArtist =
-      last.track.album.artists?.[0]?.name ??
-      last.track.artists[0]?.name ??
-      "Unknown Artist";
-
-    sessions.push({
-      spotifyAlbumId: albumId,
-      albumName: last.track.album.name,
-      albumArtist,
-      coverUrl: last.track.album.images[0]?.url ?? null,
-      releaseYear: last.track.album.release_date
-        ? parseInt(last.track.album.release_date.slice(0, 4))
-        : null,
-      label: last.track.album.label ?? null,
-      playedAt: new Date(last.played_at),
-    });
-
-    i = j;
   }
 
-  return sessions;
+  return [...map.values()];
 }
 
 // Delete per-song duplicate entries created by the old track-level sync.
@@ -217,11 +208,21 @@ export async function POST() {
       },
     });
 
-    // Skip if we already have a log for this exact album+timestamp
+    // Skip if we already have an auto-imported log for this album on the same calendar day
+    const startOfDay = new Date(session.playedAt);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
     const existing = await prisma.listeningLog.findFirst({
-      where: { userId: user.id, albumId: album.id, playedAt: session.playedAt },
+      where: { userId: user.id, albumId: album.id, autoImported: true, playedAt: { gte: startOfDay, lt: endOfDay } },
     });
     if (existing) { skipped++; continue; }
+
+    const durationMs = await fetchAlbumDurationMs({
+      mbid: album.mbid,
+      title: album.title,
+      artist: album.artist,
+    });
 
     await prisma.listeningLog.create({
       data: {
@@ -231,6 +232,7 @@ export async function POST() {
         source:       "streaming",
         autoImported: true,
         playedAt:     session.playedAt,
+        durationMs:   BigInt(durationMs),
       },
     });
     imported++;

@@ -128,8 +128,7 @@ export default function RecentListens({ logs: initialLogs, isOwnProfile }: { log
       <div className="space-y-2">
         {first4.map((log) => <LogEntry key={log.id} log={log} />)}
         {rest.length > 0 && (
-          <div className="space-y-2 max-h-64 overflow-y-auto pr-1"
-            style={{ scrollbarWidth: "thin", scrollbarColor: `${C.border} transparent` }}>
+          <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-none">
             {rest.map((log) => <LogEntry key={log.id} log={log} />)}
           </div>
         )}
