@@ -42,6 +42,7 @@ function formatTimestamp(iso: string): string {
 export default function RecentListens({ logs: initialLogs, isOwnProfile }: { logs: Log[]; isOwnProfile: boolean }) {
   const [logs, setLogs] = useState(initialLogs);
   const [editTarget, setEditTarget] = useState<Log | null>(null);
+  const [visibleCount, setVisibleCount] = useState(5);
   const [spinStates, setSpinStates] = useState<Record<string, { count: number; spun: boolean }>>(
     Object.fromEntries(initialLogs.map((l) => [l.id, { count: l.spinCount, spun: l.userHasSpun }]))
   );
@@ -70,9 +71,8 @@ export default function RecentListens({ logs: initialLogs, isOwnProfile }: { log
     );
   }
 
-  // First 4 always visible, rest scrollable
-  const first4 = logs.slice(0, 4);
-  const rest = logs.slice(4);
+  const visible = logs.slice(0, visibleCount);
+  const hasMore = visibleCount < logs.length;
 
   function LogEntry({ log }: { log: Log }) {
     const spin = spinStates[log.id];
@@ -133,11 +133,16 @@ export default function RecentListens({ logs: initialLogs, isOwnProfile }: { log
   return (
     <>
       <div className="space-y-2">
-        {first4.map((log) => <LogEntry key={log.id} log={log} />)}
-        {rest.length > 0 && (
-          <div className="space-y-2 max-h-64 overflow-y-auto scrollbar-none">
-            {rest.map((log) => <LogEntry key={log.id} log={log} />)}
-          </div>
+        {visible.map((log) => <LogEntry key={log.id} log={log} />)}
+        {hasMore && (
+          <button
+            onClick={() => setVisibleCount((n) => n + 5)}
+            className="w-full text-xs font-mono py-2 transition-colors duration-100"
+            style={{ color: C.muted, background: C.surfaceRaised, border: `1px solid ${C.border}`, borderRadius: 4 }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = C.text)}
+            onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
+            more...
+          </button>
         )}
       </div>
 
