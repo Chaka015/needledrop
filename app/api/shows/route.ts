@@ -2,14 +2,15 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-const BANDSINTOWN_KEY = process.env.BANDSINTOWN_API_KEY;
+const TICKETMASTER_KEY = process.env.TICKETMASTER_API_KEY;
 const SETLISTFM_KEY = process.env.SETLIST_FM_API_KEY;
 
-interface BTEvent {
+interface TMEvent {
   id: string;
-  datetime: string;
-  venue: { name: string; city: string };
-  offers?: { url: string }[];
+  name: string;
+  dates: { start: { dateTime?: string; localDate: string } };
+  _embedded?: { venues?: { name: string; city: { name: string } }[] };
+  url?: string;
 }
 
 interface SLSetlist {
@@ -28,27 +29,25 @@ export async function GET(req: Request) {
   let past: object[] = [];
   let myAttendance: string[] = [];
 
-  // Bandsintown upcoming shows
-  if (BANDSINTOWN_KEY && artistName) {
+  // Ticketmaster upcoming shows
+  if (TICKETMASTER_KEY && artistName) {
     try {
       const res = await fetch(
-        `https://rest.bandsintown.com/artists/${encodeURIComponent(artistName)}/events?app_id=${BANDSINTOWN_KEY}`,
+        `https://app.ticketmaster.com/discovery/v2/events.json?keyword=${encodeURIComponent(artistName)}&classificationName=music&size=10&apikey=${TICKETMASTER_KEY}`,
         { next: { revalidate: 3600 } }
       );
       if (res.ok) {
-        const events: BTEvent[] = await res.json();
-        upcoming = (Array.isArray(events) ? events : []).slice(0, 10).map((e) => ({
-          setlistFmId: `bt:${e.id}`,
-          date: e.datetime,
-          venueName: e.venue.name,
-          venueCity: e.venue.city,
-          ticketUrl: e.offers?.[0]?.url,
+        const data = await res.json();
+        const events: TMEvent[] = data._embedded?.events ?? [];
+        upcoming = events.map((e) => ({
+          setlistFmId: `tm:${e.id}`,
+          date: e.dates.start.dateTime ?? e.dates.start.localDate,
+          venueName: e._embedded?.venues?.[0]?.name ?? "Unknown Venue",
+          venueCity: e._embedded?.venues?.[0]?.city?.name ?? "",
+          ticketUrl: e.url,
         }));
       }
     } catch { /* stub */ }
-  } else {
-    // Stub data when no API key
-    upcoming = [];
   }
 
   // Setlist.fm past shows

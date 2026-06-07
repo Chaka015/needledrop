@@ -161,19 +161,15 @@ export default async function ArtistPage({ params }: Props) {
                   <h3 className="text-xs font-mono uppercase tracking-widest mb-3" style={{ color: C.muted }}>{label}</h3>
                   <div className="space-y-1">
                     {grouped[key].map((r) => {
-                      const coverUrl = r["cover-art-archive"]?.front
-                        ? `https://coverartarchive.org/release-group/${r.id}/front-250`
-                        : null;
+                      const coverUrl = `https://coverartarchive.org/release-group/${r.id}/front-250`;
                       return (
                         <div key={r.id} className="flex items-center gap-3 p-3"
                           style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                          {coverUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={coverUrl} alt={r.title} className="object-cover shrink-0"
-                              style={{ width: 40, height: 40, borderRadius: 4 }} />
-                          ) : (
-                            <div className="shrink-0" style={{ width: 40, height: 40, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
-                          )}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={coverUrl} alt={r.title} className="object-cover shrink-0"
+                            style={{ width: 40, height: 40, borderRadius: 4 }}
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; (e.currentTarget.nextSibling as HTMLElement).style.display = "block"; }} />
+                          <div className="shrink-0" style={{ width: 40, height: 40, backgroundColor: C.surfaceRaised, borderRadius: 4, display: "none" }} />
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-semibold truncate" style={{ color: C.text }}>{r.title}</div>
                             {r.date && (

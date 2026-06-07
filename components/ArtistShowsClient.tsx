@@ -83,14 +83,12 @@ export default function ArtistShowsClient({ artistMbid, artistName, userId }: Ar
 
   return (
     <div className="space-y-8">
-      {/* Upcoming Shows */}
-      <section>
-        <h2 className="text-xs font-mono uppercase tracking-widest mb-3" style={{ color: C.subtle }}>
-          Upcoming Shows
-        </h2>
-        {upcomingShows.length === 0 ? (
-          <p className="text-xs font-mono" style={{ color: C.subtle }}>No upcoming shows found.</p>
-        ) : (
+      {/* Upcoming Shows — only render if there are shows */}
+      {upcomingShows.length > 0 && (
+        <section>
+          <h2 className="text-xs font-mono uppercase tracking-widest mb-3" style={{ color: C.subtle }}>
+            Upcoming Shows
+          </h2>
           <div className="space-y-2">
             {upcomingShows.map((show) => (
               <div key={show.setlistFmId} className="p-3"
@@ -109,8 +107,8 @@ export default function ArtistShowsClient({ artistMbid, artistName, userId }: Ar
               </div>
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* Show History */}
       <section>
