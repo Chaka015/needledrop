@@ -18,6 +18,16 @@ export interface SearchAlbum {
   collectionCount: number;
 }
 
+export interface SearchArtist {
+  mbid: string;
+  name: string;
+  disambiguation?: string;
+  type?: string;
+  area?: string;
+  beginYear?: string;
+  ended: boolean;
+}
+
 export interface SearchFan {
   id: string;
   username: string;
@@ -33,13 +43,15 @@ interface SearchDropdownProps {
   query: string;
   onAlbumSelect?: (album: SearchAlbum) => void;
   onFanSelect?: (fan: SearchFan) => void;
+  onArtistSelect?: (artist: SearchArtist) => void;
   onClose?: () => void;
 }
 
-export default function SearchDropdown({ query, onAlbumSelect, onFanSelect, onClose }: SearchDropdownProps) {
+export default function SearchDropdown({ query, onAlbumSelect, onFanSelect, onArtistSelect, onClose }: SearchDropdownProps) {
   const router = useRouter();
   const [albums, setAlbums] = useState<SearchAlbum[]>([]);
   const [fans, setFans] = useState<SearchFan[]>([]);
+  const [artists, setArtists] = useState<SearchArtist[]>([]);
   const [loading, setLoading] = useState(false);
   const [albumsExpanded, setAlbumsExpanded] = useState(false);
   const [fansExpanded, setFansExpanded] = useState(false);
@@ -60,6 +72,7 @@ export default function SearchDropdown({ query, onAlbumSelect, onFanSelect, onCl
         const data = await res.json();
         setAlbums(data.albums ?? []);
         setFans(data.fans ?? []);
+        setArtists(data.artists ?? []);
         setAlbumsExpanded(false);
         setFansExpanded(false);
       } finally {
@@ -73,6 +86,15 @@ export default function SearchDropdown({ query, onAlbumSelect, onFanSelect, onCl
 
   const visibleAlbums = albums.slice(0, albumsExpanded ? 15 : 5);
   const visibleFans = fans.slice(0, fansExpanded ? 15 : 5);
+
+  function handleArtistClick(artist: SearchArtist) {
+    if (onArtistSelect) {
+      onArtistSelect(artist);
+    } else {
+      router.push(`/artist/${artist.mbid}`);
+    }
+    onClose?.();
+  }
 
   function handleAlbumClick(album: SearchAlbum) {
     if (onAlbumSelect) {
@@ -102,7 +124,7 @@ export default function SearchDropdown({ query, onAlbumSelect, onFanSelect, onCl
         <div style={{ padding: 16, textAlign: "center", fontSize: 11, fontFamily: "monospace", color: "var(--skin-subtle)" }}>
           Digging...
         </div>
-      ) : albums.length === 0 && fans.length === 0 ? (
+      ) : albums.length === 0 && fans.length === 0 && artists.length === 0 ? (
         <div style={{ padding: 16, textAlign: "center", fontSize: 11, fontFamily: "monospace", color: "var(--skin-subtle)" }}>
           No results found.
         </div>
@@ -123,9 +145,19 @@ export default function SearchDropdown({ query, onAlbumSelect, onFanSelect, onCl
             </section>
           )}
 
-          {fans.length > 0 && (
+          {artists.length > 0 && (
             <section>
               {albums.length > 0 && <Divider />}
+              <SectionHeader label="Artists" />
+              {artists.map((artist) => (
+                <ArtistRow key={artist.mbid} artist={artist} onClick={() => handleArtistClick(artist)} />
+              ))}
+            </section>
+          )}
+
+          {fans.length > 0 && (
+            <section>
+              {(albums.length > 0 || artists.length > 0) && <Divider />}
               <SectionHeader label="Fans" extra={
                 fans.length > 5 && !fansExpanded
                   ? <ExpandBtn onClick={() => setFansExpanded(true)} count={fans.length - 5} />
@@ -218,6 +250,44 @@ export function FanRow({ fan, onClick }: { fan: SearchFan; onClick: () => void }
         <div style={{ fontSize: 11, fontFamily: "monospace", color: "var(--skin-muted)" }}>
           {fan.collectionCount} records · {fan.logCount} logged
         </div>
+      </div>
+    </button>
+  );
+}
+
+export function ArtistRow({ artist, onClick }: { artist: SearchArtist; onClick: () => void }) {
+  const meta = [
+    artist.type,
+    artist.area,
+    artist.beginYear ? (artist.ended ? `${artist.beginYear} – ` : `${artist.beginYear} – present`) : null,
+  ].filter(Boolean).join(" · ");
+
+  return (
+    <button
+      onClick={onClick}
+      style={rowStyle}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--skin-surface-raised)")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+    >
+      <div style={{
+        width: 36, height: 36, borderRadius: "50%", background: "var(--skin-surface-raised)",
+        flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 15, fontWeight: 700, color: "var(--skin-subtle)",
+      }}>
+        {artist.name[0].toUpperCase()}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--skin-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {artist.name}
+          {artist.disambiguation && (
+            <span style={{ fontWeight: 400, color: "var(--skin-muted)", marginLeft: 6, fontSize: 11 }}>
+              ({artist.disambiguation})
+            </span>
+          )}
+        </div>
+        {meta && (
+          <div style={{ fontSize: 11, fontFamily: "monospace", color: "var(--skin-muted)" }}>{meta}</div>
+        )}
       </div>
     </button>
   );

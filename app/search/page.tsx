@@ -76,11 +76,8 @@ export default async function Search({ searchParams }: Props) {
     collectionCount: a.collection.length,
   }));
 
-  const C = { bg: "#2D2926", text: "#F7F1E3", subtle: "#6B6560" };
-
   return (
-    <div className="min-h-screen font-sans" style={{ backgroundColor: C.bg, color: C.text }}>
-      <div className="max-w-3xl mx-auto px-6 py-10">
+    <div className="max-w-3xl mx-auto px-6 py-10">
         <SearchPage
           query={q ?? ""}
           initialTab={((tab === "fans" ? "fans" : "albums") as "fans" | "albums")}
@@ -89,7 +86,6 @@ export default async function Search({ searchParams }: Props) {
           isLoggedIn={!!currentUser}
           discogsToken={process.env.DISCOGS_TOKEN ?? ""}
         />
-      </div>
     </div>
   );
 }

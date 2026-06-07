@@ -50,6 +50,28 @@ export async function fetchArtistReleases(mbid: string): Promise<MBRelease[]> {
   } catch { return []; }
 }
 
+export interface MBArtistSearchResult {
+  id: string;
+  name: string;
+  disambiguation?: string;
+  type?: string;
+  area?: { name: string };
+  "life-span"?: { begin?: string; ended?: boolean };
+  score: number;
+}
+
+export async function searchArtists(query: string): Promise<MBArtistSearchResult[]> {
+  try {
+    const res = await fetch(
+      `${MB_BASE}/artist?query=${encodeURIComponent(query)}&limit=5&fmt=json`,
+      { headers: MB_HEADERS, next: { revalidate: 300 } }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.artists ?? [];
+  } catch { return []; }
+}
+
 export async function fetchWikipediaSummary(title: string): Promise<string | null> {
   try {
     const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
