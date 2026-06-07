@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { searchArtists } from "@/lib/musicbrainz";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q")?.trim() ?? "";
 
-  if (!q) return NextResponse.json({ albums: [], fans: [] });
+  if (!q) return NextResponse.json({ albums: [], fans: [], artists: [] });
 
   const { userId: clerkId } = await auth();
   const currentUser = clerkId
@@ -16,7 +17,7 @@ export async function GET(req: Request) {
       })
     : null;
 
-  const [albums, fans] = await Promise.all([
+  const [albums, fans, artists] = await Promise.all([
     prisma.album.findMany({
       where: {
         OR: [
@@ -46,6 +47,7 @@ export async function GET(req: Request) {
       },
       take: 15,
     }),
+    searchArtists(q),
   ]);
 
   return NextResponse.json({
@@ -72,6 +74,15 @@ export async function GET(req: Request) {
       isFollowing: currentUser
         ? currentUser.following.some((f) => f.followingId === u.id)
         : false,
+    })),
+    artists: artists.map((a) => ({
+      mbid: a.id,
+      name: a.name,
+      disambiguation: a.disambiguation,
+      type: a.type,
+      area: a.area?.name,
+      beginYear: a["life-span"]?.begin?.slice(0, 4),
+      ended: a["life-span"]?.ended ?? false,
     })),
   });
 }
