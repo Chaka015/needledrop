@@ -312,8 +312,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     <div className="t">{nowSpinningAlbum.title}</div>
                     <div style={{ color: C.muted, fontSize: 15, marginTop: 2 }}>{nowSpinningAlbum.artist}</div>
                     <div className="nowmeta">
-                      <span className="ms-onair"><span className="d" /> ON AIR</span>
-                      {!nowSpinningIsActive && <span style={{ opacity: 0.55 }}> · LAST PLAYED</span>}
+                      {nowSpinningIsActive
+                        ? <span className="ms-onair"><span className="d" /> ON AIR</span>
+                        : <span style={{ opacity: 0.55 }}>LAST PLAYED</span>
+                      }
                     </div>
                   </div>
                 </div>
