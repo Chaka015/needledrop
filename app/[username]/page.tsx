@@ -399,57 +399,61 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               </div>
             )}
 
-            {/* Mixes */}
-            <div className="ms-box">
-              <div className="ms-bar">Mixes <span className="cta">{user.mixes.length} total</span></div>
-              {user.mixes.length > 0 ? (
-                <div>
-                  {user.mixes.slice(0, 5).map((m) => (
-                    <Link key={m.id} href={`/${username}/mixes/${m.id}`} className="ms-mix" style={{ textDecoration: "none" }}>
-                      <div style={{ display: "flex", flexShrink: 0 }}>
-                        {m.items.slice(0, 3).map((item, i) => (
-                          item.album.coverUrl ? (
-                            <Image key={i} src={item.album.coverUrl} alt={item.album.title} width={50} height={50}
-                              className="object-cover"
-                              style={{ width: 50, height: 50, borderRadius: 4, border: `2px solid var(--skin-border)`, marginLeft: i > 0 ? -14 : 0, boxShadow: i > 0 ? "-2px 0 4px rgba(0,0,0,0.3)" : "none" }} unoptimized />
-                          ) : (
-                            <div key={i} style={{ width: 50, height: 50, borderRadius: 4, background: C.surface, border: `2px solid ${C.border}`, marginLeft: i > 0 ? -14 : 0 }} />
-                          )
+            {/* Mixes + Wantlist side by side */}
+            {(user.mixes.length > 0 || user.wantlist.length > 0) && (
+              <div style={{ display: "grid", gridTemplateColumns: user.mixes.length > 0 && user.wantlist.length > 0 ? "1fr 1fr" : "1fr", gap: 0 }}>
+                {/* Mixes */}
+                {user.mixes.length > 0 && (
+                  <div className="ms-box" style={{
+                    borderRight: user.wantlist.length > 0 ? "none" : undefined,
+                    borderRadius: user.wantlist.length > 0 ? "4px 0 0 4px" : undefined,
+                  }}>
+                    <div className="ms-bar">Mixes <span className="cta">{user.mixes.length} total</span></div>
+                    <div>
+                      {user.mixes.slice(0, 5).map((m) => (
+                        <Link key={m.id} href={`/${username}/mixes/${m.id}`} className="ms-mix" style={{ textDecoration: "none" }}>
+                          <div style={{ display: "flex", flexShrink: 0 }}>
+                            {m.items.slice(0, 3).map((item, i) => (
+                              item.album.coverUrl ? (
+                                <Image key={i} src={item.album.coverUrl} alt={item.album.title} width={44} height={44}
+                                  className="object-cover"
+                                  style={{ width: 44, height: 44, borderRadius: 4, border: `2px solid var(--skin-border)`, marginLeft: i > 0 ? -12 : 0, boxShadow: i > 0 ? "-2px 0 4px rgba(0,0,0,0.3)" : "none" }} unoptimized />
+                              ) : (
+                                <div key={i} style={{ width: 44, height: 44, borderRadius: 4, background: C.surface, border: `2px solid ${C.border}`, marginLeft: i > 0 ? -12 : 0 }} />
+                              )
+                            ))}
+                          </div>
+                          <div>
+                            <div className="ti">{m.title}</div>
+                            <div className="sub">{m._count.items} records</div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Wantlist */}
+                {user.wantlist.length > 0 && (
+                  <div className="ms-box" style={{ borderRadius: user.mixes.length > 0 ? "0 4px 4px 0" : undefined }}>
+                    <div className="ms-bar">Wantlist <span className="cta"><Link href={`/${username}/wantlist`} style={{ color: "inherit" }}>{user.wantlist.length} records →</Link></span></div>
+                    <div className="ms-pad">
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(56px, 1fr))", gap: 6 }}>
+                        {user.wantlist.slice(0, 12).map((w) => (
+                          <Link key={w.id} href={`/album/${encodeURIComponent(w.album.discogsId)}`} title={`${w.album.title} — ${w.album.artist}`}>
+                            {w.album.coverUrl ? (
+                              <Image src={w.album.coverUrl} alt={w.album.title} width={56} height={56}
+                                className="object-cover aspect-square w-full"
+                                style={{ borderRadius: 4, border: `2px solid var(--skin-border)`, display: "block" }} unoptimized />
+                            ) : (
+                              <div style={{ aspectRatio: "1", background: C.surface, borderRadius: 4, border: `2px solid ${C.border}` }} />
+                            )}
+                          </Link>
                         ))}
                       </div>
-                      <div>
-                        <div className="ti">{m.title}</div>
-                        <div className="sub">{m._count.items} records</div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="ms-pad" style={{ paddingTop: 12 }}>
-                  <MixesList mixes={user.mixes} username={username} isOwnProfile={isOwnProfile} />
-                </div>
-              )}
-            </div>
-
-            {/* Wantlist */}
-            {user.wantlist.length > 0 && (
-              <div className="ms-box">
-                <div className="ms-bar">Wantlist <span className="cta"><Link href={`/${username}/wantlist`} style={{ color: "inherit" }}>{user.wantlist.length} records →</Link></span></div>
-                <div className="ms-pad">
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(60px, 1fr))", gap: 6 }}>
-                    {user.wantlist.slice(0, 12).map((w) => (
-                      <Link key={w.id} href={`/album/${encodeURIComponent(w.album.discogsId)}`} title={`${w.album.title} — ${w.album.artist}`}>
-                        {w.album.coverUrl ? (
-                          <Image src={w.album.coverUrl} alt={w.album.title} width={60} height={60}
-                            className="object-cover aspect-square w-full"
-                            style={{ borderRadius: 4, border: `2px solid var(--skin-border)`, display: "block" }} unoptimized />
-                        ) : (
-                          <div style={{ aspectRatio: "1", background: C.surface, borderRadius: 4, border: `2px solid ${C.border}` }} />
-                        )}
-                      </Link>
-                    ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
