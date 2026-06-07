@@ -290,42 +290,46 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           {/* RIGHT COLUMN */}
           <div className="ms-stack">
 
-            {/* Now Spinning */}
-            {nowSpinningAlbum && (
-              <div className="ms-box">
-                <div className="ms-bar hot">
-                  Now Spinning{" "}
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                    <span className="ms-eq"><i /><i /><i /><i /></span>
-                  </span>
-                </div>
-                <div className="ms-pad ms-now">
-                  {nowSpinningAlbum.coverUrl && (
-                    <Link href={`/album/${encodeURIComponent(nowSpinningAlbum.discogsId ?? "")}`}>
-                      <Image src={nowSpinningAlbum.coverUrl} alt={nowSpinningAlbum.title}
-                        width={104} height={104} className="object-cover"
-                        style={{ width: 104, height: 104, borderRadius: 4, border: `2px solid var(--skin-border)`, flexShrink: 0 }}
-                        unoptimized />
-                    </Link>
-                  )}
-                  <div>
-                    <div className="t">{nowSpinningAlbum.title}</div>
-                    <div style={{ color: C.muted, fontSize: 15, marginTop: 2 }}>{nowSpinningAlbum.artist}</div>
-                    <div className="nowmeta">
-                      {nowSpinningIsActive
-                        ? <span className="ms-onair"><span className="d" /> ON AIR</span>
-                        : <span style={{ opacity: 0.55 }}>LAST PLAYED</span>
-                      }
+            {/* Now Spinning + Log a Listen side by side */}
+            {(nowSpinningAlbum || isOwnProfile) && (
+              <div style={{ display: "grid", gridTemplateColumns: nowSpinningAlbum && isOwnProfile ? "1fr 1fr" : "1fr", gap: 0 }}>
+                {nowSpinningAlbum && (
+                  <div className="ms-box" style={{ borderRight: isOwnProfile ? "none" : undefined, borderRadius: isOwnProfile ? "4px 0 0 4px" : undefined }}>
+                    <div className="ms-bar hot">
+                      Now Spinning{" "}
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                        <span className="ms-eq"><i /><i /><i /><i /></span>
+                      </span>
+                    </div>
+                    <div className="ms-pad ms-now">
+                      {nowSpinningAlbum.coverUrl && (
+                        <Link href={`/album/${encodeURIComponent(nowSpinningAlbum.discogsId ?? "")}`}>
+                          <Image src={nowSpinningAlbum.coverUrl} alt={nowSpinningAlbum.title}
+                            width={72} height={72} className="object-cover"
+                            style={{ width: 72, height: 72, borderRadius: 4, border: `2px solid var(--skin-border)`, flexShrink: 0 }}
+                            unoptimized />
+                        </Link>
+                      )}
+                      <div style={{ minWidth: 0 }}>
+                        <div className="t" style={{ fontSize: 14 }}>{nowSpinningAlbum.title}</div>
+                        <div style={{ color: C.muted, fontSize: 13, marginTop: 2 }}>{nowSpinningAlbum.artist}</div>
+                        <div className="nowmeta" style={{ marginTop: 8 }}>
+                          {nowSpinningIsActive
+                            ? <span className="ms-onair"><span className="d" /> ON AIR</span>
+                            : <span style={{ opacity: 0.55 }}>LAST PLAYED</span>
+                          }
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
+                )}
 
-            {isOwnProfile && (
-              <div className="ms-box">
-                <div className="ms-bar hot">+ Log a listen</div>
-                <div className="ms-pad"><QuickLogWidget /></div>
+                {isOwnProfile && (
+                  <div className="ms-box" style={{ borderRadius: nowSpinningAlbum ? "0 4px 4px 0" : undefined }}>
+                    <div className="ms-bar hot">+ Log a listen</div>
+                    <div className="ms-pad"><QuickLogWidget /></div>
+                  </div>
+                )}
               </div>
             )}
 
