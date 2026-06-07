@@ -15,10 +15,15 @@ const C = {
 
 export default function ImportDiscogs() {
   const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState("");
   const [result, setResult] = useState<{ imported: number; skipped: number; total: number } | null>(null);
   const [error, setError] = useState("");
 
   async function handleImport() {
+    if (!username.trim()) {
+      setError("Please enter your Discogs username.");
+      return;
+    }
     setLoading(true);
     setError("");
     setResult(null);
@@ -26,7 +31,7 @@ export default function ImportDiscogs() {
     const res = await fetch("/api/discogs/import", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ discogsUsername: "Chaka015" }),
+      body: JSON.stringify({ discogsUsername: username.trim() }),
     });
 
     const data = await res.json();
@@ -43,6 +48,23 @@ export default function ImportDiscogs() {
 
   return (
     <div className="space-y-3">
+      <input
+        type="text"
+        placeholder="Your Discogs username"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        disabled={loading}
+        className="w-full px-3 py-2 text-xs font-mono"
+        style={{
+          backgroundColor: C.surface,
+          color: C.text,
+          border: `1px solid ${C.border}`,
+          borderRadius: 0,
+          outline: "none",
+        }}
+        onFocus={(e) => (e.currentTarget.style.borderColor = C.accent)}
+        onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
+      />
       <button
         onClick={handleImport}
         disabled={loading}
