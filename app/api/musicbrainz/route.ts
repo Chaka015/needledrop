@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   if (!res.ok) return NextResponse.json({ results: [] }, { status: res.status });
 
   const data = await res.json();
-  const results = (data.releases ?? []).map((r: {
+  const mapped = (data.releases ?? []).map((r: {
     id: string;
     title: string;
     "artist-credit"?: { name?: string; artist?: { name: string } }[];
@@ -31,6 +31,17 @@ export async function GET(req: Request) {
     catalogNumber: r["label-info"]?.[0]?.["catalog-number"] ?? null,
     formats: r.media ? [...new Set(r.media.map((m) => m.format).filter(Boolean))] : [],
   }));
+
+  // Deduplicate by title+artist, preferring releases that have cover art
+  const seen = new Map<string, typeof mapped[0]>();
+  for (const r of mapped) {
+    const key = `${r.title.toLowerCase()}::${r.artist.toLowerCase()}`;
+    const existing = seen.get(key);
+    if (!existing || (!existing.hasCover && r.hasCover)) {
+      seen.set(key, r);
+    }
+  }
+  const results = [...seen.values()];
 
   return NextResponse.json({ results });
 }
