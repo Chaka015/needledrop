@@ -184,54 +184,6 @@ export default function SettingsClient({ user }: SettingsClientProps) {
           </button>
         </form>
 
-        {/* Streaming — separate, not part of the profile form */}
-        <div className="ms-box">
-          <div className="ms-bar">Streaming · Spotify</div>
-          <div className="ms-pad">
-            <p style={{ fontSize: 13, color: "var(--skin-muted)", marginBottom: 16, lineHeight: 1.5 }}>
-              Connect Spotify to auto-import your recent plays as streaming logs.
-            </p>
-
-            {spotifyConnected ? (
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--skin-live)", display: "inline-block", flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, fontFamily: "var(--font-nd-mono)", color: "var(--skin-text)" }}>
-                    Spotify connected
-                  </span>
-                  <span style={{ fontSize: 11, color: "var(--skin-subtle)", fontFamily: "var(--font-nd-mono)" }}>
-                    ({user.spotifyId})
-                  </span>
-                </div>
-                {lastSyncedAt && (
-                  <p style={{ fontSize: 11, color: "var(--skin-subtle)", fontFamily: "var(--font-nd-mono)", marginBottom: 12 }}>
-                    Last synced: {new Date(lastSyncedAt).toLocaleString()}
-                  </p>
-                )}
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button type="button" onClick={handleSpotifySync} disabled={spotifySyncing}
-                    className="ms-btn sm" style={{ opacity: spotifySyncing ? 0.4 : 1 }}>
-                    {spotifySyncing ? "Syncing…" : "⟳ Sync now"}
-                  </button>
-                  <button type="button" onClick={handleSpotifyDisconnect}
-                    className="ms-btn sm" style={{ color: "var(--skin-subtle)" }}>
-                    Disconnect
-                  </button>
-                </div>
-                {spotifySyncResult && (
-                  <p style={{ fontSize: 12, color: spotifySyncResult.startsWith("✓") ? "var(--skin-live)" : "var(--skin-hot)", fontFamily: "var(--font-nd-mono)", marginTop: 10 }}>
-                    {spotifySyncResult}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <a href="/api/auth/spotify"
-                style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "9px 16px", fontSize: 13, fontWeight: 600, borderRadius: 4, textDecoration: "none", background: "#1DB954", color: "#ffffff" }}>
-                ▶ Connect Spotify
-              </a>
-            )}
-          </div>
-        </div>
 
       </div>
     </div>

@@ -176,14 +176,6 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
                       <AddModal trigger="search" />
                     </div>
                     <DropItem onClick={() => { setShowAdd(false); if (username) router.push(`/${username}`); }}>↓ Import from Discogs</DropItem>
-                    {spotifyConnected && (
-                      <>
-                        <div style={{ height: 1, background: "var(--skin-line)" }} />
-                        <DropItem onClick={handleSpotifySync}>
-                          {syncing ? "⟳ Syncing…" : "⟳ Sync Spotify"}
-                        </DropItem>
-                      </>
-                    )}
                   </div>
                 )}
               </div>
