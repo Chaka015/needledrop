@@ -121,11 +121,11 @@ export default function SearchDropdown({ query, onAlbumSelect, onFanSelect, onAr
       maxHeight: 480, overflowY: "auto",
     }}>
       {loading ? (
-        <div style={{ padding: 16, textAlign: "center", fontSize: 11, fontFamily: "monospace", color: "var(--skin-subtle)" }}>
+        <div style={{ padding: 16, textAlign: "center", fontSize: 11, fontFamily: "var(--font-nd-mono)", color: "var(--skin-subtle)" }}>
           Digging...
         </div>
       ) : albums.length === 0 && fans.length === 0 && artists.length === 0 ? (
-        <div style={{ padding: 16, textAlign: "center", fontSize: 11, fontFamily: "monospace", color: "var(--skin-subtle)" }}>
+        <div style={{ padding: 16, textAlign: "center", fontSize: 11, fontFamily: "var(--font-nd-mono)", color: "var(--skin-subtle)" }}>
           No results found.
         </div>
       ) : (
@@ -200,7 +200,7 @@ export function AlbumRow({ album, onClick, onArtistClick }: {
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--skin-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {album.title}
         </div>
-        <div style={{ fontSize: 11, fontFamily: "monospace", color: "var(--skin-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div style={{ fontSize: 11, fontFamily: "var(--font-nd-mono)", color: "var(--skin-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           <Link
             href={`/search?q=${encodeURIComponent(album.artist)}`}
             style={{ color: "inherit", textDecoration: "none" }}
@@ -214,7 +214,7 @@ export function AlbumRow({ album, onClick, onArtistClick }: {
         </div>
       </div>
       {(album.logCount > 0 || album.collectionCount > 0) && (
-        <div style={{ fontSize: 10, fontFamily: "monospace", color: "var(--skin-subtle)", flexShrink: 0, textAlign: "right", lineHeight: 1.4 }}>
+        <div style={{ fontSize: 10, fontFamily: "var(--font-nd-mono)", color: "var(--skin-subtle)", flexShrink: 0, textAlign: "right", lineHeight: 1.4 }}>
           {album.logCount > 0 && <div>{album.logCount} logged</div>}
           {album.collectionCount > 0 && <div>{album.collectionCount} collected</div>}
         </div>
@@ -247,7 +247,7 @@ export function FanRow({ fan, onClick }: { fan: SearchFan; onClick: () => void }
         <div style={{ fontSize: 13, fontWeight: 600, color: "var(--skin-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {fan.username}
         </div>
-        <div style={{ fontSize: 11, fontFamily: "monospace", color: "var(--skin-muted)" }}>
+        <div style={{ fontSize: 11, fontFamily: "var(--font-nd-mono)", color: "var(--skin-muted)" }}>
           {fan.collectionCount} records · {fan.logCount} logged
         </div>
       </div>
@@ -286,7 +286,7 @@ export function ArtistRow({ artist, onClick }: { artist: SearchArtist; onClick: 
           )}
         </div>
         {meta && (
-          <div style={{ fontSize: 11, fontFamily: "monospace", color: "var(--skin-muted)" }}>{meta}</div>
+          <div style={{ fontSize: 11, fontFamily: "var(--font-nd-mono)", color: "var(--skin-muted)" }}>{meta}</div>
         )}
       </div>
     </button>
@@ -296,7 +296,7 @@ export function ArtistRow({ artist, onClick }: { artist: SearchArtist; onClick: 
 function SectionHeader({ label, extra }: { label: string; extra?: React.ReactNode }) {
   return (
     <div style={{ padding: "10px 14px 4px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-      <span style={{ fontSize: 10, fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--skin-subtle)" }}>
+      <span style={{ fontSize: 10, fontFamily: "var(--font-nd-mono)", textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--skin-subtle)" }}>
         {label}
       </span>
       {extra}
@@ -307,7 +307,7 @@ function SectionHeader({ label, extra }: { label: string; extra?: React.ReactNod
 function ExpandBtn({ onClick, count }: { onClick: () => void; count: number }) {
   return (
     <button onClick={(e) => { e.stopPropagation(); onClick(); }}
-      style={{ fontSize: 10, fontFamily: "monospace", color: "var(--skin-accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+      style={{ fontSize: 10, fontFamily: "var(--font-nd-mono)", color: "var(--skin-accent)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
       +{count} more
     </button>
   );
@@ -324,5 +324,5 @@ const rowStyle: React.CSSProperties = {
 };
 
 const expandLinkStyle: React.CSSProperties = {
-  fontSize: 10, fontFamily: "monospace", color: "var(--skin-accent)", textDecoration: "none",
+  fontSize: 10, fontFamily: "var(--font-nd-mono)", color: "var(--skin-accent)", textDecoration: "none",
 };

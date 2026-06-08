@@ -283,13 +283,13 @@ export default function SearchPage({ query, initialTab, users, albums, isLoggedI
       {recentDigs.length > 0 && (
         <div style={{ marginTop: 48 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <span style={{ fontSize: 10, fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.1em", color: C.subtle }}>
+            <span style={{ fontSize: 10, fontFamily: "var(--font-nd-mono)", textTransform: "uppercase", letterSpacing: "0.1em", color: C.subtle }}>
               Recent Digs
             </span>
             <button
               onClick={clearAllDigs}
               style={{
-                fontSize: 10, fontFamily: "monospace", background: "none", border: "none",
+                fontSize: 10, fontFamily: "var(--font-nd-mono)", background: "none", border: "none",
                 cursor: "pointer", color: C.subtle, padding: 0, transition: "color 100ms",
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = C.muted)}
@@ -321,7 +321,7 @@ export default function SearchPage({ query, initialTab, users, albums, isLoggedI
                   }}
                 >
                   <span style={{ fontSize: 12, color: C.subtle, flexShrink: 0 }}>⚲</span>
-                  <span style={{ fontSize: 13, color: C.muted, fontFamily: "monospace" }}>{term}</span>
+                  <span style={{ fontSize: 13, color: C.muted, fontFamily: "var(--font-nd-mono)" }}>{term}</span>
                 </button>
 
                 {/* Remove individual dig */}

@@ -3,9 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import CollectionGrid from "@/components/CollectionGrid";
 import AudioSetupEditor from "@/components/AudioSetupEditor";
-import ImportDiscogs from "@/components/ImportDiscogs";
+import MyRecordsSection from "@/components/MyRecordsSection";
 import RecentListens from "@/components/RecentListens";
 import FeaturedGrid from "@/components/FeaturedGrid";
 import FollowButton from "@/components/FollowButton";
@@ -214,7 +213,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   <>
                     <Link href="/settings" className="ms-cbtn">Edit</Link>
                     <Link href={`/${username}/analytics`} className="ms-cbtn">Record Room</Link>
-                    <ImportDiscogs />
                   </>
                 ) : (
                   <>
@@ -459,26 +457,22 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
             {/* Full collection — own profile */}
             {isOwnProfile && (
-              <div className="ms-box">
-                <div className="ms-bar">My Records <span className="cta">{user.collection.length} total</span></div>
-                <div className="ms-pad">
-                  <CollectionGrid
-                    items={user.collection.map((c) => ({
-                      id: c.id,
-                      isFeatured: c.isFeatured,
-                      album: {
-                        discogsId: c.album.discogsId,
-                        title: c.album.title,
-                        artist: c.album.artist,
-                        releaseYear: c.album.releaseYear,
-                        coverUrl: c.album.coverUrl,
-                        label: c.album.label,
-                        genre: c.album.genre,
-                      },
-                    }))}
-                  />
-                </div>
-              </div>
+              <MyRecordsSection
+                totalCount={user.collection.length}
+                items={user.collection.map((c) => ({
+                  id: c.id,
+                  isFeatured: c.isFeatured,
+                  album: {
+                    discogsId: c.album.discogsId,
+                    title: c.album.title,
+                    artist: c.album.artist,
+                    releaseYear: c.album.releaseYear,
+                    coverUrl: c.album.coverUrl,
+                    label: c.album.label,
+                    genre: c.album.genre,
+                  },
+                }))}
+              />
             )}
           </div>
         </div>
