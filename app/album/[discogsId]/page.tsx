@@ -278,33 +278,23 @@ export default async function AlbumPage({ params }: Props) {
     });
   }
 
-  // Complete fallback — show a graceful "not catalogued" page instead of 404
+  // Complete fallback — auto-open the add modal instead of a dead end
   if (!album) {
-    const isStreaming = discogsId.startsWith("spotify:") || discogsId.startsWith("mb:");
     return (
       <div className="min-h-screen" style={{ backgroundColor: C.bg, color: C.text }}>
         <div className="ms-page">
           <Link href="/activity" className="ms-back">← Back to E-Zine</Link>
           <div className="ms-box" style={{ maxWidth: 560, margin: "40px auto" }}>
-            <div className="ms-bar hot">Album not catalogued yet</div>
+            <div className="ms-bar hot">Album not in catalogue</div>
             <div className="ms-pad" style={{ padding: 32, textAlign: "center" }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>💿</div>
               <h2 style={{ fontFamily: "var(--font-nd-serif)", fontSize: 24, fontWeight: 600, margin: "0 0 12px", color: C.text }}>
-                {isStreaming ? "Streaming album" : "Album not found"}
+                Album not found — add it?
               </h2>
               <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.6, margin: "0 0 24px" }}>
-                {isStreaming
-                  ? "This album was logged from a streaming service but hasn't been fully catalogued on NeedleDrop yet."
-                  : "This album isn't in the NeedleDrop catalogue yet."}
-                {" "}Add it to your collection to give it a proper home.
+                This album isn&apos;t in the NeedleDrop catalogue yet. Search below to add it and give it a proper home.
               </p>
-              <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                <AddToDatabaseTrigger />
-                <Link href="/activity" className="ms-btn" style={{ textDecoration: "none" }}>
-                  Back to E-Zine
-                </Link>
-              </div>
-              <p className="ms-time" style={{ marginTop: 20 }}>ID: {discogsId}</p>
+              <AddToDatabaseTrigger autoOpen />
             </div>
           </div>
         </div>

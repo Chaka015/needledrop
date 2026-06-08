@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const C = {
@@ -47,12 +47,13 @@ type Step = "search" | "form";
 
 interface Props {
   onClose: () => void;
+  initialQuery?: string;
 }
 
-export default function AddToDatabase({ onClose }: Props) {
+export default function AddToDatabase({ onClose, initialQuery }: Props) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("search");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery ?? "");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<SearchResult | null>(null);
@@ -72,6 +73,42 @@ export default function AddToDatabase({ onClose }: Props) {
   const [detailsLoading, setDetailsLoading] = useState(false);
 
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (initialQuery?.trim()) {
+      setSearching(true);
+      runSearch(initialQuery.trim());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function runSearch(q: string) {
+    const spotifyRes = await fetch(`/api/spotify/search?q=${encodeURIComponent(q)}`);
+    const spotifyData = await spotifyRes.json();
+    const spotifyResults: SpotifyResult[] = (spotifyData.results ?? []).map((r: Omit<SpotifyResult, "_source">) => ({
+      ...r,
+      _source: "spotify" as const,
+    }));
+    if (spotifyResults.length > 0) {
+      setResults(spotifyResults);
+      setSearching(false);
+      return;
+    }
+    const mbRes = await fetch(`/api/musicbrainz?q=${encodeURIComponent(q)}`);
+    const mbData = await mbRes.json();
+    const mbResults: MBResult[] = (mbData.results ?? []).map((r: {
+      mbid: string; title: string; artist: string; year: string | null;
+      hasCover: boolean; label: string | null; catalogNumber: string | null;
+      formats: string[]; artistMbid: string | null;
+    }) => ({
+      _source: "musicbrainz" as const,
+      mbid: r.mbid, title: r.title, artist: r.artist, year: r.year,
+      coverUrl: r.hasCover ? `https://coverartarchive.org/release/${r.mbid}/front-250` : null,
+      label: r.label, catalogNumber: r.catalogNumber, formats: r.formats, artistMbid: r.artistMbid,
+    }));
+    setResults(mbResults);
+    setSearching(false);
+  }
 
   function handleQueryChange(e: React.ChangeEvent<HTMLInputElement>) {
     const q = e.target.value;
@@ -267,7 +304,7 @@ export default function AddToDatabase({ onClose }: Props) {
       }).catch(() => {});
 
       onClose();
-      router.refresh();
+      router.push(`/album/${encodeURIComponent(album.discogsId)}`);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
