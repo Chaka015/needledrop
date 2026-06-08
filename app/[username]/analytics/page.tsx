@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import Image from "next/image";
+import MonthlyCalendarChart, { type DailyData } from "@/components/MonthlyCalendarChart";
 
 interface Props { params: Promise<{ username: string }> }
 
@@ -74,6 +75,23 @@ export default async function AnalyticsPage({ params }: Props) {
   const months = Object.entries(monthlyMap);
   const maxMonthly = Math.max(...months.map(([, v]) => v), 1);
 
+  // ── Daily counts for current month (calendar view) ────────────────────────
+  const dailyData: DailyData = {};
+  const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thisMonthLogs = logs.filter((l) => l.playedAt >= thisMonthStart);
+  for (const log of thisMonthLogs) {
+    const key = `${log.playedAt.getFullYear()}-${String(log.playedAt.getMonth() + 1).padStart(2, "0")}-${String(log.playedAt.getDate()).padStart(2, "0")}`;
+    if (!dailyData[key]) dailyData[key] = [];
+    dailyData[key].push({
+      title: log.album.title,
+      artist: log.album.artist,
+      coverUrl: log.album.coverUrl,
+      format: log.format,
+      source: log.source,
+      rating: log.rating,
+    });
+  }
+
   // ── Top artists ────────────────────────────────────────────────────────────
   const artistCount: Record<string, { count: number; mbid: string | null; coverUrl: string | null }> = {};
   for (const log of logs) {
@@ -144,30 +162,14 @@ export default async function AnalyticsPage({ params }: Props) {
           <StatCard label="STREAMING" value={streamingLogs.length} />
         </div>
 
-        {/* Monthly activity chart */}
+        {/* Monthly activity calendar */}
         <section className="mb-10">
           <SectionLabel>Monthly Activity</SectionLabel>
-          <div className="p-4" style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-            <div className="flex items-end gap-1.5" style={{ height: 120 }}>
-              {months.map(([month, count]) => {
-                const pct = count / maxMonthly;
-                const label = month.slice(5); // MM
-                return (
-                  <div key={month} className="flex flex-col items-center gap-1 flex-1">
-                    <span className="text-xs font-mono" style={{ color: C.subtle, fontSize: "0.6rem" }}>{count || ""}</span>
-                    <div style={{
-                      width: "100%",
-                      height: Math.max(pct * 96, count > 0 ? 4 : 0),
-                      backgroundColor: C.accent,
-                      opacity: 0.85,
-                      minHeight: count > 0 ? 4 : 0,
-                    }} />
-                    <span className="text-xs font-mono" style={{ color: C.subtle, fontSize: "0.6rem" }}>{label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <MonthlyCalendarChart
+            dailyData={dailyData}
+            year={now.getFullYear()}
+            month={now.getMonth()}
+          />
         </section>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
