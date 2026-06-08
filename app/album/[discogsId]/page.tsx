@@ -118,7 +118,7 @@ async function ensureSpotifyAlbumViaMB(discogsId: string, spotifyId: string): Pr
     if (!urlRes.ok) return;
     const urlData = await urlRes.json();
     const releaseId: string | undefined = urlData.relations?.find(
-      (r: { type: string; release?: { id: string } }) => r.type === "streaming music" && r.release?.id
+      (r: { type: string; release?: { id: string } }) => (r.type === "free streaming" || r.type === "streaming music") && r.release?.id
     )?.release?.id;
     if (!releaseId) return;
 
