@@ -257,13 +257,19 @@ export default async function AlbumPage({ params }: Props) {
   // Self-heal missing artistMbid — look up by name and cache it
   if (!album.artistMbid) {
     try {
+      const q = encodeURIComponent(`artist:"${album.artist}"`);
       const res = await fetch(
-        `https://musicbrainz.org/ws/2/artist?query=${encodeURIComponent(album.artist)}&limit=1&fmt=json`,
+        `https://musicbrainz.org/ws/2/artist?query=${q}&limit=5&fmt=json`,
         { headers: { "User-Agent": "NeedleDrop/1.0 (needledrop.app)" }, next: { revalidate: 86400 } }
       );
       if (res.ok) {
         const data = await res.json();
-        const mbid: string | undefined = data.artists?.[0]?.id;
+        // Prefer artists (not labels/etc) with a high score
+        const match = (data.artists ?? []).find(
+          (a: { id: string; type?: string; score?: number }) =>
+            !a.type || a.type === "Group" || a.type === "Person"
+        );
+        const mbid: string | undefined = match?.id;
         if (mbid) {
           await prisma.album.update({ where: { id: album.id }, data: { artistMbid: mbid } });
           album = { ...album, artistMbid: mbid };

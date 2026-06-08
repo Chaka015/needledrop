@@ -1,11 +1,10 @@
-import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { fetchArtist, fetchArtistReleases, fetchWikipediaSummary } from "@/lib/musicbrainz";
 import { fetchArtistNews } from "@/lib/newsapi";
 import ArtistShowsClient from "@/components/ArtistShowsClient";
+import ArtistDiscography from "@/components/ArtistDiscography";
 
 interface Props {
   params: Promise<{ mbid: string }>;
@@ -22,13 +21,6 @@ const C = {
   accent:        "var(--skin-accent)",
 };
 
-const RELEASE_TYPES = [
-  { key: "Album", label: "Albums" },
-  { key: "Single", label: "Singles" },
-  { key: "EP", label: "EPs" },
-  { key: "Live", label: "Live" },
-  { key: "Compilation", label: "Compilations" },
-];
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -78,18 +70,6 @@ export default async function ArtistPage({ params }: Props) {
   const collectorCount = await prisma.collection.count({
     where: { album: { artist: { contains: artist.name, mode: "insensitive" } } },
   });
-
-  // Group releases by type
-  const grouped: Record<string, typeof releases> = {};
-  for (const r of releases) {
-    const type = r["primary-type"] ?? "Other";
-    if (!grouped[type]) grouped[type] = [];
-    grouped[type].push(r);
-  }
-  // Sort each group by date desc
-  for (const key of Object.keys(grouped)) {
-    grouped[key].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
-  }
 
   const currentUser = clerkId
     ? await prisma.user.findUnique({ where: { clerkId }, select: { id: true } })
@@ -154,10 +134,8 @@ export default async function ArtistPage({ params }: Props) {
                 <div className="space-y-1">
                   {news.map((article, i) => (
                     <a key={i} href={article.url} target="_blank" rel="noopener noreferrer"
-                      className="block p-4 transition-colors duration-100"
-                      style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}
-                      onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = C.accent)}
-                      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.borderColor = C.border)}>
+                      className="hover-border-accent block p-4 transition-colors duration-100"
+                      style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
                       <div className="text-sm font-semibold mb-1 hover:underline" style={{ color: C.text }}>
                         {article.title}
                       </div>
@@ -174,35 +152,7 @@ export default async function ArtistPage({ params }: Props) {
             {/* DISCOGRAPHY */}
             <section>
               <SectionLabel>Discography</SectionLabel>
-              {RELEASE_TYPES.filter((t) => grouped[t.key]?.length).map(({ key, label }) => (
-                <div key={key} className="mb-8">
-                  <h3 className="text-xs font-mono uppercase tracking-widest mb-3" style={{ color: C.muted }}>{label}</h3>
-                  <div className="space-y-1">
-                    {grouped[key].map((r) => {
-                      const coverUrl = `https://coverartarchive.org/release-group/${r.id}/front-250`;
-                      return (
-                        <div key={r.id} className="flex items-center gap-3 p-3"
-                          style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={coverUrl} alt={r.title} className="object-cover shrink-0"
-                            style={{ width: 40, height: 40, borderRadius: 4 }}
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; (e.currentTarget.nextSibling as HTMLElement).style.display = "block"; }} />
-                          <div className="shrink-0" style={{ width: 40, height: 40, backgroundColor: C.surfaceRaised, borderRadius: 4, display: "none" }} />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-semibold truncate" style={{ color: C.text }}>{r.title}</div>
-                            {r.date && (
-                              <div className="text-xs font-mono" style={{ color: C.subtle }}>{r.date.slice(0, 4)}</div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-              {Object.keys(grouped).length === 0 && (
-                <p className="text-xs font-mono" style={{ color: C.subtle }}>No releases found on MusicBrainz.</p>
-              )}
+              <ArtistDiscography releases={releases} />
             </section>
           </div>
 
