@@ -266,8 +266,8 @@ export default function AddToDatabase({ onClose }: Props) {
         body: JSON.stringify({ albumId: album.id, source: "physical" }),
       }).catch(() => {});
 
-      router.push(`/album/${encodeURIComponent(album.discogsId)}`);
       onClose();
+      router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
