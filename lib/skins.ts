@@ -48,22 +48,22 @@ export function parseSkinId(skinId: string | null | undefined): { accent: string
 // Light-mode base shared by all 6 MS accent themes
 function msLight(accent: string, accentHover: string, hot: string): SkinTokens {
   return {
-    bg:           "#e9e7e2",
+    bg:           "#F4F1EA",
     surface:      "#ffffff",
-    surfaceRaised:"#f1efe9",
-    border:       "#18161d",
-    text:         "#18161d",
-    muted:        "#57545f",
-    subtle:       "#8b8893",
+    surfaceRaised:"#F0EDE5",
+    border:       "#000000",
+    text:         "#0D0D0D",
+    muted:        "#4A4742",
+    subtle:       "#7A7570",
     accent,
     accentHover,
     hot,
     hotInk:       "#ffffff",
     accentInk:    "#ffffff",
     card:         "#ffffff",
-    sunk:         "#f1efe9",
-    line:         "#e6e3dc",
-    shadowSoft:   "rgba(24,22,29,.85)",
+    sunk:         "#EDE9E0",
+    line:         "#DDD9D0",
+    shadowSoft:   "rgba(0,0,0,1)",
     star:         "#f3a712",
     live:         "#16a34a",
   };
@@ -111,7 +111,7 @@ export const SKINS: Record<string, SkinTokens> = {
   "ms-cyan-dark":    msDark("#08a5c4", "#0790aa", "#ff4d8d"),
 };
 
-export const DEFAULT_SKIN_ID = "ms-blue-light";
+export const DEFAULT_SKIN_ID = "ms-orange-light";
 export const DEFAULT_SKIN = SKINS[DEFAULT_SKIN_ID];
 
 export function getSkin(id: string | null | undefined): SkinTokens {
