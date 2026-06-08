@@ -27,24 +27,35 @@ export interface MBRelease {
   "label-info"?: { label?: { name: string } }[];
 }
 
+async function mbFetch(url: string, retries = 2): Promise<Response | null> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const res = await fetch(url, { headers: MB_HEADERS, next: { revalidate: 3600 } });
+      if (res.status === 429) {
+        // Rate limited — wait and retry
+        await new Promise((r) => setTimeout(r, 1200 * (i + 1)));
+        continue;
+      }
+      return res;
+    } catch { /* network error — retry */ }
+  }
+  return null;
+}
+
 export async function fetchArtist(mbid: string): Promise<MBArtist | null> {
   try {
-    const res = await fetch(
-      `${MB_BASE}/artist/${mbid}?inc=url-rels+tags&fmt=json`,
-      { headers: MB_HEADERS, next: { revalidate: 3600 } }
-    );
-    if (!res.ok) return null;
+    const res = await mbFetch(`${MB_BASE}/artist/${mbid}?inc=url-rels+tags&fmt=json`);
+    if (!res?.ok) return null;
     return res.json();
   } catch { return null; }
 }
 
 export async function fetchArtistReleases(mbid: string): Promise<MBRelease[]> {
   try {
-    const res = await fetch(
-      `${MB_BASE}/release-group?artist=${mbid}&limit=100&fmt=json`,
-      { headers: MB_HEADERS, next: { revalidate: 3600 } }
-    );
-    if (!res.ok) return [];
+    // Small delay so this doesn't fire simultaneously with fetchArtist
+    await new Promise((r) => setTimeout(r, 300));
+    const res = await mbFetch(`${MB_BASE}/release-group?artist=${mbid}&limit=100&fmt=json`);
+    if (!res?.ok) return [];
     const data = await res.json();
     return data["release-groups"] ?? [];
   } catch { return []; }

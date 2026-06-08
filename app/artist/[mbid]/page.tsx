@@ -42,12 +42,30 @@ export default async function ArtistPage({ params }: Props) {
   const { mbid } = await params;
   const { userId: clerkId } = await auth();
 
-  const [artist, releases] = await Promise.all([
-    fetchArtist(mbid),
-    fetchArtistReleases(mbid),
-  ]);
+  // Sequential — MusicBrainz enforces 1 req/sec; parallel requests get rate-limited
+  const artist = await fetchArtist(mbid);
 
-  if (!artist) notFound();
+  if (!artist) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: C.bg, color: C.text }}>
+        <div className="max-w-5xl mx-auto px-6 py-10">
+          <Link href="/activity" className="ms-back">← Back to E-Zine</Link>
+          <div className="ms-box" style={{ maxWidth: 480, margin: "60px auto" }}>
+            <div className="ms-bar hot">Artist not found</div>
+            <div className="ms-pad" style={{ textAlign: "center", padding: 32 }}>
+              <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.6, margin: "0 0 20px" }}>
+                MusicBrainz couldn't return data for this artist. This is usually a temporary rate-limit — try refreshing.
+              </p>
+              <p className="ms-time" style={{ marginBottom: 20 }}>MBID: {mbid}</p>
+              <Link href="/activity" className="ms-btn" style={{ textDecoration: "none" }}>← Back to E-Zine</Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const releases = await fetchArtistReleases(mbid);
 
   const news = await fetchArtistNews(artist.name);
 
