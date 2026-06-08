@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 const C = {
   bg:            "var(--skin-bg)",
@@ -51,7 +50,6 @@ interface Props {
 }
 
 export default function AddToDatabase({ onClose, initialQuery }: Props) {
-  const router = useRouter();
   const [step, setStep] = useState<Step>("search");
   const [query, setQuery] = useState(initialQuery ?? "");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -304,7 +302,9 @@ export default function AddToDatabase({ onClose, initialQuery }: Props) {
       }).catch(() => {});
 
       onClose();
-      router.push(`/album/${encodeURIComponent(album.discogsId)}`);
+      // Hard navigate so the server component re-runs and finds the newly created album.
+      // router.push to the same URL is a no-op in Next.js App Router (serves cached result).
+      window.location.href = `/album/${encodeURIComponent(album.discogsId)}`;
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
