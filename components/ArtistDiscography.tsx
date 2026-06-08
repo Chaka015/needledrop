@@ -12,19 +12,39 @@ const C = {
   accent:        "var(--skin-accent)",
 };
 
-const RELEASE_TYPES = [
-  { key: "Album", label: "Albums" },
-  { key: "Single", label: "Singles" },
-  { key: "EP", label: "EPs" },
-  { key: "Live", label: "Live" },
+const BUCKETS = [
+  { key: "Album",       label: "Albums" },
+  { key: "EP",          label: "EPs" },
+  { key: "Single",      label: "Singles" },
   { key: "Compilation", label: "Compilations" },
+  { key: "Live",        label: "Live" },
+  { key: "Other",       label: "Other" },
 ];
+
+function bucket(r: DiscographyRelease): string {
+  const primary = r["primary-type"] ?? "Other";
+  const secondary = r["secondary-types"] ?? [];
+
+  // Secondary type overrides primary for categorization
+  if (secondary.includes("Compilation")) return "Compilation";
+  if (secondary.includes("Live"))        return "Live";
+  if (secondary.includes("Soundtrack") || secondary.includes("Interview") ||
+      secondary.includes("Audiobook") || secondary.includes("Mixtape/Street") ||
+      secondary.includes("DJ-mix") || secondary.includes("Remix"))
+    return "Other";
+
+  if (primary === "Album")  return "Album";
+  if (primary === "EP")     return "EP";
+  if (primary === "Single") return "Single";
+  return "Other";
+}
 
 export interface DiscographyRelease {
   id: string;
   title: string;
   date?: string;
   "primary-type"?: string;
+  "secondary-types"?: string[];
 }
 
 function CoverImg({ mbid, title }: { mbid: string; title: string }) {
@@ -48,9 +68,9 @@ function CoverImg({ mbid, title }: { mbid: string; title: string }) {
 export default function ArtistDiscography({ releases }: { releases: DiscographyRelease[] }) {
   const grouped: Record<string, DiscographyRelease[]> = {};
   for (const r of releases) {
-    const type = r["primary-type"] ?? "Other";
-    if (!grouped[type]) grouped[type] = [];
-    grouped[type].push(r);
+    const key = bucket(r);
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(r);
   }
   for (const key of Object.keys(grouped)) {
     grouped[key].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
@@ -64,7 +84,7 @@ export default function ArtistDiscography({ releases }: { releases: DiscographyR
 
   return (
     <>
-      {RELEASE_TYPES.filter((t) => grouped[t.key]?.length).map(({ key, label }) => (
+      {BUCKETS.filter((t) => grouped[t.key]?.length).map(({ key, label }) => (
         <div key={key} className="mb-8">
           <h3 className="text-xs font-mono uppercase tracking-widest mb-3" style={{ color: C.muted }}>{label}</h3>
           <div className="space-y-1">
