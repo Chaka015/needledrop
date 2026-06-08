@@ -83,6 +83,7 @@ export default async function AnalyticsPage({ params }: Props) {
     const key = `${log.playedAt.getFullYear()}-${String(log.playedAt.getMonth() + 1).padStart(2, "0")}-${String(log.playedAt.getDate()).padStart(2, "0")}`;
     if (!dailyData[key]) dailyData[key] = [];
     dailyData[key].push({
+      discogsId: log.album.discogsId,
       title: log.album.title,
       artist: log.album.artist,
       coverUrl: log.album.coverUrl,

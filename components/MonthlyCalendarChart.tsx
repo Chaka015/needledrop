@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 const C = {
   surface:       "var(--skin-surface)",
@@ -17,6 +18,7 @@ const C = {
 };
 
 export interface DayLog {
+  discogsId: string;
   title: string;
   artist: string;
   coverUrl: string | null;
@@ -67,6 +69,7 @@ export default function MonthlyCalendarChart({
   month: number; // 0-indexed
 }) {
   const [hovered, setHovered] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
 
   const cells = getMonthGrid(year, month);
   const monthName = new Date(year, month, 1).toLocaleString("default", { month: "long", year: "numeric" });
@@ -76,13 +79,20 @@ export default function MonthlyCalendarChart({
     1
   );
 
-  const hoveredLogs = hovered ? (dailyData[hovered] ?? []) : [];
+  // Panel shows selected day (locked) or hovered day (preview), selected takes priority
+  const activeKey = selected ?? hovered;
+  const activeLogs = activeKey ? (dailyData[activeKey] ?? []) : [];
 
   function pad(n: number) { return String(n).padStart(2, "0"); }
 
   function handleEnter(day: number) {
     const key = `${year}-${pad(month + 1)}-${pad(day)}`;
     setHovered(key);
+  }
+
+  function handleClick(day: number) {
+    const key = `${year}-${pad(month + 1)}-${pad(day)}`;
+    setSelected((prev) => (prev === key ? null : key));
   }
 
   return (
@@ -136,19 +146,26 @@ export default function MonthlyCalendarChart({
             }
             const key = `${year}-${pad(month + 1)}-${pad(day)}`;
             const count = (dailyData[key] ?? []).length;
+            const isSelected = selected === key;
             const isHovered = hovered === key;
+            const isActive = isSelected || (!selected && isHovered);
 
             return (
               <div
                 key={key}
                 onMouseEnter={() => handleEnter(day)}
                 onMouseLeave={() => setHovered(null)}
+                onClick={() => handleClick(day)}
                 style={{
                   aspectRatio: "1",
                   borderRadius: 3,
                   position: "relative",
-                  cursor: count > 0 ? "pointer" : "default",
-                  border: isHovered ? `1px solid var(--skin-accent)` : `1px solid ${C.border}`,
+                  cursor: "pointer",
+                  border: isSelected
+                    ? `2px solid var(--skin-accent)`
+                    : isHovered
+                    ? `1px solid var(--skin-accent)`
+                    : `1px solid ${C.border}`,
                   backgroundColor: C.sunk,
                   transition: "border-color 100ms",
                   overflow: "hidden",
@@ -223,8 +240,8 @@ export default function MonthlyCalendarChart({
         {/* Panel header */}
         <div
           style={{
-            backgroundColor: hovered ? "var(--skin-accent)" : C.surfaceRaised,
-            color: hovered ? "var(--skin-accent-ink, #fff)" : C.subtle,
+            backgroundColor: activeKey ? "var(--skin-accent)" : C.surfaceRaised,
+            color: activeKey ? "var(--skin-accent-ink, #fff)" : C.subtle,
             fontFamily: "var(--font-nd-mono)",
             fontSize: 11,
             fontWeight: 700,
@@ -234,31 +251,47 @@ export default function MonthlyCalendarChart({
             borderBottom: `1px solid ${C.border}`,
             transition: "background-color 100ms, color 100ms",
             flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
-          {hovered ? fmt(hovered) : "Hover a day"}
+          <span>{activeKey ? fmt(activeKey) : "Hover a day"}</span>
+          {selected && (
+            <button
+              onClick={() => setSelected(null)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", opacity: 0.7, fontSize: 13, lineHeight: 1, padding: 0 }}
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         <div style={{ overflowY: "auto", flex: 1 }}>
-          {!hovered ? (
+          {!activeKey ? (
             <div style={{ padding: "16px 12px", fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.subtle, textTransform: "uppercase", letterSpacing: "0.08em", lineHeight: 1.6 }}>
-              Hover any day to see listens
+              Hover to preview · click to lock
             </div>
-          ) : hoveredLogs.length === 0 ? (
+          ) : activeLogs.length === 0 ? (
             <div style={{ padding: "12px", fontFamily: "var(--font-nd-mono)", fontSize: 11, color: C.subtle }}>
               No listens logged
             </div>
           ) : (
-            hoveredLogs.map((log, i) => (
-              <div
+            activeLogs.map((log, i) => (
+              <Link
                 key={i}
+                href={`/album/${encodeURIComponent(log.discogsId)}`}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: 10,
                   padding: "9px 12px",
-                  borderBottom: i < hoveredLogs.length - 1 ? `1px solid ${C.line}` : "none",
+                  borderBottom: i < activeLogs.length - 1 ? `1px solid ${C.line}` : "none",
+                  textDecoration: "none",
+                  transition: "background-color 100ms",
                 }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
               >
                 {log.coverUrl ? (
                   <Image
@@ -300,7 +333,7 @@ export default function MonthlyCalendarChart({
                     )}
                   </div>
                 </div>
-              </div>
+              </Link>
             ))
           )}
         </div>
