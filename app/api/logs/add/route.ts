@@ -52,6 +52,6 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     log: { ...log, durationMs: log.durationMs !== null ? Number(log.durationMs) : null },
-    album,
+    album: { ...album, durationMs: album.durationMs !== null ? Number(album.durationMs) : null },
   });
 }

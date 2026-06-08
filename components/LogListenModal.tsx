@@ -47,33 +47,39 @@ export default function LogListenModal({ album, onClose, onSuccess, source = "ph
     setLoading(true);
     setError("");
 
-    const res = await fetch("/api/logs/add", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        discogsId: album.discogsId,
-        title: album.albumTitle ?? album.title,
-        artist: album.artist,
-        releaseYear: album.releaseYear,
-        coverUrl: album.coverUrl,
-        label: album.label,
-        genre: album.genre,
-        rating,
-        review: review || null,
-        format: source === "streaming" ? null : (format || null),
-        source,
-      }),
-    });
+    try {
+      const res = await fetch("/api/logs/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          discogsId: album.discogsId,
+          title: album.albumTitle ?? album.title,
+          artist: album.artist,
+          releaseYear: album.releaseYear,
+          coverUrl: album.coverUrl,
+          label: album.label,
+          genre: album.genre,
+          rating,
+          review: review || null,
+          format: source === "streaming" ? null : (format || null),
+          source,
+        }),
+      });
 
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Something went wrong.");
+      if (!res.ok) {
+        let errMsg = "Something went wrong.";
+        try { const d = await res.json(); errMsg = d.error ?? errMsg; } catch { /* non-JSON body */ }
+        setError(errMsg);
+        setLoading(false);
+        return;
+      }
+
       setLoading(false);
-      return;
+      onSuccess();
+    } catch {
+      setError("Network error. Please try again.");
+      setLoading(false);
     }
-
-    setLoading(false);
-    onSuccess();
   }
 
   return (
