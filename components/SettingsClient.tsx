@@ -152,7 +152,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
 
           {/* Theme */}
           <div className="ms-box">
-            <div className="ms-bar hot">Customize · Theme <span className="cta">your page</span></div>
+            <div className="ms-bar accent">Customize · Theme <span className="cta">your page</span></div>
             <div className="ms-pad">
               <SkinPicker
                 currentSkin={selectedSkin}

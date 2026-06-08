@@ -293,7 +293,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               <div style={{ display: "grid", gridTemplateColumns: nowSpinningAlbum && isOwnProfile ? "1fr 1fr" : "1fr", gap: 0 }}>
                 {nowSpinningAlbum && (
                   <div className="ms-box" style={{ borderRight: isOwnProfile ? "none" : undefined, borderRadius: isOwnProfile ? "4px 0 0 4px" : undefined }}>
-                    <div className="ms-bar hot">
+                    <div className="ms-bar accent">
                       Now Spinning{" "}
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
                         <span className="ms-eq"><i /><i /><i /><i /></span>
@@ -324,7 +324,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
                 {isOwnProfile && (
                   <div className="ms-box" style={{ borderRadius: nowSpinningAlbum ? "0 4px 4px 0" : undefined }}>
-                    <div className="ms-bar hot">+ Log a listen</div>
+                    <div className="ms-bar accent">+ Log a listen</div>
                     <div className="ms-pad"><QuickLogWidget /></div>
                   </div>
                 )}
