@@ -103,62 +103,92 @@ const ALBUM_INCLUDES = {
   },
 };
 
-// When a spotify:album: discogsId isn't in the DB yet, fetch from Spotify
-// using client credentials (no user auth needed) and upsert it.
+const MB_HEADERS = { "User-Agent": "NeedleDrop/1.0 (needledrop.app)" };
+
+// Resolve a Spotify album ID → MB release via MusicBrainz URL lookup,
+// then upsert the album record from MB data. Used as fallback when
+// Spotify credentials aren't available.
+async function ensureSpotifyAlbumViaMB(discogsId: string, spotifyId: string): Promise<void> {
+  try {
+    const spotifyUrl = `https://open.spotify.com/album/${spotifyId}`;
+    const urlRes = await fetch(
+      `https://musicbrainz.org/ws/2/url?resource=${encodeURIComponent(spotifyUrl)}&inc=release-rels&fmt=json`,
+      { headers: MB_HEADERS, next: { revalidate: 86400 } }
+    );
+    if (!urlRes.ok) return;
+    const urlData = await urlRes.json();
+    const releaseId: string | undefined = urlData.relations?.find(
+      (r: { type: string; release?: { id: string } }) => r.type === "streaming music" && r.release?.id
+    )?.release?.id;
+    if (!releaseId) return;
+
+    const relRes = await fetch(
+      `https://musicbrainz.org/ws/2/release/${releaseId}?inc=artist-credits+release-groups&fmt=json`,
+      { headers: MB_HEADERS, next: { revalidate: 86400 } }
+    );
+    if (!relRes.ok) return;
+    const rel = await relRes.json();
+
+    const title       = rel.title ?? "Unknown Album";
+    const artist      = rel["artist-credit"]?.[0]?.artist?.name ?? "Unknown Artist";
+    const artistMbid  = rel["artist-credit"]?.[0]?.artist?.id ?? null;
+    const releaseYear = rel.date ? parseInt(rel.date.slice(0, 4)) : null;
+    const label       = rel["label-info"]?.[0]?.label?.name ?? null;
+    const rgId        = rel["release-group"]?.id ?? null;
+    const coverUrl    = rgId ? `https://coverartarchive.org/release-group/${rgId}/front` : null;
+
+    await prisma.album.upsert({
+      where:  { discogsId },
+      update: { title, artist, artistMbid, releaseYear, label, coverUrl },
+      create: { discogsId, title, artist, artistMbid, releaseYear, label, coverUrl, genre: null },
+    });
+  } catch { /* non-fatal */ }
+}
+
+// When a spotify:album: discogsId isn't in the DB yet, try Spotify first
+// then fall back to MusicBrainz URL lookup.
 async function ensureSpotifyAlbum(discogsId: string): Promise<void> {
   if (!discogsId.toLowerCase().startsWith("spotify:album:")) return;
   const spotifyId = discogsId.slice("spotify:album:".length);
-  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  if (!spotifyId) return;
+
+  const clientId     = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-  if (!clientId || !clientSecret || !spotifyId) return;
 
-  try {
-    const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: "grant_type=client_credentials",
-      cache: "no-store",
-    });
-    if (!tokenRes.ok) return;
-    const { access_token } = await tokenRes.json();
-
-    const albumRes = await fetch(`https://api.spotify.com/v1/albums/${spotifyId}`, {
-      headers: { Authorization: `Bearer ${access_token}` },
-      next: { revalidate: 86400 },
-    });
-    if (!albumRes.ok) return;
-    const data = await albumRes.json();
-
-    const artist =
-      data.artists?.[0]?.name ??
-      data.album_artists?.[0]?.name ??
-      "Unknown Artist";
-
-    await prisma.album.upsert({
-      where: { discogsId },
-      update: {
-        title:       data.name,
-        artist,
-        coverUrl:    data.images?.[0]?.url ?? null,
-        releaseYear: data.release_date ? parseInt(data.release_date.slice(0, 4)) : null,
-        label:       data.label ?? null,
-      },
-      create: {
-        discogsId,
-        title:       data.name,
-        artist,
-        coverUrl:    data.images?.[0]?.url ?? null,
-        releaseYear: data.release_date ? parseInt(data.release_date.slice(0, 4)) : null,
-        label:       data.label ?? null,
-        genre:       null,
-      },
-    });
-  } catch {
-    // Spotify unreachable — graceful fallback page will render instead
+  // Try Spotify API if credentials are present
+  if (clientId && clientSecret) {
+    try {
+      const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: "grant_type=client_credentials",
+        cache: "no-store",
+      });
+      if (tokenRes.ok) {
+        const { access_token } = await tokenRes.json();
+        const albumRes = await fetch(`https://api.spotify.com/v1/albums/${spotifyId}`, {
+          headers: { Authorization: `Bearer ${access_token}` },
+          next: { revalidate: 86400 },
+        });
+        if (albumRes.ok) {
+          const data = await albumRes.json();
+          const artist = data.artists?.[0]?.name ?? data.album_artists?.[0]?.name ?? "Unknown Artist";
+          await prisma.album.upsert({
+            where:  { discogsId },
+            update: { title: data.name, artist, coverUrl: data.images?.[0]?.url ?? null, releaseYear: data.release_date ? parseInt(data.release_date.slice(0, 4)) : null, label: data.label ?? null },
+            create: { discogsId, title: data.name, artist, coverUrl: data.images?.[0]?.url ?? null, releaseYear: data.release_date ? parseInt(data.release_date.slice(0, 4)) : null, label: data.label ?? null, genre: null },
+          });
+          return;
+        }
+      }
+    } catch { /* fall through to MB */ }
   }
+
+  // Fallback: resolve via MusicBrainz URL lookup
+  await ensureSpotifyAlbumViaMB(discogsId, spotifyId);
 }
 
 // When a mb: discogsId isn't in the DB, fetch the release group from MusicBrainz and upsert.
