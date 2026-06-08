@@ -67,7 +67,6 @@ export default function MonthlyCalendarChart({
   month: number; // 0-indexed
 }) {
   const [hovered, setHovered] = useState<string | null>(null);
-  const [panelSide, setPanelSide] = useState<"left" | "right">("right");
 
   const cells = getMonthGrid(year, month);
   const monthName = new Date(year, month, 1).toLocaleString("default", { month: "long", year: "numeric" });
@@ -81,20 +80,18 @@ export default function MonthlyCalendarChart({
 
   function pad(n: number) { return String(n).padStart(2, "0"); }
 
-  function handleEnter(day: number, cellIndex: number) {
-    const col = cellIndex % 7;
-    setPanelSide(col >= 4 ? "left" : "right");
+  function handleEnter(day: number) {
     const key = `${year}-${pad(month + 1)}-${pad(day)}`;
     setHovered(key);
   }
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 240px", gap: 0, border: `1px solid ${C.border}`, backgroundColor: C.surface }}>
+      {/* Left: calendar */}
       <div
         style={{
-          backgroundColor: C.surface,
-          border: `1px solid ${C.border}`,
           padding: 16,
+          borderRight: `1px solid ${C.border}`,
         }}
       >
         {/* Month heading */}
@@ -144,7 +141,7 @@ export default function MonthlyCalendarChart({
             return (
               <div
                 key={key}
-                onMouseEnter={() => handleEnter(day, i)}
+                onMouseEnter={() => handleEnter(day)}
                 onMouseLeave={() => setHovered(null)}
                 style={{
                   aspectRatio: "1",
@@ -221,102 +218,93 @@ export default function MonthlyCalendarChart({
         </div>
       </div>
 
-      {/* Hover panel */}
-      {hovered && (
+      {/* Right: day detail panel */}
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {/* Panel header */}
         <div
           style={{
-            position: "absolute",
-            top: 0,
-            ...(panelSide === "right" ? { left: "calc(100% + 12px)" } : { right: "calc(100% + 12px)" }),
-            width: 240,
-            backgroundColor: C.surface,
-            border: `1px solid ${C.border}`,
-            borderRadius: 4,
-            overflow: "hidden",
-            zIndex: 20,
-            boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
-            pointerEvents: "none",
+            backgroundColor: hovered ? "var(--skin-accent)" : C.surfaceRaised,
+            color: hovered ? "var(--skin-accent-ink, #fff)" : C.subtle,
+            fontFamily: "var(--font-nd-mono)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            padding: "9px 12px",
+            borderBottom: `1px solid ${C.border}`,
+            transition: "background-color 100ms, color 100ms",
+            flexShrink: 0,
           }}
         >
-          {/* Panel header */}
-          <div
-            style={{
-              backgroundColor: "var(--skin-accent)",
-              color: "var(--skin-accent-ink, #fff)",
-              fontFamily: "var(--font-nd-mono)",
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              padding: "7px 12px",
-            }}
-          >
-            {fmt(hovered)}
-          </div>
+          {hovered ? fmt(hovered) : "Hover a day"}
+        </div>
 
-          {hoveredLogs.length === 0 ? (
-            <div style={{ padding: "12px 14px", fontFamily: "var(--font-nd-mono)", fontSize: 11, color: C.subtle }}>
+        <div style={{ overflowY: "auto", flex: 1 }}>
+          {!hovered ? (
+            <div style={{ padding: "16px 12px", fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.subtle, textTransform: "uppercase", letterSpacing: "0.08em", lineHeight: 1.6 }}>
+              Hover any day to see listens
+            </div>
+          ) : hoveredLogs.length === 0 ? (
+            <div style={{ padding: "12px", fontFamily: "var(--font-nd-mono)", fontSize: 11, color: C.subtle }}>
               No listens logged
             </div>
           ) : (
-            <div>
-              {hoveredLogs.map((log, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "9px 12px",
-                    borderBottom: i < hoveredLogs.length - 1 ? `1px solid ${C.line}` : "none",
-                  }}
-                >
-                  {log.coverUrl ? (
-                    <Image
-                      src={log.coverUrl}
-                      alt={log.title}
-                      width={36}
-                      height={36}
-                      unoptimized
-                      style={{ width: 36, height: 36, borderRadius: 3, objectFit: "cover", flexShrink: 0 }}
-                    />
-                  ) : (
-                    <div style={{ width: 36, height: 36, borderRadius: 3, backgroundColor: C.surfaceRaised, flexShrink: 0 }} />
-                  )}
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {log.title}
-                    </div>
-                    <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>
-                      {log.artist}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
-                      <span style={{
-                        fontFamily: "var(--font-nd-mono)",
-                        fontSize: 9,
-                        letterSpacing: "0.1em",
-                        textTransform: "uppercase",
-                        color: log.source === "streaming" ? C.muted : C.subtle,
-                        border: `1px solid ${C.border}`,
-                        borderStyle: log.source === "streaming" ? "dashed" : "solid",
-                        borderRadius: 2,
-                        padding: "1px 4px",
-                      }}>
-                        {log.source === "streaming" ? "▶ stream" : (log.format ?? "vinyl")}
+            hoveredLogs.map((log, i) => (
+              <div
+                key={i}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "9px 12px",
+                  borderBottom: i < hoveredLogs.length - 1 ? `1px solid ${C.line}` : "none",
+                }}
+              >
+                {log.coverUrl ? (
+                  <Image
+                    src={log.coverUrl}
+                    alt={log.title}
+                    width={36}
+                    height={36}
+                    unoptimized
+                    style={{ width: 36, height: 36, borderRadius: 3, objectFit: "cover", flexShrink: 0 }}
+                  />
+                ) : (
+                  <div style={{ width: 36, height: 36, borderRadius: 3, backgroundColor: C.surfaceRaised, flexShrink: 0 }} />
+                )}
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {log.title}
+                  </div>
+                  <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>
+                    {log.artist}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
+                    <span style={{
+                      fontFamily: "var(--font-nd-mono)",
+                      fontSize: 9,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: C.subtle,
+                      border: `1px solid ${C.border}`,
+                      borderStyle: log.source === "streaming" ? "dashed" : "solid",
+                      borderRadius: 2,
+                      padding: "1px 4px",
+                    }}>
+                      {log.source === "streaming" ? "▶ stream" : (log.format ?? "vinyl")}
+                    </span>
+                    {log.rating !== null && (
+                      <span style={{ fontFamily: "var(--font-nd-mono)", fontSize: 9, color: "var(--skin-star, #f3a712)" }}>
+                        {"★".repeat(Math.round(log.rating))}
                       </span>
-                      {log.rating !== null && (
-                        <span style={{ fontFamily: "var(--font-nd-mono)", fontSize: 9, color: "var(--skin-star, #f3a712)" }}>
-                          {"★".repeat(Math.round(log.rating))}
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
