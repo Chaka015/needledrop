@@ -254,6 +254,24 @@ export default async function AlbumPage({ params }: Props) {
   const inCollection = (currentUser?.collection.length ?? 0) > 0;
   const inWantlist = (currentUser?.wantlist.length ?? 0) > 0;
 
+  // Self-heal missing artistMbid — look up by name and cache it
+  if (!album.artistMbid) {
+    try {
+      const res = await fetch(
+        `https://musicbrainz.org/ws/2/artist?query=${encodeURIComponent(album.artist)}&limit=1&fmt=json`,
+        { headers: { "User-Agent": "NeedleDrop/1.0 (needledrop.app)" }, next: { revalidate: 86400 } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const mbid: string | undefined = data.artists?.[0]?.id;
+        if (mbid) {
+          await prisma.album.update({ where: { id: album.id }, data: { artistMbid: mbid } });
+          album = { ...album, artistMbid: mbid };
+        }
+      }
+    } catch { /* non-fatal */ }
+  }
+
   // Fetch track listing and pressings in parallel
   const [tracks, pressings] = await Promise.all([
     album.mbid ? fetchMBTracklist(album.mbid) : Promise.resolve([]),
