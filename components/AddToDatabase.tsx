@@ -39,6 +39,7 @@ interface MBResult {
   label: string | null;
   catalogNumber: string | null;
   formats: string[];
+  artistMbid: string | null;
 }
 
 type SearchResult = SpotifyResult | MBResult;
@@ -81,6 +82,7 @@ export default function AddToDatabase({ onClose }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [createdAlbum, setCreatedAlbum] = useState<CreatedAlbum | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
 
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -117,6 +119,7 @@ export default function AddToDatabase({ onClose }: Props) {
         label: string | null;
         catalogNumber: string | null;
         formats: string[];
+        artistMbid: string | null;
       }) => ({
         _source: "musicbrainz" as const,
         mbid: r.mbid,
@@ -127,11 +130,57 @@ export default function AddToDatabase({ onClose }: Props) {
         label: r.label,
         catalogNumber: r.catalogNumber,
         formats: r.formats,
+        artistMbid: r.artistMbid,
       }));
 
       setResults(mbResults);
       setSearching(false);
     }, 400);
+  }
+
+  async function fetchAndApplyTags(artistMbid: string) {
+    try {
+      const res = await fetch(`/api/musicbrainz?mbid=${artistMbid}`);
+      const data = await res.json();
+      const tags: string[] = data.tags ?? [];
+      if (tags.length > 0) setGenreTags(tags.slice(0, 2));
+    } catch { /* non-fatal */ }
+  }
+
+  // For Spotify results: silently query MB by title+artist to pull label, catalog, and genre tags.
+  async function enrichSpotifyFromMB(searchTitle: string, searchArtist: string) {
+    setDetailsLoading(true);
+    try {
+      const res = await fetch(`/api/musicbrainz?q=${encodeURIComponent(`${searchTitle} ${searchArtist}`)}`);
+      const data = await res.json();
+      const results: (Omit<MBResult, "_source"> & { hasCover: boolean; artistMbid: string | null })[] = data.results ?? [];
+
+      // Prefer an exact title+artist match; fall back to first result
+      const match =
+        results.find(
+          (r) =>
+            r.title.toLowerCase() === searchTitle.toLowerCase() &&
+            r.artist.toLowerCase() === searchArtist.toLowerCase()
+        ) ?? results[0];
+
+      if (match) {
+        if (match.label) setLabel(match.label);
+        if (match.catalogNumber) setCatalogNumber(match.catalogNumber);
+        // Map formats the same way we do for direct MB selections
+        const knownFormats = (match.formats ?? []).flatMap((f: string) => {
+          const lower = f.toLowerCase();
+          if (lower.includes("vinyl") || lower.includes("12") || lower.includes("7")) return ["Vinyl"];
+          if (lower.includes("cd")) return ["CD"];
+          if (lower.includes("cassette")) return ["Cassette"];
+          if (lower.includes("digital")) return ["Digital"];
+          return [];
+        }).filter((f: string) => FORMAT_OPTIONS.includes(f));
+        if (knownFormats.length > 0) setFormats([...new Set(knownFormats)]);
+        if (match.artistMbid) await fetchAndApplyTags(match.artistMbid);
+      }
+    } catch { /* non-fatal */ } finally {
+      setDetailsLoading(false);
+    }
   }
 
   function selectResult(r: SearchResult) {
@@ -140,6 +189,8 @@ export default function AddToDatabase({ onClose }: Props) {
     setArtist(r.artist);
     setReleaseYear(r.year ?? "");
     setCoverUrl(r.coverUrl ?? "");
+    setGenreTags([]);
+    setTagInput("");
     setError("");
 
     if (r._source === "musicbrainz") {
@@ -155,13 +206,15 @@ export default function AddToDatabase({ onClose }: Props) {
         return [];
       }).filter((f) => FORMAT_OPTIONS.includes(f));
       setFormats([...new Set(knownFormats)]);
+      // Fetch genre tags from artist in the background
+      if (r.artistMbid) fetchAndApplyTags(r.artistMbid);
     } else {
+      // Spotify result — clear derived fields, then enrich silently from MB
       setLabel("");
       setCatalogNumber("");
       setFormats([]);
+      enrichSpotifyFromMB(r.title, r.artist);
     }
-    setGenreTags([]);
-    setTagInput("");
     setStep("form");
   }
 
@@ -402,8 +455,11 @@ export default function AddToDatabase({ onClose }: Props) {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-mono uppercase tracking-widest block mb-1" style={{ color: C.subtle }}>
+                  <label className="text-xs font-mono uppercase tracking-widest flex items-center gap-1.5 mb-1" style={{ color: C.subtle }}>
                     Label
+                    {detailsLoading && (
+                      <span className="text-xs font-mono normal-case tracking-normal" style={{ color: C.subtle, opacity: 0.6 }}>fetching…</span>
+                    )}
                   </label>
                   <input
                     value={label}
@@ -439,6 +495,19 @@ export default function AddToDatabase({ onClose }: Props) {
                   <span style={{ textTransform: "none", letterSpacing: 0 }}>(select all that apply)</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
+                  {/* ALL toggle */}
+                  <button
+                    type="button"
+                    onClick={() => setFormats(formats.length === FORMAT_OPTIONS.length ? [] : [...FORMAT_OPTIONS])}
+                    className="px-3 py-1.5 text-xs font-mono transition-colors duration-100"
+                    style={{
+                      backgroundColor: formats.length === FORMAT_OPTIONS.length ? C.accent : C.surfaceRaised,
+                      color: formats.length === FORMAT_OPTIONS.length ? C.text : C.muted,
+                      borderRadius: 4,
+                      border: `1px solid ${formats.length === FORMAT_OPTIONS.length ? C.accent : C.border}`,
+                    }}>
+                    ALL
+                  </button>
                   {FORMAT_OPTIONS.map((f) => (
                     <button
                       key={f}
