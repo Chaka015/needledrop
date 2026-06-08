@@ -161,6 +161,43 @@ async function ensureSpotifyAlbum(discogsId: string): Promise<void> {
   }
 }
 
+// When a mb: discogsId isn't in the DB, fetch the release group from MusicBrainz and upsert.
+async function ensureMBAlbum(discogsId: string): Promise<void> {
+  if (!discogsId.toLowerCase().startsWith("mb:")) return;
+  const mbid = discogsId.slice(3); // strip "mb:"
+  if (!mbid) return;
+
+  try {
+    // Fetch release group for title/artist/date
+    const rgRes = await fetch(
+      `https://musicbrainz.org/ws/2/release-group/${mbid}?inc=artist-credits&fmt=json`,
+      { headers: { "User-Agent": "NeedleDrop/1.0 (needledrop.app)" }, next: { revalidate: 86400 } }
+    );
+    if (!rgRes.ok) return;
+    const rg = await rgRes.json();
+
+    const title = rg.title ?? "Unknown Album";
+    const artist = rg["artist-credit"]?.[0]?.artist?.name
+      ?? rg["artist-credit"]?.[0]?.name
+      ?? "Unknown Artist";
+    const artistMbid = rg["artist-credit"]?.[0]?.artist?.id ?? null;
+    const releaseYear = rg["first-release-date"]
+      ? parseInt(rg["first-release-date"].slice(0, 4))
+      : null;
+
+    // Try Cover Art Archive for this release group
+    const coverUrl = `https://coverartarchive.org/release-group/${mbid}/front`;
+
+    await prisma.album.upsert({
+      where: { discogsId },
+      update: { title, artist, artistMbid, releaseYear },
+      create: { discogsId, title, artist, artistMbid, releaseYear, coverUrl, genre: null, label: null },
+    });
+  } catch {
+    // MusicBrainz unreachable — graceful fallback page will render instead
+  }
+}
+
 // Never serve a cached version — album records can be created moments before
 // this page is first requested (race with the create → redirect flow).
 export const dynamic = "force-dynamic";
@@ -185,6 +222,15 @@ export default async function AlbumPage({ params }: Props) {
   // Self-heal for spotify: fetch from Spotify API and upsert, then retry.
   if (!album && discogsId.toLowerCase().startsWith("spotify:album:")) {
     await ensureSpotifyAlbum(discogsId);
+    album = await prisma.album.findUnique({
+      where: { discogsId },
+      include: ALBUM_INCLUDES,
+    });
+  }
+
+  // Self-heal for mb: release group IDs linked from the artist discography.
+  if (!album && discogsId.toLowerCase().startsWith("mb:")) {
+    await ensureMBAlbum(discogsId);
     album = await prisma.album.findUnique({
       where: { discogsId },
       include: ALBUM_INCLUDES,

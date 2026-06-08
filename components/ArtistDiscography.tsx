@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 const C = {
   surface:       "var(--skin-surface)",
@@ -89,16 +90,29 @@ export default function ArtistDiscography({ releases }: { releases: DiscographyR
           <h3 className="text-xs font-mono uppercase tracking-widest mb-3" style={{ color: C.muted }}>{label}</h3>
           <div className="space-y-1">
             {grouped[key].map((r) => (
-              <div key={r.id} className="flex items-center gap-3 p-3"
-                style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
+              <Link
+                key={r.id}
+                href={`/album/mb%3A${r.id}`}
+                className="hover-surface-raised flex items-center gap-3 p-3 transition-colors duration-100"
+                style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, textDecoration: "none", display: "flex" }}
+              >
                 <CoverImg mbid={r.id} title={r.title} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-semibold truncate" style={{ color: C.text }}>{r.title}</div>
-                  {r.date && (
-                    <div className="text-xs font-mono" style={{ color: C.subtle }}>{r.date.slice(0, 4)}</div>
-                  )}
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {r.date && (
+                      <span className="text-xs font-mono" style={{ color: C.subtle }}>{r.date.slice(0, 4)}</span>
+                    )}
+                    {(r["secondary-types"] ?? []).map((st) => (
+                      <span key={st} className="text-xs font-mono px-1.5 py-0.5"
+                        style={{ color: C.subtle, border: `1px solid ${C.border}`, borderRadius: 3, fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                        {st}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+                <span style={{ color: C.subtle, fontSize: 12, flexShrink: 0 }}>→</span>
+              </Link>
             ))}
           </div>
         </div>
