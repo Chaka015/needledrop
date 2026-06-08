@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import LogListenModal from "./LogListenModal";
 
 const C = {
   bg:            "var(--skin-bg)",
@@ -44,18 +43,7 @@ interface MBResult {
 
 type SearchResult = SpotifyResult | MBResult;
 
-interface CreatedAlbum {
-  id: string;
-  discogsId: string;
-  title: string;
-  artist: string;
-  releaseYear: number | null;
-  coverUrl: string | null;
-  label: string | null;
-  genre: string | null;
-}
-
-type Step = "search" | "form" | "logging";
+type Step = "search" | "form";
 
 interface Props {
   onClose: () => void;
@@ -81,7 +69,6 @@ export default function AddToDatabase({ onClose }: Props) {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [createdAlbum, setCreatedAlbum] = useState<CreatedAlbum | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -279,43 +266,13 @@ export default function AddToDatabase({ onClose }: Props) {
         body: JSON.stringify({ albumId: album.id, source: "physical" }),
       }).catch(() => {});
 
-      setCreatedAlbum({
-        id: album.id,
-        discogsId: album.discogsId,
-        title: album.title,
-        artist: album.artist,
-        releaseYear: album.releaseYear,
-        coverUrl: album.coverUrl,
-        label: album.label,
-        genre: album.genre,
-      });
-
-      setStep("logging");
+      router.push(`/album/${encodeURIComponent(album.discogsId)}`);
+      onClose();
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
-  }
-
-  if (step === "logging" && createdAlbum) {
-    return (
-      <LogListenModal
-        album={{
-          discogsId: createdAlbum.discogsId,
-          title: createdAlbum.title,
-          albumTitle: createdAlbum.title,
-          artist: createdAlbum.artist,
-          releaseYear: createdAlbum.releaseYear,
-          coverUrl: createdAlbum.coverUrl,
-          label: createdAlbum.label,
-          genre: createdAlbum.genre,
-        }}
-        source="physical"
-        onClose={onClose}
-        onSuccess={() => router.push(`/album/${encodeURIComponent(createdAlbum.discogsId)}`)}
-      />
-    );
   }
 
   return (
