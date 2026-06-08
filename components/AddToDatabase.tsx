@@ -184,8 +184,6 @@ export default function AddToDatabase({ onClose }: Props) {
     if (!title.trim()) { setError("Album title is required."); return; }
     if (!artist.trim()) { setError("Artist is required."); return; }
     if (!releaseYear) { setError("Release year is required."); return; }
-    if (!label.trim()) { setError("Label is required."); return; }
-    if (!catalogNumber.trim()) { setError("Catalog number is required."); return; }
     if (formats.length === 0) { setError("Select at least one format."); return; }
 
     setSubmitting(true);
@@ -405,7 +403,7 @@ export default function AddToDatabase({ onClose }: Props) {
                 </div>
                 <div>
                   <label className="text-xs font-mono uppercase tracking-widest block mb-1" style={{ color: C.subtle }}>
-                    Label *
+                    Label
                   </label>
                   <input
                     value={label}
@@ -421,7 +419,7 @@ export default function AddToDatabase({ onClose }: Props) {
               {/* Catalog Number */}
               <div>
                 <label className="text-xs font-mono uppercase tracking-widest block mb-1" style={{ color: C.subtle }}>
-                  Catalog Number *
+                  Catalog Number
                 </label>
                 <input
                   value={catalogNumber}

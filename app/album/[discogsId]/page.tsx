@@ -106,7 +106,7 @@ const ALBUM_INCLUDES = {
 // When a spotify:album: discogsId isn't in the DB yet, fetch from Spotify
 // using client credentials (no user auth needed) and upsert it.
 async function ensureSpotifyAlbum(discogsId: string): Promise<void> {
-  if (!discogsId.startsWith("spotify:album:")) return;
+  if (!discogsId.toLowerCase().startsWith("spotify:album:")) return;
   const spotifyId = discogsId.slice("spotify:album:".length);
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
@@ -174,8 +174,16 @@ export default async function AlbumPage({ params }: Props) {
     include: ALBUM_INCLUDES,
   });
 
+  // Case-insensitive fallback — handles SPOTIFY:ALBUM: vs spotify:album: mismatch
+  if (!album) {
+    album = await prisma.album.findFirst({
+      where: { discogsId: { equals: discogsId, mode: "insensitive" } },
+      include: ALBUM_INCLUDES,
+    }) ?? null;
+  }
+
   // Self-heal for spotify: fetch from Spotify API and upsert, then retry.
-  if (!album && discogsId.startsWith("spotify:album:")) {
+  if (!album && discogsId.toLowerCase().startsWith("spotify:album:")) {
     await ensureSpotifyAlbum(discogsId);
     album = await prisma.album.findUnique({
       where: { discogsId },
