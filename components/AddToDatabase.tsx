@@ -303,8 +303,8 @@ export default function AddToDatabase({ onClose, initialQuery }: Props) {
 
       onClose();
       // Hard navigate so the server component re-runs and finds the newly created album.
-      // router.push to the same URL is a no-op in Next.js App Router (serves cached result).
-      window.location.href = `/album/${encodeURIComponent(album.discogsId)}`;
+      // ?new=1 tells the album page to retry longer — Neon pooler can lag on fresh writes.
+      window.location.href = `/album/${encodeURIComponent(album.discogsId)}?new=1`;
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

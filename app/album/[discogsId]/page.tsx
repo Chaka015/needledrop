@@ -9,6 +9,7 @@ import AddToDatabaseTrigger from "@/components/AddToDatabaseTrigger";
 
 interface Props {
   params: Promise<{ discogsId: string }>;
+  searchParams: Promise<{ new?: string }>;
 }
 
 const C = {
@@ -232,8 +233,9 @@ async function ensureMBAlbum(discogsId: string): Promise<void> {
 // this page is first requested (race with the create → redirect flow).
 export const dynamic = "force-dynamic";
 
-export default async function AlbumPage({ params }: Props) {
+export default async function AlbumPage({ params, searchParams }: Props) {
   const { discogsId } = await params;
+  const { new: isNew } = await searchParams;
   const { userId: clerkId } = await auth();
 
   let album = await prisma.album.findUnique({
@@ -267,15 +269,21 @@ export default async function AlbumPage({ params }: Props) {
     });
   }
 
-  // Generic retry for any prefix: the album may have just been committed by
-  // the API call that triggered this redirect. One short wait is enough to
-  // let the Neon pooler connection see the committed write.
+  // Retry loop: the album may have just been committed by the API call that
+  // triggered this redirect. Neon pooler connections can lag behind a fresh
+  // write, so we poll a few times. ?new=1 means the client just created it
+  // and we should wait longer; otherwise one short attempt is enough.
   if (!album) {
-    await new Promise((r) => setTimeout(r, 300));
-    album = await prisma.album.findUnique({
-      where: { discogsId },
-      include: ALBUM_INCLUDES,
-    });
+    const attempts = isNew ? 6 : 1;
+    const delay    = isNew ? 500 : 400;
+    for (let i = 0; i < attempts; i++) {
+      await new Promise((r) => setTimeout(r, delay));
+      album = await prisma.album.findUnique({
+        where: { discogsId },
+        include: ALBUM_INCLUDES,
+      });
+      if (album) break;
+    }
   }
 
   // Complete fallback — auto-open the add modal instead of a dead end
