@@ -251,6 +251,76 @@ async function ensureMBAlbum(discogsId: string): Promise<void> {
   }
 }
 
+// Given a discogsId (any format), try to derive a "Artist Title" search
+// string by hitting the relevant external API. Used to pre-fill the
+// AddToDatabase modal when the album isn't in the catalogue yet.
+async function deriveSearchQuery(discogsId: string): Promise<string> {
+  // ── Spotify album ──────────────────────────────────────────────────────────
+  if (discogsId.toLowerCase().startsWith("spotify:album:")) {
+    const spotifyId = discogsId.slice("spotify:album:".length);
+    try {
+      const clientId     = process.env.SPOTIFY_CLIENT_ID;
+      const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+      if (!clientId || !clientSecret) throw new Error("no creds");
+      const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: "grant_type=client_credentials",
+        cache: "no-store",
+      });
+      if (!tokenRes.ok) throw new Error("token fail");
+      const { access_token } = await tokenRes.json();
+      const albumRes = await fetch(`https://api.spotify.com/v1/albums/${spotifyId}`, {
+        headers: { Authorization: `Bearer ${access_token}` },
+        next: { revalidate: 3600 },
+      });
+      if (!albumRes.ok) throw new Error("album fail");
+      const data = await albumRes.json();
+      const artist = (data.artists?.[0]?.name ?? "").trim();
+      const title  = (data.name ?? "").trim();
+      return [artist, title].filter(Boolean).join(" ");
+    } catch { /* fall through */ }
+  }
+
+  // ── MusicBrainz release group ───────────────────────────────────────────────
+  if (discogsId.toLowerCase().startsWith("mb:")) {
+    const mbid = discogsId.slice(3);
+    try {
+      const res = await fetch(
+        `https://musicbrainz.org/ws/2/release-group/${mbid}?inc=artist-credits&fmt=json`,
+        { headers: { "User-Agent": "NeedleDrop/1.0 (needledrop.app)" }, next: { revalidate: 3600 } }
+      );
+      if (!res.ok) throw new Error("mb fail");
+      const data = await res.json();
+      const artist = (data["artist-credit"]?.[0]?.artist?.name ?? "").trim();
+      const title  = (data.title ?? "").trim();
+      return [artist, title].filter(Boolean).join(" ");
+    } catch { /* fall through */ }
+  }
+
+  // ── Discogs numeric release ID ─────────────────────────────────────────────
+  if (/^\d+$/.test(discogsId)) {
+    try {
+      const token = process.env.DISCOGS_TOKEN;
+      if (!token) throw new Error("no token");
+      const res = await fetch(`https://api.discogs.com/releases/${discogsId}`, {
+        headers: { Authorization: `Discogs token=${token}`, "User-Agent": "NeedleDrop/1.0" },
+        next: { revalidate: 3600 },
+      });
+      if (!res.ok) throw new Error("discogs fail");
+      const data = await res.json();
+      const artist = (data.artists?.[0]?.name ?? "").replace(/\s*\(\d+\)$/, "").trim();
+      const title  = (data.title ?? "").trim();
+      return [artist, title].filter(Boolean).join(" ");
+    } catch { /* fall through */ }
+  }
+
+  return "";
+}
+
 // Never serve a cached version — album records can be created moments before
 // this page is first requested (race with the create → redirect flow).
 export const dynamic = "force-dynamic";
@@ -312,6 +382,9 @@ export default async function AlbumPage({ params, searchParams }: Props) {
 
   // Complete fallback — auto-open the add modal instead of a dead end
   if (!album) {
+    // Try to derive a pre-filled search term from the external ID so the
+    // AddToDatabase modal opens with results already loaded.
+    const searchQuery = await deriveSearchQuery(discogsId);
     return (
       <div className="min-h-screen" style={{ backgroundColor: C.bg, color: C.text }}>
         <div className="ms-page">
@@ -326,7 +399,7 @@ export default async function AlbumPage({ params, searchParams }: Props) {
               <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.6, margin: "0 0 24px" }}>
                 This album isn&apos;t in the NeedleDrop catalogue yet. Search below to add it and give it a proper home.
               </p>
-              <AddToDatabaseTrigger autoOpen />
+              <AddToDatabaseTrigger autoOpen initialQuery={searchQuery} />
             </div>
           </div>
         </div>
