@@ -303,8 +303,9 @@ export default function AddToDatabase({ onClose, initialQuery }: Props) {
 
       onClose();
       // Hard navigate so the server component re-runs and finds the newly created album.
-      // ?new=1 tells the album page to retry longer — Neon pooler can lag on fresh writes.
-      window.location.href = `/album/${encodeURIComponent(album.discogsId)}?new=1`;
+      // Pass ?id= so the page can fall back to a primary-key lookup if the
+      // discogsId index hasn't propagated on the pooler connection yet.
+      window.location.href = `/album/${encodeURIComponent(album.discogsId)}?id=${encodeURIComponent(album.id)}`;
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

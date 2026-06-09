@@ -9,7 +9,7 @@ import AddToDatabaseTrigger from "@/components/AddToDatabaseTrigger";
 
 interface Props {
   params: Promise<{ discogsId: string }>;
-  searchParams: Promise<{ new?: string }>;
+  searchParams: Promise<{ new?: string; id?: string }>;
 }
 
 const C = {
@@ -235,13 +235,23 @@ export const dynamic = "force-dynamic";
 
 export default async function AlbumPage({ params, searchParams }: Props) {
   const { discogsId } = await params;
-  const { new: isNew } = await searchParams;
+  const { id: albumDbId } = await searchParams;
   const { userId: clerkId } = await auth();
 
   let album = await prisma.album.findUnique({
     where: { discogsId },
     include: ALBUM_INCLUDES,
   });
+
+  // If the discogsId lookup missed, try by DB primary key first — this is
+  // guaranteed to find a record that was just written (no pooler lag on PK
+  // lookups), and is passed via ?id= when navigating from AddToDatabase.
+  if (!album && albumDbId) {
+    album = await prisma.album.findUnique({
+      where: { id: albumDbId },
+      include: ALBUM_INCLUDES,
+    }) ?? null;
+  }
 
   // Case-insensitive fallback — handles SPOTIFY:ALBUM: vs spotify:album: mismatch
   if (!album) {
@@ -269,21 +279,13 @@ export default async function AlbumPage({ params, searchParams }: Props) {
     });
   }
 
-  // Retry loop: the album may have just been committed by the API call that
-  // triggered this redirect. Neon pooler connections can lag behind a fresh
-  // write, so we poll a few times. ?new=1 means the client just created it
-  // and we should wait longer; otherwise one short attempt is enough.
+  // Generic retry — one short pause for any remaining timing edge cases.
   if (!album) {
-    const attempts = isNew ? 6 : 1;
-    const delay    = isNew ? 500 : 400;
-    for (let i = 0; i < attempts; i++) {
-      await new Promise((r) => setTimeout(r, delay));
-      album = await prisma.album.findUnique({
-        where: { discogsId },
-        include: ALBUM_INCLUDES,
-      });
-      if (album) break;
-    }
+    await new Promise((r) => setTimeout(r, 400));
+    album = await prisma.album.findUnique({
+      where: { discogsId },
+      include: ALBUM_INCLUDES,
+    });
   }
 
   // Complete fallback — auto-open the add modal instead of a dead end
