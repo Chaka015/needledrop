@@ -55,6 +55,28 @@ async function fetchMBTracklist(mbid: string): Promise<MBTrack[]> {
   } catch { return []; }
 }
 
+// When mbid is unknown, search MB by title + artist, fetch the top release,
+// and return both the tracklist and the release ID so we can cache it.
+async function fetchMBTracklistBySearch(
+  title: string,
+  artist: string,
+): Promise<{ tracks: MBTrack[]; mbid: string | null }> {
+  try {
+    const q = encodeURIComponent(`release:"${title}" AND artist:"${artist}"`);
+    const searchRes = await fetch(
+      `https://musicbrainz.org/ws/2/release/?query=${q}&limit=1&fmt=json`,
+      { headers: { "User-Agent": "NeedleDrop/1.0 (needledrop.app)" }, next: { revalidate: 86400 } }
+    );
+    if (!searchRes.ok) return { tracks: [], mbid: null };
+    const searchData = await searchRes.json();
+    const releaseId: string | undefined = searchData.releases?.[0]?.id;
+    if (!releaseId) return { tracks: [], mbid: null };
+
+    const tracks = await fetchMBTracklist(releaseId);
+    return { tracks, mbid: releaseId };
+  } catch { return { tracks: [], mbid: null }; }
+}
+
 interface DiscogsVersion {
   id: number;
   country: string;
@@ -354,9 +376,22 @@ export default async function AlbumPage({ params, searchParams }: Props) {
     } catch { /* non-fatal */ }
   }
 
-  // Fetch track listing and pressings in parallel
+  // Fetch track listing and pressings.
+  // If album.mbid is missing (e.g. added via Spotify search), search MB by
+  // title+artist to find the release, then cache the mbid for future loads.
+  let trackResult: { tracks: MBTrack[]; mbid: string | null };
+  if (album.mbid) {
+    trackResult = { tracks: await fetchMBTracklist(album.mbid), mbid: album.mbid };
+  } else {
+    trackResult = await fetchMBTracklistBySearch(album.title, album.artist);
+    if (trackResult.mbid) {
+      // Cache for future page loads — non-fatal if it fails
+      await prisma.album.update({ where: { id: album.id }, data: { mbid: trackResult.mbid } }).catch(() => {});
+    }
+  }
+
   const [tracks, pressings] = await Promise.all([
-    album.mbid ? fetchMBTracklist(album.mbid) : Promise.resolve([]),
+    Promise.resolve(trackResult.tracks),
     fetchDiscogsVersions(discogsId),
   ]);
 
