@@ -77,7 +77,7 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
         <div className="ms-nav-inner">
 
           {/* Logo */}
-          <Link href={username ? "/activity" : "/"} className="ms-logo">
+          <Link href={username ? `/${username}` : "/"} className="ms-logo">
             <span className="ms-logo-mark">
               <span className="ms-logo-disc" />
               <span className="ms-logo-arm" />
@@ -91,7 +91,7 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
           {username && (
             <div className="ms-nav-links">
               <Link href="/activity" className={"ms-nav-link" + (isActive("/activity") ? " active" : "")}>
-                E-Zine
+                Social
               </Link>
               <Link href={`/${username}`} className={"ms-nav-link" + (isActive(`/${username}`) ? " active" : "")}>
                 Profile
