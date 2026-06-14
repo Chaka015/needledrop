@@ -85,6 +85,7 @@ model Album {
   catalogNumber String?
   formats       Json?
   genreTags     Json?
+  genres        String[]
   spotifyId     String?
   isInCatalog   Boolean        @default(false)
   visibility    String         @default("hidden")

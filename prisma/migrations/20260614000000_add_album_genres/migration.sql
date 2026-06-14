@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Album" ADD COLUMN "genres" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

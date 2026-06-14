@@ -6,6 +6,7 @@ import Link from "next/link";
 import AlbumActions from "@/components/AlbumActions";
 import AlbumTabsClient from "@/components/AlbumTabsClient";
 import AddToDatabaseTrigger from "@/components/AddToDatabaseTrigger";
+import GenreEditor from "@/components/GenreEditor";
 
 interface Props {
   params: Promise<{ discogsId: string }>;
@@ -463,6 +464,29 @@ export default async function AlbumPage({ params, searchParams }: Props) {
     }
   }
 
+  // Auto-fetch genres from MusicBrainz if not yet stored
+  const effectiveMbid = album.mbid ?? trackResult.mbid;
+  if (album.genres.length === 0 && effectiveMbid) {
+    try {
+      const gRes = await fetch(
+        `https://musicbrainz.org/ws/2/release/${effectiveMbid}?inc=genres&fmt=json`,
+        { headers: { "User-Agent": "NeedleDrop/1.0 (needledrop.app)" }, next: { revalidate: 86400 } }
+      );
+      if (gRes.ok) {
+        const gData = await gRes.json();
+        const fetchedGenres: string[] = (gData.genres ?? [])
+          .filter((g: { count: number }) => g.count > 0)
+          .sort((a: { count: number }, b: { count: number }) => b.count - a.count)
+          .slice(0, 8)
+          .map((g: { name: string }) => g.name);
+        if (fetchedGenres.length > 0) {
+          await prisma.album.update({ where: { id: album.id }, data: { genres: fetchedGenres } }).catch(() => {});
+          album = { ...album, genres: fetchedGenres };
+        }
+      }
+    } catch { /* non-fatal */ }
+  }
+
   const [tracks, pressings] = await Promise.all([
     Promise.resolve(trackResult.tracks),
     fetchDiscogsVersions(discogsId),
@@ -594,6 +618,11 @@ export default async function AlbumPage({ params, searchParams }: Props) {
 
             {album.releaseYear && (
               <div className="ms-time" style={{ marginTop: 4 }}>{album.releaseYear}</div>
+            )}
+
+            {/* Genre editor — visible to logged-in fans */}
+            {currentUser && (
+              <GenreEditor albumId={album.id} initialGenres={album.genres} />
             )}
 
             {/* Stat strip */}
