@@ -134,17 +134,35 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     }
   }
 
-  const logs = user.logs.map((log) => ({
-    id: log.id,
-    rating: log.rating,
-    review: log.review,
-    format: log.format,
-    source: log.source,
-    playedAt: log.playedAt.toISOString(),
-    spinCount: log.spins.length,
-    userHasSpun: currentUser ? log.spins.some((s) => s.userId === currentUser.id) : false,
-    album: { discogsId: log.album.discogsId, title: log.album.title, artist: log.album.artist, coverUrl: log.album.coverUrl },
-  }));
+  function mapLog(log: typeof user.logs[number]) {
+    return {
+      id: log.id,
+      rating: log.rating,
+      review: log.review,
+      format: log.format,
+      source: log.source,
+      playedAt: log.playedAt.toISOString(),
+      spinCount: log.spins.length,
+      userHasSpun: currentUser ? log.spins.some((s) => s.userId === currentUser.id) : false,
+      album: { discogsId: log.album.discogsId, title: log.album.title, artist: log.album.artist, coverUrl: log.album.coverUrl },
+    };
+  }
+
+  let logs = user.logs.map(mapLog);
+
+  // Pin the Now Spinning log to the top of Recent Listens.
+  // The take:10 query may not include it (e.g. set before our log-on-spin fix),
+  // so we fetch it explicitly and prepend if it's not already first.
+  if (user.nowSpinning) {
+    const nsLog = await prisma.listeningLog.findFirst({
+      where: { userId: user.id, albumId: user.nowSpinning },
+      orderBy: { playedAt: "desc" },
+      include: { album: true, spins: true },
+    });
+    if (nsLog && logs[0]?.id !== nsLog.id) {
+      logs = [mapLog(nsLog), ...logs.filter((l) => l.id !== nsLog.id)].slice(0, 10);
+    }
+  }
 
   // First name for possessives
   const firstName = user.username;
