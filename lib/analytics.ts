@@ -46,7 +46,9 @@ export async function getGenreBreakdown(userId: string, start: Date, end: Date):
   const rows = await prisma.$queryRaw<{ genre: string; count: bigint }[]>`
     SELECT genre, COUNT(*)::bigint as count
     FROM (
-      SELECT unnest(a.genres) as genre
+      SELECT unnest(
+        CASE WHEN array_length(a.genres, 1) > 0 THEN a.genres ELSE ARRAY[a.genre] END
+      ) as genre
       FROM "ListeningLog" ll
       JOIN "Album" a ON a.id = ll."albumId"
       WHERE ll."userId" = ${userId}
@@ -71,7 +73,7 @@ export async function getGenreBreakdown(userId: string, start: Date, end: Date):
         WHERE ll."userId" = ${userId}
           AND ll."playedAt" >= ${start}
           AND ll."playedAt" <= ${end}
-          AND a.genres @> ARRAY[${row.genre}::text]
+          AND (a.genres @> ARRAY[${row.genre}::text] OR a.genre = ${row.genre})
         GROUP BY a.artist
         ORDER BY count DESC
         LIMIT 5
@@ -83,7 +85,7 @@ export async function getGenreBreakdown(userId: string, start: Date, end: Date):
         WHERE ll."userId" = ${userId}
           AND ll."playedAt" >= ${start}
           AND ll."playedAt" <= ${end}
-          AND a.genres @> ARRAY[${row.genre}::text]
+          AND (a.genres @> ARRAY[${row.genre}::text] OR a.genre = ${row.genre})
         GROUP BY a.id, a.title, a.artist, a."coverUrl", a."discogsId"
         ORDER BY count DESC
         LIMIT 5
