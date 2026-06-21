@@ -44,14 +44,16 @@ export interface GenreDetail {
 
 export async function getGenreBreakdown(userId: string, start: Date, end: Date): Promise<GenreDetail[]> {
   const rows = await prisma.$queryRaw<{ genre: string; count: bigint }[]>`
-    SELECT unnest(a.genres) as genre, COUNT(*)::bigint as count
-    FROM "ListeningLog" ll
-    JOIN "Album" a ON a.id = ll."albumId"
-    WHERE ll."userId" = ${userId}
-      AND ll."playedAt" >= ${start}
-      AND ll."playedAt" <= ${end}
-      AND a.genres IS NOT NULL
-      AND array_length(a.genres, 1) > 0
+    SELECT genre, COUNT(*)::bigint as count
+    FROM (
+      SELECT unnest(a.genres) as genre
+      FROM "ListeningLog" ll
+      JOIN "Album" a ON a.id = ll."albumId"
+      WHERE ll."userId" = ${userId}
+        AND ll."playedAt" >= ${start}
+        AND ll."playedAt" <= ${end}
+    ) sub
+    WHERE genre IS NOT NULL AND genre != ''
     GROUP BY genre
     ORDER BY count DESC
     LIMIT 15
