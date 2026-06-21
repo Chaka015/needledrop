@@ -134,7 +134,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     }
   }
 
-  function mapLog(log: typeof user.logs[number]) {
+  function mapLog(log: typeof user!.logs[number]) {
     return {
       id: log.id,
       rating: log.rating,
