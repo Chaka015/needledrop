@@ -8,16 +8,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { albumId, source } = await req.json();
+  const { albumId, source, format } = await req.json();
+  const logSource = source === "streaming" ? "streaming" : "physical";
 
-  await prisma.user.update({
+  const user = await prisma.user.update({
     where: { clerkId },
     data: {
       nowSpinning: albumId ?? null,
-      nowSpinningSource: albumId ? (source === "streaming" ? "streaming" : "physical") : null,
+      nowSpinningSource: albumId ? logSource : null,
       nowSpinningAt: albumId ? new Date() : null,
     },
+    select: { id: true },
   });
+
+  if (albumId) {
+    await prisma.listeningLog.create({
+      data: {
+        userId: user.id,
+        albumId,
+        source: logSource,
+        format: logSource === "physical" ? (format ?? null) : null,
+        playedAt: new Date(),
+      },
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }
