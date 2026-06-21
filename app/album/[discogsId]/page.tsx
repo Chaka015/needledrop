@@ -1,11 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import Image from "next/image";
 import Link from "next/link";
 import AlbumActions from "@/components/AlbumActions";
 import AlbumTabsClient from "@/components/AlbumTabsClient";
-import AddToDatabaseTrigger from "@/components/AddToDatabaseTrigger";
 import GenreEditor from "@/components/GenreEditor";
 
 interface Props {
@@ -252,74 +250,29 @@ async function ensureMBAlbum(discogsId: string): Promise<void> {
   }
 }
 
-// Given a discogsId (any format), try to derive a "Artist Title" search
-// string by hitting the relevant external API. Used to pre-fill the
-// AddToDatabase modal when the album isn't in the catalogue yet.
-async function deriveSearchQuery(discogsId: string): Promise<string> {
-  // ── Spotify album ──────────────────────────────────────────────────────────
-  if (discogsId.toLowerCase().startsWith("spotify:album:")) {
-    const spotifyId = discogsId.slice("spotify:album:".length);
-    try {
-      const clientId     = process.env.SPOTIFY_CLIENT_ID;
-      const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-      if (!clientId || !clientSecret) throw new Error("no creds");
-      const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: "grant_type=client_credentials",
-        cache: "no-store",
-      });
-      if (!tokenRes.ok) throw new Error("token fail");
-      const { access_token } = await tokenRes.json();
-      const albumRes = await fetch(`https://api.spotify.com/v1/albums/${spotifyId}`, {
-        headers: { Authorization: `Bearer ${access_token}` },
-        next: { revalidate: 3600 },
-      });
-      if (!albumRes.ok) throw new Error("album fail");
-      const data = await albumRes.json();
-      const artist = (data.artists?.[0]?.name ?? "").trim();
-      const title  = (data.name ?? "").trim();
-      return [artist, title].filter(Boolean).join(" ");
-    } catch { /* fall through */ }
-  }
-
-  // ── MusicBrainz release group ───────────────────────────────────────────────
-  if (discogsId.toLowerCase().startsWith("mb:")) {
-    const mbid = discogsId.slice(3);
-    try {
-      const res = await fetch(
-        `https://musicbrainz.org/ws/2/release-group/${mbid}?inc=artist-credits&fmt=json`,
-        { headers: { "User-Agent": "NeedleDrop/1.0 (needledrop.app)" }, next: { revalidate: 3600 } }
-      );
-      if (!res.ok) throw new Error("mb fail");
-      const data = await res.json();
-      const artist = (data["artist-credit"]?.[0]?.artist?.name ?? "").trim();
-      const title  = (data.title ?? "").trim();
-      return [artist, title].filter(Boolean).join(" ");
-    } catch { /* fall through */ }
-  }
-
-  // ── Discogs numeric release ID ─────────────────────────────────────────────
-  if (/^\d+$/.test(discogsId)) {
-    try {
-      const token = process.env.DISCOGS_TOKEN;
-      if (!token) throw new Error("no token");
-      const res = await fetch(`https://api.discogs.com/releases/${discogsId}`, {
-        headers: { Authorization: `Discogs token=${token}`, "User-Agent": "NeedleDrop/1.0" },
-        next: { revalidate: 3600 },
-      });
-      if (!res.ok) throw new Error("discogs fail");
-      const data = await res.json();
-      const artist = (data.artists?.[0]?.name ?? "").replace(/\s*\(\d+\)$/, "").trim();
-      const title  = (data.title ?? "").trim();
-      return [artist, title].filter(Boolean).join(" ");
-    } catch { /* fall through */ }
-  }
-
-  return "";
+// Auto-create a DB entry for numeric Discogs master IDs.
+async function ensureDiscogsAlbum(discogsId: string): Promise<void> {
+  if (!/^\d+$/.test(discogsId)) return;
+  try {
+    const token = process.env.DISCOGS_TOKEN;
+    if (!token) return;
+    const res = await fetch(`https://api.discogs.com/masters/${discogsId}`, {
+      headers: { Authorization: `Discogs token=${token}`, "User-Agent": "NeedleDrop/1.0" },
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const title      = data.title ?? "Unknown Album";
+    const artist     = data.artists?.[0]?.name?.replace(/\s*\(\d+\)$/, "").trim() ?? "Unknown Artist";
+    const releaseYear = data.year ? parseInt(String(data.year)) : null;
+    const coverUrl   = data.images?.[0]?.uri ?? null;
+    const genre      = data.genres?.[0] ?? null;
+    await prisma.album.upsert({
+      where:  { discogsId },
+      update: { title, artist, releaseYear, coverUrl, genre },
+      create: { discogsId, title, artist, releaseYear, coverUrl, genre, label: null },
+    });
+  } catch { /* non-fatal */ }
 }
 
 // Never serve a cached version — album records can be created moments before
@@ -372,35 +325,36 @@ export default async function AlbumPage({ params, searchParams }: Props) {
     });
   }
 
+  // Self-heal for numeric Discogs master IDs — fetch from Discogs and upsert.
+  if (!album && /^\d+$/.test(discogsId)) {
+    await ensureDiscogsAlbum(discogsId);
+    album = await prisma.album.findUnique({
+      where: { discogsId },
+      include: ALBUM_INCLUDES,
+    }) ?? null;
+  }
+
   // Generic retry — one short pause for any remaining timing edge cases.
   if (!album) {
     await new Promise((r) => setTimeout(r, 400));
     album = await prisma.album.findUnique({
       where: { discogsId },
       include: ALBUM_INCLUDES,
-    });
+    }) ?? null;
   }
 
-  // Complete fallback — auto-open the add modal instead of a dead end
+  // Nothing we can do — the ID is unrecognised or every API call failed.
   if (!album) {
-    // Try to derive a pre-filled search term from the external ID so the
-    // AddToDatabase modal opens with results already loaded.
-    const searchQuery = await deriveSearchQuery(discogsId);
     return (
       <div className="min-h-screen" style={{ backgroundColor: C.bg, color: C.text }}>
         <div className="ms-page">
           <Link href="/activity" className="ms-back">← Back to E-Zine</Link>
           <div className="ms-box" style={{ maxWidth: 560, margin: "40px auto" }}>
-            <div className="ms-bar hot">Album not in catalogue</div>
+            <div className="ms-bar hot">Album not found</div>
             <div className="ms-pad" style={{ padding: 32, textAlign: "center" }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>💿</div>
-              <h2 style={{ fontFamily: "var(--font-nd-serif)", fontSize: 24, fontWeight: 600, margin: "0 0 12px", color: C.text }}>
-                Album not found — add it?
-              </h2>
-              <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.6, margin: "0 0 24px" }}>
-                This album isn&apos;t in the NeedleDrop catalogue yet. Search below to add it and give it a proper home.
+              <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.6, margin: 0 }}>
+                We couldn&apos;t find or fetch this album. Try searching again.
               </p>
-              <AddToDatabaseTrigger autoOpen initialQuery={searchQuery} />
             </div>
           </div>
         </div>
