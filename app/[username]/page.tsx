@@ -98,7 +98,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const hoursListened = Math.round(totalListeningMs / 3_600_000);
 
   const featured = user.collection.filter((c) => c.isFeatured).slice(0, 8);
-  const latestAdded = user.collection.filter((c) => !c.isFeatured).slice(0, 8);
+  const latestAdded = user.collection.filter((c) => !c.isFeatured).slice(0, 5);
 
   const now = new Date();
   const sixtyMinutesAgo = new Date(now.getTime() - 60 * 60 * 1000);
