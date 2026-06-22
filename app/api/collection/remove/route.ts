@@ -9,14 +9,8 @@ export async function POST(req: Request) {
   const user = await prisma.user.findUnique({ where: { clerkId } });
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  const { wantlistId, albumId } = await req.json();
+  const { albumId } = await req.json();
+  await prisma.collection.deleteMany({ where: { userId: user.id, albumId } });
 
-  if (albumId) {
-    await prisma.wantlist.deleteMany({ where: { userId: user.id, albumId } });
-  } else {
-    const item = await prisma.wantlist.findUnique({ where: { id: wantlistId } });
-    if (!item || item.userId !== user.id) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    await prisma.wantlist.delete({ where: { id: wantlistId } });
-  }
   return NextResponse.json({ ok: true });
 }

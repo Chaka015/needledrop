@@ -34,30 +34,48 @@ export default function AlbumActions({
 }: AlbumActionsProps) {
   const [inCollection, setInCollection] = useState(initialInCollection);
   const [inWantlist, setInWantlist] = useState(initialInWantlist);
-  const [addingCollection, setAddingCollection] = useState(false);
-  const [addingWantlist, setAddingWantlist] = useState(false);
+  const [loadingCollection, setLoadingCollection] = useState(false);
+  const [loadingWantlist, setLoadingWantlist] = useState(false);
   const [showLog, setShowLog] = useState(false);
 
-  async function handleAddToCollection() {
-    setAddingCollection(true);
-    const res = await fetch("/api/collection/add", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ discogsId, title, artist, releaseYear, coverUrl, label, genre }),
-    });
-    if (res.ok) setInCollection(true);
-    setAddingCollection(false);
+  async function handleToggleCollection() {
+    setLoadingCollection(true);
+    if (inCollection) {
+      const res = await fetch("/api/collection/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ albumId }),
+      });
+      if (res.ok) setInCollection(false);
+    } else {
+      const res = await fetch("/api/collection/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ discogsId, title, artist, releaseYear, coverUrl, label, genre }),
+      });
+      if (res.ok) setInCollection(true);
+    }
+    setLoadingCollection(false);
   }
 
-  async function handleAddToWantlist() {
-    setAddingWantlist(true);
-    const res = await fetch("/api/wantlist/add", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ discogsId, title, artist, releaseYear, coverUrl, label, genre }),
-    });
-    if (res.ok) setInWantlist(true);
-    setAddingWantlist(false);
+  async function handleToggleWantlist() {
+    setLoadingWantlist(true);
+    if (inWantlist) {
+      const res = await fetch("/api/wantlist/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ albumId }),
+      });
+      if (res.ok) setInWantlist(false);
+    } else {
+      const res = await fetch("/api/wantlist/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ discogsId, title, artist, releaseYear, coverUrl, label, genre }),
+      });
+      if (res.ok) setInWantlist(true);
+    }
+    setLoadingWantlist(false);
   }
 
   return (
@@ -74,30 +92,30 @@ export default function AlbumActions({
         </button>
 
         <button
-          onClick={handleAddToCollection}
-          disabled={inCollection || addingCollection}
+          onClick={handleToggleCollection}
+          disabled={loadingCollection}
           className="px-4 py-2 text-xs font-mono transition-colors duration-100"
           style={{
             backgroundColor: inCollection ? C.surfaceRaised : C.surface,
             color: inCollection ? C.subtle : C.muted,
             borderRadius: 4,
             border: `1px solid ${C.border}`,
-            opacity: addingCollection ? 0.4 : 1,
+            opacity: loadingCollection ? 0.4 : 1,
           }}
         >
           {inCollection ? "✓ IN COLLECTION" : "+ ADD TO COLLECTION"}
         </button>
 
         <button
-          onClick={handleAddToWantlist}
-          disabled={inWantlist || addingWantlist}
+          onClick={handleToggleWantlist}
+          disabled={loadingWantlist}
           className="px-4 py-2 text-xs font-mono transition-colors duration-100"
           style={{
             backgroundColor: inWantlist ? C.surfaceRaised : C.surface,
             color: inWantlist ? C.subtle : C.muted,
             borderRadius: 4,
             border: `1px solid ${C.border}`,
-            opacity: addingWantlist ? 0.4 : 1,
+            opacity: loadingWantlist ? 0.4 : 1,
           }}
         >
           {inWantlist ? "✓ WANTLISTED" : "+ WANTLIST"}
