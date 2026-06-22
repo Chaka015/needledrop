@@ -219,34 +219,36 @@ async function ensureMBAlbum(discogsId: string): Promise<void> {
   const mbid = discogsId.slice(3); // strip "mb:"
   if (!mbid) return;
 
-  try {
-    // Fetch release group for title/artist/date
-    const rgRes = await fetch(
-      `https://musicbrainz.org/ws/2/release-group/${mbid}?inc=artist-credits&fmt=json`,
-      { headers: { "User-Agent": "NeedleDrop/1.0 (needledrop.app)" }, next: { revalidate: 86400 } }
-    );
-    if (!rgRes.ok) return;
-    const rg = await rgRes.json();
+  // Retry up to 3 times with backoff — MB rate-limits at 1 req/sec and the
+  // artist page already fires 2 requests, so the first attempt often gets 429.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 1100 * attempt));
+    try {
+      const rgRes = await fetch(
+        `https://musicbrainz.org/ws/2/release-group/${mbid}?inc=artist-credits&fmt=json`,
+        { headers: { "User-Agent": "NeedleDrop/1.0 (needledrop.app)" }, next: { revalidate: 86400 } }
+      );
+      if (rgRes.status === 429) continue; // rate-limited — wait and retry
+      if (!rgRes.ok) return;
+      const rg = await rgRes.json();
 
-    const title = rg.title ?? "Unknown Album";
-    const artist = rg["artist-credit"]?.[0]?.artist?.name
-      ?? rg["artist-credit"]?.[0]?.name
-      ?? "Unknown Artist";
-    const artistMbid = rg["artist-credit"]?.[0]?.artist?.id ?? null;
-    const releaseYear = rg["first-release-date"]
-      ? parseInt(rg["first-release-date"].slice(0, 4))
-      : null;
+      const title = rg.title ?? "Unknown Album";
+      const artist = rg["artist-credit"]?.[0]?.artist?.name
+        ?? rg["artist-credit"]?.[0]?.name
+        ?? "Unknown Artist";
+      const artistMbid = rg["artist-credit"]?.[0]?.artist?.id ?? null;
+      const releaseYear = rg["first-release-date"]
+        ? parseInt(rg["first-release-date"].slice(0, 4))
+        : null;
+      const coverUrl = `https://coverartarchive.org/release-group/${mbid}/front`;
 
-    // Try Cover Art Archive for this release group
-    const coverUrl = `https://coverartarchive.org/release-group/${mbid}/front`;
-
-    await prisma.album.upsert({
-      where: { discogsId },
-      update: { title, artist, artistMbid, releaseYear },
-      create: { discogsId, title, artist, artistMbid, releaseYear, coverUrl, genre: null, label: null },
-    });
-  } catch {
-    // MusicBrainz unreachable — graceful fallback page will render instead
+      await prisma.album.upsert({
+        where: { discogsId },
+        update: { title, artist, artistMbid, releaseYear },
+        create: { discogsId, title, artist, artistMbid, releaseYear, coverUrl, genre: null, label: null },
+      });
+      return; // success
+    } catch { return; }
   }
 }
 

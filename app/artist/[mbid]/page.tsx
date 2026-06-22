@@ -59,6 +59,27 @@ export default async function ArtistPage({ params }: Props) {
 
   const releases = await fetchArtistReleases(mbid);
 
+  // Pre-populate minimal album stubs so clicking a discography link never
+  // hits "Album not found" — the DB entry already exists before the user clicks.
+  // upsert with empty update so existing rich records aren't overwritten.
+  await Promise.allSettled(
+    releases.slice(0, 50).map((r) =>
+      prisma.album.upsert({
+        where: { discogsId: `mb:${r.id}` },
+        update: {},
+        create: {
+          discogsId: `mb:${r.id}`,
+          title: r.title,
+          artist: artist.name,
+          releaseYear: r.date ? parseInt(r.date.slice(0, 4)) : null,
+          coverUrl: `https://coverartarchive.org/release-group/${r.id}/front`,
+          genre: null,
+          label: null,
+        },
+      }).catch(() => {})
+    )
+  );
+
   const news = await fetchArtistNews(artist.name);
 
   // Find Wikipedia URL from MusicBrainz relations
