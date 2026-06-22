@@ -191,7 +191,7 @@ export default function SearchPage({ query, initialTab, users, albums, isLoggedI
             ) : (
               <div className="space-y-2">
                 {discogsResults.slice(0, discogsVisible).map((album) => (
-                  <AlbumRow key={album.discogsId} album={album} noLink />
+                  <AlbumRow key={album.discogsId} album={album} />
                 ))}
                 {discogsResults.length > discogsVisible && (
                   <LoadMore
