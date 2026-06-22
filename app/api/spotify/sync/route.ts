@@ -25,6 +25,7 @@ async function refreshToken(refreshToken: string): Promise<{ access_token: strin
 interface SpotifyTrack {
   played_at: string;
   track: {
+    id: string;
     type: string;
     name: string;
     artists: { name: string }[];
@@ -32,6 +33,7 @@ interface SpotifyTrack {
       album_type: string;
       name: string;
       id: string;
+      total_tracks: number;
       images: { url: string }[];
       release_date: string;
       label?: string;
@@ -48,6 +50,8 @@ interface AlbumSession {
   releaseYear: number | null;
   label: string | null;
   playedAt: Date;
+  uniqueTrackIds: Set<string>;
+  totalTracks: number;
 }
 
 function groupIntoSessions(tracks: SpotifyTrack[]): AlbumSession[] {
@@ -72,11 +76,13 @@ function groupIntoSessions(tracks: SpotifyTrack[]): AlbumSession[] {
           : null,
         label: album.label ?? null,
         playedAt,
+        uniqueTrackIds: new Set([item.track.id]),
+        totalTracks: album.total_tracks,
       });
     } else {
-      // Track the most recent play time within the day
       const session = map.get(dayKey)!;
       if (playedAt > session.playedAt) session.playedAt = playedAt;
+      session.uniqueTrackIds.add(item.track.id);
     }
   }
 
@@ -186,6 +192,12 @@ export async function POST() {
   let skipped = 0;
 
   for (const session of sessions) {
+    // Require >50% of the album's tracks to have been played — partial listens don't count
+    if (session.totalTracks > 0 && session.uniqueTrackIds.size / session.totalTracks < 0.5) {
+      skipped++;
+      continue;
+    }
+
     const discogsId = `spotify:album:${session.spotifyAlbumId}`;
 
     const album = await prisma.album.upsert({
