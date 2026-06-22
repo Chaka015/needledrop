@@ -44,6 +44,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       followers: true,
       following: true,
       logs: {
+        where: { userDeleted: false },
         orderBy: { playedAt: "desc" },
         take: 10,
         include: { album: true, spins: true },
@@ -89,8 +90,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   // Stats for odometer — aggregate across ALL logs, not just the 10 fetched for display
   const [totalMsResult, listensLogged] = await Promise.all([
-    prisma.listeningLog.aggregate({ where: { userId: user.id }, _sum: { durationMs: true } }),
-    prisma.listeningLog.count({ where: { userId: user.id } }),
+    prisma.listeningLog.aggregate({ where: { userId: user.id, userDeleted: false }, _sum: { durationMs: true } }),
+    prisma.listeningLog.count({ where: { userId: user.id, userDeleted: false } }),
   ]);
   const recordsOwned = user.collection.length;
   const totalListeningMs = Number(totalMsResult._sum.durationMs ?? BigInt(0));
@@ -155,7 +156,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   // so we fetch it explicitly and prepend if it's not already first.
   if (user.nowSpinning) {
     const nsLog = await prisma.listeningLog.findFirst({
-      where: { userId: user.id, albumId: user.nowSpinning },
+      where: { userId: user.id, albumId: user.nowSpinning, userDeleted: false },
       orderBy: { playedAt: "desc" },
       include: { album: true, spins: true },
     });

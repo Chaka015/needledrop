@@ -21,7 +21,7 @@ export function getDateRange(range: TimeRange): { start: Date; end: Date } {
 export async function getStatStrip(userId: string, start: Date, end: Date) {
   const [logs, wantlistCount] = await Promise.all([
     prisma.listeningLog.findMany({
-      where: { userId, playedAt: { gte: start, lte: end } },
+      where: { userId, userDeleted: false, playedAt: { gte: start, lte: end } },
       select: { source: true },
     }),
     prisma.wantlist.count({ where: { userId } }),
@@ -52,6 +52,7 @@ export async function getGenreBreakdown(userId: string, start: Date, end: Date):
       FROM "ListeningLog" ll
       JOIN "Album" a ON a.id = ll."albumId"
       WHERE ll."userId" = ${userId}
+        AND NOT ll."userDeleted"
         AND ll."playedAt" >= ${start}
         AND ll."playedAt" <= ${end}
     ) sub
@@ -71,6 +72,7 @@ export async function getGenreBreakdown(userId: string, start: Date, end: Date):
         FROM "ListeningLog" ll
         JOIN "Album" a ON a.id = ll."albumId"
         WHERE ll."userId" = ${userId}
+          AND NOT ll."userDeleted"
           AND ll."playedAt" >= ${start}
           AND ll."playedAt" <= ${end}
           AND (a.genres @> ARRAY[${row.genre}::text] OR a.genre = ${row.genre})
@@ -83,6 +85,7 @@ export async function getGenreBreakdown(userId: string, start: Date, end: Date):
         FROM "ListeningLog" ll
         JOIN "Album" a ON a.id = ll."albumId"
         WHERE ll."userId" = ${userId}
+          AND NOT ll."userDeleted"
           AND ll."playedAt" >= ${start}
           AND ll."playedAt" <= ${end}
           AND (a.genres @> ARRAY[${row.genre}::text] OR a.genre = ${row.genre})
@@ -118,6 +121,7 @@ export async function getListeningVelocity(userId: string) {
     SELECT date_trunc('month', "playedAt")::timestamptz as month, COUNT(*)::bigint as count
     FROM "ListeningLog"
     WHERE "userId" = ${userId}
+      AND NOT "userDeleted"
       AND "playedAt" >= ${twelveMonthsAgo}
     GROUP BY month
     ORDER BY month ASC
@@ -139,7 +143,7 @@ export async function getListeningVelocity(userId: string) {
 
 export async function getFormatPreference(userId: string, start: Date, end: Date) {
   const logs = await prisma.listeningLog.findMany({
-    where: { userId, playedAt: { gte: start, lte: end } },
+    where: { userId, userDeleted: false, playedAt: { gte: start, lte: end } },
     select: { format: true, source: true, rating: true },
   });
 
@@ -170,7 +174,7 @@ export interface DecadeDetail {
 
 export async function getDecadeBreakdown(userId: string, start: Date, end: Date): Promise<DecadeDetail[]> {
   const logs = await prisma.listeningLog.findMany({
-    where: { userId, playedAt: { gte: start, lte: end } },
+    where: { userId, userDeleted: false, playedAt: { gte: start, lte: end } },
     select: {
       album: { select: { releaseYear: true, title: true, artist: true, coverUrl: true, discogsId: true } },
     },
@@ -220,11 +224,12 @@ export async function getCollectionBreadth(userId: string) {
 
 export async function getWantlistOverlap(userId: string, start: Date, end: Date) {
   const [totalSpins, wantResult] = await Promise.all([
-    prisma.listeningLog.count({ where: { userId, playedAt: { gte: start, lte: end } } }),
+    prisma.listeningLog.count({ where: { userId, userDeleted: false, playedAt: { gte: start, lte: end } } }),
     prisma.$queryRaw<[{ count: bigint }]>`
       SELECT COUNT(*)::bigint as count
       FROM "ListeningLog" ll
       WHERE ll."userId" = ${userId}
+        AND NOT ll."userDeleted"
         AND ll."playedAt" >= ${start}
         AND ll."playedAt" <= ${end}
         AND EXISTS (
@@ -242,7 +247,7 @@ export async function getWantlistOverlap(userId: string, start: Date, end: Date)
 
 export async function getTopArtists(userId: string, start: Date, end: Date, limit = 10) {
   const logs = await prisma.listeningLog.findMany({
-    where: { userId, playedAt: { gte: start, lte: end } },
+    where: { userId, userDeleted: false, playedAt: { gte: start, lte: end } },
     select: { album: { select: { artist: true, artistMbid: true } } },
   });
   const map: Record<string, { count: number; mbid: string | null }> = {};
@@ -259,7 +264,7 @@ export async function getTopArtists(userId: string, start: Date, end: Date, limi
 
 export async function getTopAlbums(userId: string, start: Date, end: Date, limit = 10) {
   const logs = await prisma.listeningLog.findMany({
-    where: { userId, playedAt: { gte: start, lte: end } },
+    where: { userId, userDeleted: false, playedAt: { gte: start, lte: end } },
     select: { albumId: true, album: { select: { title: true, artist: true, coverUrl: true, discogsId: true } } },
   });
   const map: Record<string, { count: number; title: string; artist: string; coverUrl: string | null; discogsId: string }> = {};
@@ -272,7 +277,7 @@ export async function getTopAlbums(userId: string, start: Date, end: Date, limit
 
 export async function getFormatBreakdown(userId: string, start: Date, end: Date) {
   const logs = await prisma.listeningLog.findMany({
-    where: { userId, playedAt: { gte: start, lte: end } },
+    where: { userId, userDeleted: false, playedAt: { gte: start, lte: end } },
     select: { source: true, format: true },
   });
   const map: Record<string, number> = {};
@@ -288,7 +293,7 @@ export async function getFormatBreakdown(userId: string, start: Date, end: Date)
 
 export async function getRatingDistribution(userId: string, start: Date, end: Date) {
   const logs = await prisma.listeningLog.findMany({
-    where: { userId, playedAt: { gte: start, lte: end } },
+    where: { userId, userDeleted: false, playedAt: { gte: start, lte: end } },
     select: { rating: true },
   });
   const rated = logs.filter((l) => l.rating !== null);
@@ -308,7 +313,7 @@ export async function getDailyData(userId: string, year: number, month: number) 
   const start = new Date(year, month, 1);
   const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
   const logs = await prisma.listeningLog.findMany({
-    where: { userId, playedAt: { gte: start, lte: end } },
+    where: { userId, userDeleted: false, playedAt: { gte: start, lte: end } },
     include: { album: { select: { discogsId: true, title: true, artist: true, coverUrl: true } } },
     orderBy: { playedAt: "asc" },
   });

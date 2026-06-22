@@ -16,9 +16,14 @@ export async function DELETE(_req: Request, { params }: Params) {
   if (!log) return NextResponse.json({ error: "Log not found" }, { status: 404 });
   if (log.userId !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  // Delete associated spins first
   await prisma.spin.deleteMany({ where: { logId } });
-  await prisma.listeningLog.delete({ where: { id: logId } });
+
+  if (log.autoImported) {
+    // Soft-delete: keep as tombstone so Spotify sync doesn't reimport this entry
+    await prisma.listeningLog.update({ where: { id: logId }, data: { userDeleted: true } });
+  } else {
+    await prisma.listeningLog.delete({ where: { id: logId } });
+  }
 
   return NextResponse.json({ ok: true });
 }

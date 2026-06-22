@@ -48,6 +48,7 @@ export default async function LogsPage({ params, searchParams }: Props) {
   const logs = await prisma.listeningLog.findMany({
     where: {
       userId: user.id,
+      userDeleted: false,
       ...(since ? { playedAt: { gte: since } } : {}),
     },
     orderBy: { playedAt: "desc" },

@@ -131,7 +131,8 @@ model ListeningLog {
   format       String?
   playedAt     DateTime @default(now())
   source       String   @default("physical")
-  autoImported Boolean  @default(false)
+  autoImported Boolean   @default(false)
+  userDeleted  Boolean   @default(false)
   durationMs   BigInt?
   album        Album    @relation(fields: [albumId], references: [id])
   user         User     @relation(fields: [userId], references: [id])
