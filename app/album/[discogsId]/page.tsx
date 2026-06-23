@@ -315,7 +315,10 @@ export default async function AlbumPage({ params, searchParams }: Props) {
     album = await prisma.album.findUnique({
       where: { discogsId },
       include: ALBUM_INCLUDES,
-    });
+    }) ?? await prisma.album.findFirst({
+      where: { discogsId: { equals: discogsId, mode: "insensitive" } },
+      include: ALBUM_INCLUDES,
+    }) ?? null;
   }
 
   // Self-heal for mb: release group IDs linked from the artist discography.
@@ -324,7 +327,7 @@ export default async function AlbumPage({ params, searchParams }: Props) {
     album = await prisma.album.findUnique({
       where: { discogsId },
       include: ALBUM_INCLUDES,
-    });
+    }) ?? null;
   }
 
   // Self-heal for numeric Discogs master IDs — fetch from Discogs and upsert.
@@ -336,11 +339,20 @@ export default async function AlbumPage({ params, searchParams }: Props) {
     }) ?? null;
   }
 
-  // Generic retry — one short pause for any remaining timing edge cases.
+  // Final retry with backoff — catches transient Neon connection misses on
+  // any ID type, including spotify:album: records already in the DB.
   if (!album) {
-    await new Promise((r) => setTimeout(r, 400));
-    album = await prisma.album.findUnique({
-      where: { discogsId },
+    await new Promise((r) => setTimeout(r, 600));
+    album = await prisma.album.findFirst({
+      where: { discogsId: { equals: discogsId, mode: "insensitive" } },
+      include: ALBUM_INCLUDES,
+    }) ?? null;
+  }
+
+  if (!album) {
+    await new Promise((r) => setTimeout(r, 1200));
+    album = await prisma.album.findFirst({
+      where: { discogsId: { equals: discogsId, mode: "insensitive" } },
       include: ALBUM_INCLUDES,
     }) ?? null;
   }
