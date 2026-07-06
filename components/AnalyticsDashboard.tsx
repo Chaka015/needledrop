@@ -235,7 +235,7 @@ export default function AnalyticsDashboard(props: DashboardProps) {
   const maxRating = Math.max(...ratingDist.buckets.map((b) => b.count), 1);
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: C.bg, color: C.text }}>
+    <div style={{ minHeight: "100vh", backgroundColor: C.bg, color: C.text, fontFamily: "var(--font-nd-sans, Inter, sans-serif)" }}>
       <div style={{ maxWidth: 1152, margin: "0 auto", padding: "40px 24px" }}>
 
         {/* Header */}

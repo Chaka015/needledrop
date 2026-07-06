@@ -44,7 +44,7 @@ export interface GenreDetail {
 
 export async function getGenreBreakdown(userId: string, start: Date, end: Date): Promise<GenreDetail[]> {
   const rows = await prisma.$queryRaw<{ genre: string; count: bigint }[]>`
-    SELECT genre, COUNT(*)::bigint as count
+    SELECT INITCAP(TRIM(LOWER(genre))) as genre, COUNT(*)::bigint as count
     FROM (
       SELECT unnest(
         CASE WHEN array_length(a.genres, 1) > 0 THEN a.genres ELSE ARRAY[a.genre] END
@@ -56,8 +56,8 @@ export async function getGenreBreakdown(userId: string, start: Date, end: Date):
         AND ll."playedAt" >= ${start}
         AND ll."playedAt" <= ${end}
     ) sub
-    WHERE genre IS NOT NULL AND genre != ''
-    GROUP BY genre
+    WHERE genre IS NOT NULL AND TRIM(genre) != ''
+    GROUP BY TRIM(LOWER(genre))
     ORDER BY count DESC
     LIMIT 15
   `;
@@ -75,7 +75,7 @@ export async function getGenreBreakdown(userId: string, start: Date, end: Date):
           AND NOT ll."userDeleted"
           AND ll."playedAt" >= ${start}
           AND ll."playedAt" <= ${end}
-          AND (a.genres @> ARRAY[${row.genre}::text] OR a.genre = ${row.genre})
+          AND (LOWER(array_to_string(a.genres, ',')) LIKE '%' || LOWER(${row.genre}) || '%' OR LOWER(a.genre) = LOWER(${row.genre}))
         GROUP BY a.artist
         ORDER BY count DESC
         LIMIT 5
@@ -88,7 +88,7 @@ export async function getGenreBreakdown(userId: string, start: Date, end: Date):
           AND NOT ll."userDeleted"
           AND ll."playedAt" >= ${start}
           AND ll."playedAt" <= ${end}
-          AND (a.genres @> ARRAY[${row.genre}::text] OR a.genre = ${row.genre})
+          AND (LOWER(array_to_string(a.genres, ',')) LIKE '%' || LOWER(${row.genre}) || '%' OR LOWER(a.genre) = LOWER(${row.genre}))
         GROUP BY a.id, a.title, a.artist, a."coverUrl", a."discogsId"
         ORDER BY count DESC
         LIMIT 5
