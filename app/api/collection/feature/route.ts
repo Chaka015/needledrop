@@ -24,12 +24,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // If currently featured, just unfeature it
+  // If currently featured, unfeature it and renumber the rest
   if (item.isFeatured) {
     await prisma.collection.update({
       where: { id: collectionId },
-      data: { isFeatured: false },
+      data: { isFeatured: false, featuredPosition: null },
     });
+
+    const remaining = await prisma.collection.findMany({
+      where: { userId: user.id, isFeatured: true },
+      orderBy: { featuredPosition: "asc" },
+    });
+    await Promise.all(
+      remaining.map((c, i) =>
+        prisma.collection.update({ where: { id: c.id }, data: { featuredPosition: i } })
+      )
+    );
+
     return NextResponse.json({ isFeatured: false });
   }
 
@@ -44,7 +55,7 @@ export async function POST(req: Request) {
 
   await prisma.collection.update({
     where: { id: collectionId },
-    data: { isFeatured: true },
+    data: { isFeatured: true, featuredPosition: featuredCount },
   });
 
   return NextResponse.json({ isFeatured: true });

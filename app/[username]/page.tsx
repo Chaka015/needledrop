@@ -7,6 +7,7 @@ import AudioSetupEditor from "@/components/AudioSetupEditor";
 import MyRecordsSection from "@/components/MyRecordsSection";
 import RecentListens from "@/components/RecentListens";
 import FeaturedGrid from "@/components/FeaturedGrid";
+import TopFiveGrid from "@/components/TopFiveGrid";
 import FollowButton from "@/components/FollowButton";
 import MessageButton from "@/components/MessageButton";
 import MixesList from "@/components/MixesList";
@@ -97,7 +98,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const totalListeningMs = Number(totalMsResult._sum.durationMs ?? BigInt(0));
   const hoursListened = Math.round(totalListeningMs / 3_600_000);
 
-  const featured = user.collection.filter((c) => c.isFeatured).slice(0, 8);
+  const featured = user.collection
+    .filter((c) => c.isFeatured)
+    .sort((a, b) => (a.featuredPosition ?? 999) - (b.featuredPosition ?? 999))
+    .slice(0, 5);
   const latestAdded = user.collection.filter((c) => !c.isFeatured).slice(0, 5);
 
   const now = new Date();
@@ -354,24 +358,18 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             <div className="ms-box">
               <div className="ms-bar">{firstName}&apos;s Top {featured.length > 0 ? featured.length : ""} Records</div>
               {featured.length > 0 ? (
-                <div className="ms-top8">
-                  {featured.map((c, i) => (
-                    <div className="cell" key={c.id}>
-                      <span className="ms-ribbon">{i + 1}</span>
-                      <Link href={`/album/${encodeURIComponent(c.album.discogsId)}`}>
-                        {c.album.coverUrl ? (
-                          <Image src={c.album.coverUrl} alt={c.album.title} width={118} height={118}
-                            className="object-cover aspect-square w-full"
-                            style={{ borderRadius: 4, border: `2px solid var(--skin-border)`, display: "block" }} unoptimized />
-                        ) : (
-                          <div style={{ aspectRatio: "1", background: C.surface, borderRadius: 4, border: `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <span style={{ fontSize: 11, color: C.subtle, fontFamily: "var(--font-nd-mono)" }}>No art</span>
-                          </div>
-                        )}
-                      </Link>
-                    </div>
-                  ))}
-                </div>
+                <TopFiveGrid
+                  items={featured.map((c) => ({
+                    id: c.id,
+                    album: {
+                      discogsId: c.album.discogsId,
+                      title: c.album.title,
+                      artist: c.album.artist,
+                      coverUrl: c.album.coverUrl,
+                    },
+                  }))}
+                  isOwnProfile={isOwnProfile}
+                />
               ) : (
                 <div className="ms-pad">
                   <FeaturedGrid

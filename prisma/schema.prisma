@@ -109,15 +109,16 @@ model Spin {
 }
 
 model Collection {
-  id         String   @id @default(cuid())
-  userId     String
-  albumId    String
-  condition  String?
-  addedAt    DateTime @default(now())
-  isFeatured Boolean  @default(false)
-  pressingId String?
-  album      Album    @relation(fields: [albumId], references: [id])
-  user       User     @relation(fields: [userId], references: [id])
+  id               String   @id @default(cuid())
+  userId           String
+  albumId          String
+  condition        String?
+  addedAt          DateTime @default(now())
+  isFeatured       Boolean  @default(false)
+  featuredPosition Int?
+  pressingId       String?
+  album            Album    @relation(fields: [albumId], references: [id])
+  user             User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, albumId])
 }
