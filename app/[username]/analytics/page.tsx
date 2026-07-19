@@ -9,6 +9,7 @@ import {
   getFormatPreference,
   getDecadeBreakdown,
   getCollectionBreadth,
+  getCollectionListening,
   getWantlistOverlap,
   getTopArtists,
   getTopAlbums,
@@ -54,6 +55,7 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
     formatPreference,
     decades,
     collectionBreadth,
+    collectionListening,
     wantlistOverlap,
     topArtists,
     topAlbums,
@@ -67,6 +69,7 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
     getFormatPreference(uid, start, end),
     getDecadeBreakdown(uid, start, end),
     getCollectionBreadth(uid),
+    getCollectionListening(uid, start, end),
     getWantlistOverlap(uid, start, end),
     getTopArtists(uid, start, end),
     getTopAlbums(uid, start, end),
@@ -85,6 +88,7 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
       formatPreference={formatPreference}
       decades={decades}
       collectionBreadth={collectionBreadth}
+      collectionListening={collectionListening}
       wantlistOverlap={wantlistOverlap}
       dailyData={dailyData}
       calendarYear={calendarYear}

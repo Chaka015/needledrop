@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import MonthlyCalendarChart, { type DailyData } from "@/components/MonthlyCalendarChart";
-import type { TimeRange, GenreDetail, DecadeDetail } from "@/lib/analytics";
+import type { TimeRange, GenreDetail, DecadeDetail, CollectionListeningRow, CollectionListeningSummary } from "@/lib/analytics";
 
 const C = {
   bg:            "var(--skin-bg)",
@@ -105,6 +105,138 @@ function VelocityChart({ data }: { data: { month: string; label: string; count: 
   );
 }
 
+type CollectionSortKey = "title" | "spinsInRange" | "totalSpins" | "lastSpunAt" | "rating";
+
+function CollectionListeningTable({ records, summary, range }: { records: CollectionListeningRow[]; summary: CollectionListeningSummary; range: TimeRange }) {
+  const [sortKey, setSortKey] = useState<CollectionSortKey>("spinsInRange");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [neverSpunOnly, setNeverSpunOnly] = useState(false);
+
+  const filtered = neverSpunOnly ? records.filter((r) => r.totalSpins === 0) : records;
+
+  const sorted = [...filtered].sort((a, b) => {
+    let cmp = 0;
+    switch (sortKey) {
+      case "title": cmp = a.title.localeCompare(b.title); break;
+      case "spinsInRange": cmp = a.spinsInRange - b.spinsInRange; break;
+      case "totalSpins": cmp = a.totalSpins - b.totalSpins; break;
+      case "lastSpunAt": cmp = (a.lastSpunAt ? new Date(a.lastSpunAt).getTime() : 0) - (b.lastSpunAt ? new Date(b.lastSpunAt).getTime() : 0); break;
+      case "rating": cmp = (a.avgRating ?? -1) - (b.avgRating ?? -1); break;
+    }
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+
+  function toggleSort(key: CollectionSortKey) {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("desc");
+    }
+  }
+
+  function formatDate(iso: string | null) {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleDateString("default", { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  function SortHeader({ label, sortKeyName, align }: { label: string; sortKeyName: CollectionSortKey; align?: "left" | "right" }) {
+    const active = sortKey === sortKeyName;
+    return (
+      <button onClick={() => toggleSort(sortKeyName)}
+        style={{
+          display: "flex", alignItems: "center", gap: 4, justifyContent: align === "right" ? "flex-end" : "flex-start", width: "100%",
+          background: "none", border: "none", cursor: "pointer", padding: 0,
+          fontFamily: "var(--font-nd-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase",
+          color: active ? C.accent : C.subtle,
+        }}>
+        {label}
+        {active && <span style={{ fontSize: 9 }}>{sortDir === "asc" ? "↑" : "↓"}</span>}
+      </button>
+    );
+  }
+
+  return (
+    <section style={{ backgroundColor: C.surface, border: `1px solid ${C.border}`, padding: 20 }}>
+      <SectionLabel>Collection Listening</SectionLabel>
+
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2" style={{ marginBottom: 16 }}>
+        <StatCard label="Owned" value={summary.totalRecords} />
+        <StatCard label="Spun ≥1×" value={summary.spunCount} />
+        <StatCard label="Never Spun" value={summary.neverSpunCount} dim={summary.neverSpunCount === 0} />
+        <StatCard label="% Played" value={`${summary.pctSpun.toFixed(0)}%`} />
+        <StatCard label="Avg Spins" value={summary.avgSpinsPerRecord} />
+      </div>
+
+      {records.length === 0 ? (
+        <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 12, color: C.subtle, padding: "16px 0" }}>
+          Add records to your collection to see how often you actually spin what you own.
+        </div>
+      ) : (
+        <>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+            <button onClick={() => setNeverSpunOnly((v) => !v)}
+              style={{
+                fontFamily: "var(--font-nd-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase",
+                padding: "5px 10px", borderRadius: 4, border: `1px solid ${neverSpunOnly ? C.accent : C.border}`,
+                background: neverSpunOnly ? C.accent : "transparent", color: neverSpunOnly ? "#fff" : C.muted,
+                cursor: "pointer", transition: "all 100ms",
+              }}>
+              Never Spun Only
+            </button>
+          </div>
+
+          {sorted.length === 0 ? (
+            <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 12, color: C.subtle, padding: "16px 0" }}>
+              Every record in your collection has been spun at least once.
+            </div>
+          ) : (
+            <div style={{ maxHeight: 420, overflowY: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead style={{ position: "sticky", top: 0, backgroundColor: C.surface }}>
+                  <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+                    <th style={{ textAlign: "left", padding: "0 8px 8px 0" }}><SortHeader label="Album" sortKeyName="title" /></th>
+                    <th style={{ textAlign: "right", padding: "0 8px 8px", width: 60 }}><SortHeader label={range === "all" ? "Spins" : "Period"} sortKeyName="spinsInRange" align="right" /></th>
+                    <th style={{ textAlign: "right", padding: "0 8px 8px", width: 70 }}><SortHeader label="All-Time" sortKeyName="totalSpins" align="right" /></th>
+                    <th style={{ textAlign: "right", padding: "0 8px 8px", width: 92 }}><SortHeader label="Last Spun" sortKeyName="lastSpunAt" align="right" /></th>
+                    <th style={{ textAlign: "right", padding: "0 0 8px", width: 56 }}><SortHeader label="Rating" sortKeyName="rating" align="right" /></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((r) => (
+                    <tr key={r.discogsId} style={{ borderBottom: `1px solid ${C.border}` }}>
+                      <td style={{ padding: "8px 8px 8px 0" }}>
+                        <Link href={`/album/${encodeURIComponent(r.discogsId)}`} style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+                          {r.coverUrl ? (
+                            <Image src={r.coverUrl} alt={r.title} width={28} height={28} unoptimized
+                              style={{ width: 28, height: 28, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+                          ) : (
+                            <div style={{ width: 28, height: 28, backgroundColor: C.bg, borderRadius: 2, flexShrink: 0 }} />
+                          )}
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>{r.title}</div>
+                            <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted }}>{r.artist}</div>
+                          </div>
+                        </Link>
+                      </td>
+                      <td style={{ textAlign: "right", padding: "8px", fontFamily: "var(--font-nd-mono)", fontSize: 12, color: r.spinsInRange > 0 ? C.text : C.subtle }}>{r.spinsInRange}</td>
+                      <td style={{ textAlign: "right", padding: "8px", fontFamily: "var(--font-nd-mono)", fontSize: 12, color: C.muted }}>{r.totalSpins}</td>
+                      <td style={{ textAlign: "right", padding: "8px", fontFamily: "var(--font-nd-mono)", fontSize: 11, color: C.subtle }}>{formatDate(r.lastSpunAt)}</td>
+                      <td style={{ textAlign: "right", padding: "8px 0", fontFamily: "var(--font-nd-mono)", fontSize: 12, color: r.avgRating ? "var(--skin-star, #f3a712)" : C.subtle }}>
+                        {r.avgRating ? r.avgRating.toFixed(1) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
 type ModalState =
   | { type: "genre"; data: GenreDetail }
   | { type: "decade"; data: DecadeDetail }
@@ -197,6 +329,7 @@ export interface DashboardProps {
   formatPreference: { format: string; count: number; avgRating: number | null }[];
   decades: DecadeDetail[];
   collectionBreadth: { artists: number; albums: number; avgPerArtist: number };
+  collectionListening: { records: CollectionListeningRow[]; summary: CollectionListeningSummary };
   wantlistOverlap: { totalSpins: number; spinsOnWantlist: number; pct: number };
   dailyData: DailyData;
   calendarYear: number;
@@ -216,7 +349,7 @@ const RANGES: { key: TimeRange; label: string }[] = [
 
 export default function AnalyticsDashboard(props: DashboardProps) {
   const { username, range, stats, genres, velocity, formatPreference, decades,
-    collectionBreadth, wantlistOverlap, dailyData, calendarYear, calendarMonth,
+    collectionBreadth, collectionListening, wantlistOverlap, dailyData, calendarYear, calendarMonth,
     topArtists, topAlbums, formatBreakdown, ratingDist } = props;
 
   const router = useRouter();
@@ -428,6 +561,11 @@ export default function AnalyticsDashboard(props: DashboardProps) {
               <MonthlyCalendarChart dailyData={dailyData} year={calendarYear} month={calendarMonth} />
             </section>
           </div>
+        </div>
+
+        {/* ── Collection Listening ─────────────────────────── */}
+        <div style={{ marginBottom: 16 }}>
+          <CollectionListeningTable records={collectionListening.records} summary={collectionListening.summary} range={range} />
         </div>
 
         {/* ── Top Artists + Top Albums ─────────────────────── */}

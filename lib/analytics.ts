@@ -309,6 +309,90 @@ export async function getRatingDistribution(userId: string, start: Date, end: Da
   };
 }
 
+export interface CollectionListeningRow {
+  discogsId: string;
+  title: string;
+  artist: string;
+  coverUrl: string | null;
+  spinsInRange: number;
+  totalSpins: number;
+  lastSpunAt: string | null;
+  avgRating: number | null;
+  addedAt: string;
+}
+
+export interface CollectionListeningSummary {
+  totalRecords: number;
+  spunCount: number;
+  neverSpunCount: number;
+  pctSpun: number;
+  avgSpinsPerRecord: number;
+}
+
+export async function getCollectionListening(
+  userId: string,
+  start: Date,
+  end: Date
+): Promise<{ records: CollectionListeningRow[]; summary: CollectionListeningSummary }> {
+  const collection = await prisma.collection.findMany({
+    where: { userId },
+    select: {
+      addedAt: true,
+      album: { select: { id: true, discogsId: true, title: true, artist: true, coverUrl: true } },
+    },
+  });
+
+  const empty = { totalRecords: 0, spunCount: 0, neverSpunCount: 0, pctSpun: 0, avgSpinsPerRecord: 0 };
+  if (collection.length === 0) return { records: [], summary: empty };
+
+  const albumIds = collection.map((c) => c.album.id);
+
+  const logs = await prisma.listeningLog.findMany({
+    where: { userId, userDeleted: false, source: { not: "streaming" }, albumId: { in: albumIds } },
+    select: { albumId: true, playedAt: true, rating: true },
+  });
+
+  const byAlbum: Record<string, { totalSpins: number; spinsInRange: number; lastSpunAt: Date | null; ratingSum: number; ratingCount: number }> = {};
+  for (const log of logs) {
+    if (!byAlbum[log.albumId]) byAlbum[log.albumId] = { totalSpins: 0, spinsInRange: 0, lastSpunAt: null, ratingSum: 0, ratingCount: 0 };
+    const entry = byAlbum[log.albumId];
+    entry.totalSpins++;
+    if (log.playedAt >= start && log.playedAt <= end) entry.spinsInRange++;
+    if (!entry.lastSpunAt || log.playedAt > entry.lastSpunAt) entry.lastSpunAt = log.playedAt;
+    if (log.rating !== null) { entry.ratingSum += log.rating; entry.ratingCount++; }
+  }
+
+  const records: CollectionListeningRow[] = collection.map((c) => {
+    const stats = byAlbum[c.album.id];
+    return {
+      discogsId: c.album.discogsId,
+      title: c.album.title,
+      artist: c.album.artist,
+      coverUrl: c.album.coverUrl,
+      spinsInRange: stats?.spinsInRange ?? 0,
+      totalSpins: stats?.totalSpins ?? 0,
+      lastSpunAt: stats?.lastSpunAt ? stats.lastSpunAt.toISOString() : null,
+      avgRating: stats && stats.ratingCount > 0 ? Math.round((stats.ratingSum / stats.ratingCount) * 10) / 10 : null,
+      addedAt: c.addedAt.toISOString(),
+    };
+  });
+
+  const totalRecords = records.length;
+  const spunCount = records.filter((r) => r.totalSpins > 0).length;
+  const totalSpinsAll = records.reduce((s, r) => s + r.totalSpins, 0);
+
+  return {
+    records,
+    summary: {
+      totalRecords,
+      spunCount,
+      neverSpunCount: totalRecords - spunCount,
+      pctSpun: totalRecords > 0 ? Math.round((spunCount / totalRecords) * 1000) / 10 : 0,
+      avgSpinsPerRecord: totalRecords > 0 ? Math.round((totalSpinsAll / totalRecords) * 10) / 10 : 0,
+    },
+  };
+}
+
 export async function getDailyData(userId: string, year: number, month: number) {
   const start = new Date(year, month, 1);
   const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
