@@ -278,12 +278,86 @@ async function ensureDiscogsAlbum(discogsId: string): Promise<void> {
   } catch { /* non-fatal */ }
 }
 
+// Given a discogsId (any format) that the self-heal attempts above couldn't
+// resolve, make one lightweight, non-retrying attempt to derive an
+// "Artist Title" string — just enough to pre-fill and auto-run the
+// AddToDatabase modal's search so a fan isn't stuck typing in a query by hand.
+async function deriveSearchQuery(discogsId: string): Promise<string> {
+  if (discogsId.toLowerCase().startsWith("spotify:album:")) {
+    const spotifyId = discogsId.slice("spotify:album:".length);
+    try {
+      const clientId     = process.env.SPOTIFY_CLIENT_ID;
+      const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+      if (!clientId || !clientSecret) throw new Error("no creds");
+      const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: "grant_type=client_credentials",
+        cache: "no-store",
+      });
+      if (!tokenRes.ok) throw new Error("token fail");
+      const { access_token } = await tokenRes.json();
+      const albumRes = await fetch(`https://api.spotify.com/v1/albums/${spotifyId}`, {
+        headers: { Authorization: `Bearer ${access_token}` },
+        next: { revalidate: 3600 },
+      });
+      if (!albumRes.ok) throw new Error("album fail");
+      const data = await albumRes.json();
+      const artist = (data.artists?.[0]?.name ?? "").trim();
+      const title  = (data.name ?? "").trim();
+      return [artist, title].filter(Boolean).join(" ");
+    } catch { /* fall through */ }
+  }
+
+  if (discogsId.toLowerCase().startsWith("mb:")) {
+    const mbid = discogsId.slice(3);
+    try {
+      const res = await fetch(
+        `https://musicbrainz.org/ws/2/release-group/${mbid}?inc=artist-credits&fmt=json`,
+        { headers: { "User-Agent": "NeedleDrop/1.0 (needledrop.app)" }, next: { revalidate: 3600 } }
+      );
+      if (!res.ok) throw new Error("mb fail");
+      const data = await res.json();
+      const artist = (data["artist-credit"]?.[0]?.artist?.name ?? "").trim();
+      const title  = (data.title ?? "").trim();
+      return [artist, title].filter(Boolean).join(" ");
+    } catch { /* fall through */ }
+  }
+
+  if (/^\d+$/.test(discogsId)) {
+    try {
+      const token = process.env.DISCOGS_TOKEN;
+      if (!token) throw new Error("no token");
+      const res = await fetch(`https://api.discogs.com/masters/${discogsId}`, {
+        headers: { Authorization: `Discogs token=${token}`, "User-Agent": "NeedleDrop/1.0" },
+        next: { revalidate: 3600 },
+      });
+      if (!res.ok) throw new Error("discogs fail");
+      const data = await res.json();
+      const artist = (data.artists?.[0]?.name ?? "").replace(/\s*\(\d+\)$/, "").trim();
+      const title  = (data.title ?? "").trim();
+      return [artist, title].filter(Boolean).join(" ");
+    } catch { /* fall through */ }
+  }
+
+  return "";
+}
+
 // Never serve a cached version — album records can be created moments before
 // this page is first requested (race with the create → redirect flow).
 export const dynamic = "force-dynamic";
 
 export default async function AlbumPage({ params, searchParams }: Props) {
-  const { discogsId } = await params;
+  const { discogsId: rawDiscogsId } = await params;
+  // Route params can arrive still percent-encoded (e.g. "mb%3Axxx" instead of
+  // "mb:xxx") depending on how the request was proxied — decode defensively so
+  // prefix checks like startsWith("mb:") match reliably. Decoding an
+  // already-decoded string is a safe no-op.
+  let discogsId = rawDiscogsId;
+  try { discogsId = decodeURIComponent(rawDiscogsId); } catch { /* already decoded */ }
   const { id: albumDbId } = await searchParams;
   const { userId: clerkId } = await auth();
 
@@ -360,6 +434,7 @@ export default async function AlbumPage({ params, searchParams }: Props) {
 
   // Nothing we can do — the ID is unrecognised or every API call failed.
   if (!album) {
+    const searchQuery = await deriveSearchQuery(discogsId);
     return (
       <div className="min-h-screen" style={{ backgroundColor: C.bg, color: C.text }}>
         <div className="ms-page">
@@ -368,9 +443,9 @@ export default async function AlbumPage({ params, searchParams }: Props) {
             <div className="ms-bar hot">Album not found</div>
             <div className="ms-pad" style={{ padding: 32, textAlign: "center" }}>
               <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.6, margin: "0 0 20px" }}>
-                We couldn&apos;t automatically fetch this album. Search for it below to add it to the catalogue by hand.
+                We couldn&apos;t automatically fetch this album. {searchQuery ? "We've searched for it below — pick the right match." : "Search for it below to add it to the catalogue by hand."}
               </p>
-              <AddToDatabaseTrigger autoOpen />
+              <AddToDatabaseTrigger autoOpen initialQuery={searchQuery} />
             </div>
           </div>
         </div>
