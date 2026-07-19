@@ -128,12 +128,12 @@ export default function TopFiveGrid({ items, isOwnProfile }: { items: TopFiveIte
             </Link>
             {isOwnProfile && hovered && (
               <div className="absolute inset-0 flex items-start justify-end p-1"
-                style={{ borderRadius: 4, background: "rgba(0,0,0,0.4)" }}>
+                style={{ borderRadius: 4, background: "rgba(0,0,0,0.4)", pointerEvents: "none" }}>
                 <button
                   onClick={() => handleUnfeature(item.id)}
                   disabled={isRemoving}
                   className="flex items-center justify-center w-6 h-6 text-sm transition-colors duration-100"
-                  style={{ backgroundColor: C.accent, borderRadius: 4, color: C.text, opacity: isRemoving ? 0.4 : 1 }}
+                  style={{ backgroundColor: C.accent, borderRadius: 4, color: C.text, opacity: isRemoving ? 0.4 : 1, pointerEvents: "auto" }}
                   title="Remove from Top 5"
                 >
                   ★
