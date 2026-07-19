@@ -5,6 +5,7 @@ import Link from "next/link";
 import AlbumActions from "@/components/AlbumActions";
 import AlbumTabsClient from "@/components/AlbumTabsClient";
 import GenreEditor from "@/components/GenreEditor";
+import AddToDatabaseTrigger from "@/components/AddToDatabaseTrigger";
 
 interface Props {
   params: Promise<{ discogsId: string }>;
@@ -366,9 +367,10 @@ export default async function AlbumPage({ params, searchParams }: Props) {
           <div className="ms-box" style={{ maxWidth: 560, margin: "40px auto" }}>
             <div className="ms-bar hot">Album not found</div>
             <div className="ms-pad" style={{ padding: 32, textAlign: "center" }}>
-              <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.6, margin: 0 }}>
-                We couldn&apos;t find or fetch this album. Try searching again.
+              <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.6, margin: "0 0 20px" }}>
+                We couldn&apos;t automatically fetch this album. Search for it below to add it to the catalogue by hand.
               </p>
+              <AddToDatabaseTrigger autoOpen />
             </div>
           </div>
         </div>
