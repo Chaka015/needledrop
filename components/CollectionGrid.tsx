@@ -29,6 +29,7 @@ interface Album {
   discogsId: string;
   title: string;
   artist: string;
+  artistMbid: string | null;
   releaseYear: number | null;
   coverUrl: string | null;
   label: string | null;
@@ -144,7 +145,12 @@ export default function CollectionGrid({ items }: { items: CollectionItem[] }) {
               <div className="flex-1 min-w-0">
                 <Link href={`/album/${encodeURIComponent(c.album.discogsId)}`} className="text-sm font-medium truncate block hover:underline" style={{ color: C.text }}>{c.album.title}</Link>
                 <div className="text-xs font-mono truncate" style={{ color: C.muted }}>
-                  {c.album.artist}{c.album.releaseYear ? ` · ${c.album.releaseYear}` : ""}
+                  {c.album.artistMbid ? (
+                    <Link href={`/artist/${c.album.artistMbid}`} className="hover:underline">{c.album.artist}</Link>
+                  ) : (
+                    c.album.artist
+                  )}
+                  {c.album.releaseYear ? ` · ${c.album.releaseYear}` : ""}
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">

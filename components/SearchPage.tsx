@@ -35,6 +35,7 @@ interface AlbumResult {
   discogsId: string;
   title: string;
   artist: string;
+  artistMbid?: string | null;
   releaseYear: number | null;
   coverUrl: string | null;
   label: string | null;
@@ -348,50 +349,61 @@ export default function SearchPage({ query, initialTab, users, albums, isLoggedI
 }
 
 function AlbumRow({ album, showStats, noLink }: { album: AlbumResult; showStats?: boolean; noLink?: boolean }) {
-  const inner = (
-    <>
-      {album.coverUrl ? (
-        <Image src={album.coverUrl} alt={album.title} width={48} height={48}
-          className="object-cover shrink-0" style={{ width: 48, height: 48, borderRadius: 4 }} unoptimized />
+  const meta = (
+    <div className="text-xs font-mono truncate" style={{ color: "var(--skin-muted)" }}>
+      {album.artistMbid ? (
+        <Link href={`/artist/${album.artistMbid}`} className="hover:underline">{album.artist}</Link>
       ) : (
-        <div className="shrink-0 flex items-center justify-center text-xs"
-          style={{ width: 48, height: 48, backgroundColor: "var(--skin-surface-raised)", borderRadius: 4, color: "var(--skin-subtle)" }}>
-          No art
-        </div>
+        album.artist
       )}
-      <div className="flex-1 min-w-0">
-        <div className="font-semibold text-sm truncate" style={{ color: "var(--skin-text)" }}>{album.title}</div>
-        <div className="text-xs font-mono truncate" style={{ color: "var(--skin-muted)" }}>
-          {album.artist}{album.releaseYear ? ` · ${album.releaseYear}` : ""}
-          {album.label ? ` · ${album.label}` : ""}
-        </div>
-        {showStats && (
-          <div className="flex gap-3 mt-0.5 text-xs font-mono" style={{ color: "var(--skin-subtle)" }}>
-            {album.logCount !== undefined && <span>{album.logCount} logged</span>}
-            {album.collectionCount !== undefined && <span>{album.collectionCount} collected</span>}
-          </div>
-        )}
-      </div>
-    </>
+      {album.releaseYear ? ` · ${album.releaseYear}` : ""}
+      {album.label ? ` · ${album.label}` : ""}
+    </div>
+  );
+
+  const stats = showStats && (
+    <div className="flex gap-3 mt-0.5 text-xs font-mono" style={{ color: "var(--skin-subtle)" }}>
+      {album.logCount !== undefined && <span>{album.logCount} logged</span>}
+      {album.collectionCount !== undefined && <span>{album.collectionCount} collected</span>}
+    </div>
+  );
+
+  const cover = album.coverUrl ? (
+    <Image src={album.coverUrl} alt={album.title} width={48} height={48}
+      className="object-cover shrink-0" style={{ width: 48, height: 48, borderRadius: 4 }} unoptimized />
+  ) : (
+    <div className="shrink-0 flex items-center justify-center text-xs"
+      style={{ width: 48, height: 48, backgroundColor: "var(--skin-surface-raised)", borderRadius: 4, color: "var(--skin-subtle)" }}>
+      No art
+    </div>
   );
 
   if (noLink) {
     return (
       <div className="flex items-center gap-4 p-3"
         style={{ backgroundColor: "var(--skin-surface)", border: `1px solid ${C.border}` }}>
-        {inner}
+        {cover}
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-sm truncate" style={{ color: "var(--skin-text)" }}>{album.title}</div>
+          {meta}
+          {stats}
+        </div>
       </div>
     );
   }
   return (
-    <Link
-      href={`/album/${encodeURIComponent(album.discogsId)}`}
+    <div
       className="flex items-center gap-4 p-3 transition-colors duration-100"
-      style={{ backgroundColor: "var(--skin-surface)", border: `1px solid ${C.border}`, display: "flex" }}
-      onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "var(--skin-surface-raised)")}
-      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "var(--skin-surface)")}>
-      {inner}
-    </Link>
+      style={{ backgroundColor: "var(--skin-surface)", border: `1px solid ${C.border}` }}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--skin-surface-raised)")}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--skin-surface)")}>
+      <Link href={`/album/${encodeURIComponent(album.discogsId)}`} className="shrink-0">{cover}</Link>
+      <div className="flex-1 min-w-0">
+        <Link href={`/album/${encodeURIComponent(album.discogsId)}`} className="font-semibold text-sm truncate block hover:underline" style={{ color: "var(--skin-text)" }}>{album.title}</Link>
+        {meta}
+        {stats}
+      </div>
+    </div>
   );
 }
 

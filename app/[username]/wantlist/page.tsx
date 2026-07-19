@@ -103,7 +103,11 @@ export default async function WantlistPage({ params, searchParams }: Props) {
                   <Link href={`/album/${encodeURIComponent(w.album.discogsId)}`}>
                     <div className="text-sm font-semibold truncate hover:underline" style={{ color: C.text }}>{w.album.title}</div>
                   </Link>
-                  <div className="text-xs font-mono" style={{ color: C.muted }}>{w.album.artist}</div>
+                  {w.album.artistMbid ? (
+                    <Link href={`/artist/${w.album.artistMbid}`} className="text-xs font-mono hover:underline block" style={{ color: C.muted }}>{w.album.artist}</Link>
+                  ) : (
+                    <div className="text-xs font-mono" style={{ color: C.muted }}>{w.album.artist}</div>
+                  )}
                   {w.album.releaseYear && (
                     <div className="text-xs font-mono" style={{ color: C.subtle }}>{w.album.releaseYear}</div>
                   )}

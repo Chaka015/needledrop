@@ -28,6 +28,7 @@ interface Log {
     discogsId: string;
     title: string;
     artist: string;
+    artistMbid: string | null;
     coverUrl: string | null;
   };
 }
@@ -90,7 +91,11 @@ export default function RecentListens({ logs: initialLogs, isOwnProfile }: { log
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 flex-wrap">
             <Link href={`/album/${encodeURIComponent(log.album.discogsId)}`} className="font-semibold text-sm hover:underline" style={{ color: C.text }}>{log.album.title}</Link>
-            <span className="text-xs font-mono" style={{ color: C.muted }}>{log.album.artist}</span>
+            {log.album.artistMbid ? (
+              <Link href={`/artist/${log.album.artistMbid}`} className="text-xs font-mono hover:underline" style={{ color: C.muted }}>{log.album.artist}</Link>
+            ) : (
+              <span className="text-xs font-mono" style={{ color: C.muted }}>{log.album.artist}</span>
+            )}
           </div>
           {log.rating != null && <StarRating rating={log.rating} />}
           {log.review && (

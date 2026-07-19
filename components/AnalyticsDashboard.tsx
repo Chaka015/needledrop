@@ -206,18 +206,24 @@ function CollectionListeningTable({ records, summary, range }: { records: Collec
                   {sorted.map((r) => (
                     <tr key={r.discogsId} style={{ borderBottom: `1px solid ${C.border}` }}>
                       <td style={{ padding: "8px 8px 8px 0" }}>
-                        <Link href={`/album/${encodeURIComponent(r.discogsId)}`} style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-                          {r.coverUrl ? (
-                            <Image src={r.coverUrl} alt={r.title} width={28} height={28} unoptimized
-                              style={{ width: 28, height: 28, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
-                          ) : (
-                            <div style={{ width: 28, height: 28, backgroundColor: C.bg, borderRadius: 2, flexShrink: 0 }} />
-                          )}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <Link href={`/album/${encodeURIComponent(r.discogsId)}`} style={{ flexShrink: 0 }}>
+                            {r.coverUrl ? (
+                              <Image src={r.coverUrl} alt={r.title} width={28} height={28} unoptimized
+                                style={{ width: 28, height: 28, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+                            ) : (
+                              <div style={{ width: 28, height: 28, backgroundColor: C.bg, borderRadius: 2, flexShrink: 0 }} />
+                            )}
+                          </Link>
                           <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220 }}>{r.title}</div>
-                            <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted }}>{r.artist}</div>
+                            <Link href={`/album/${encodeURIComponent(r.discogsId)}`} style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220, textDecoration: "none" }}>{r.title}</Link>
+                            {r.artistMbid ? (
+                              <Link href={`/artist/${r.artistMbid}`} style={{ display: "block", fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted, textDecoration: "none" }}>{r.artist}</Link>
+                            ) : (
+                              <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted }}>{r.artist}</div>
+                            )}
                           </div>
-                        </Link>
+                        </div>
                       </td>
                       <td style={{ textAlign: "right", padding: "8px", fontFamily: "var(--font-nd-mono)", fontSize: 12, color: r.spinsInRange > 0 ? C.text : C.subtle }}>{r.spinsInRange}</td>
                       <td style={{ textAlign: "right", padding: "8px", fontFamily: "var(--font-nd-mono)", fontSize: 12, color: C.muted }}>{r.totalSpins}</td>
@@ -288,21 +294,27 @@ function Modal({ state, onClose }: { state: ModalState; onClose: () => void }) {
               <SectionLabel>Top Albums</SectionLabel>
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {topAlbums.map((a, i) => (
-                  <Link key={a.discogsId} href={`/album/${encodeURIComponent(a.discogsId)}`}
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", backgroundColor: C.surfaceRaised, border: `1px solid ${C.border}`, textDecoration: "none" }}>
+                  <div key={a.discogsId}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", backgroundColor: C.surfaceRaised, border: `1px solid ${C.border}` }}>
                     <span style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.subtle, width: 14 }}>{i + 1}</span>
-                    {a.coverUrl ? (
-                      <Image src={a.coverUrl} alt={a.title} width={28} height={28} unoptimized
-                        style={{ width: 28, height: 28, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
-                    ) : (
-                      <div style={{ width: 28, height: 28, backgroundColor: C.bg, borderRadius: 2, flexShrink: 0 }} />
-                    )}
+                    <Link href={`/album/${encodeURIComponent(a.discogsId)}`} style={{ flexShrink: 0 }}>
+                      {a.coverUrl ? (
+                        <Image src={a.coverUrl} alt={a.title} width={28} height={28} unoptimized
+                          style={{ width: 28, height: 28, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: 28, height: 28, backgroundColor: C.bg, borderRadius: 2, flexShrink: 0 }} />
+                      )}
+                    </Link>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</div>
-                      <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted }}>{a.artist}</div>
+                      <Link href={`/album/${encodeURIComponent(a.discogsId)}`} style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "none" }}>{a.title}</Link>
+                      {a.artistMbid ? (
+                        <Link href={`/artist/${a.artistMbid}`} style={{ display: "block", fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted, textDecoration: "none" }}>{a.artist}</Link>
+                      ) : (
+                        <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted }}>{a.artist}</div>
+                      )}
                     </div>
                     <span style={{ fontFamily: "var(--font-nd-mono)", fontSize: 11, fontWeight: 700, color: C.accent, flexShrink: 0 }}>{a.count}</span>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </div>
@@ -335,7 +347,7 @@ export interface DashboardProps {
   calendarYear: number;
   calendarMonth: number;
   topArtists: { artist: string; count: number; mbid: string | null }[];
-  topAlbums: { title: string; artist: string; coverUrl: string | null; discogsId: string; count: number }[];
+  topAlbums: { title: string; artist: string; artistMbid: string | null; coverUrl: string | null; discogsId: string; count: number }[];
   formatBreakdown: { format: string; count: number; pct: number }[];
   ratingDist: { avgRating: number | null; ratedCount: number; buckets: { star: number; count: number }[] };
 }
@@ -599,21 +611,27 @@ export default function AnalyticsDashboard(props: DashboardProps) {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 {topAlbums.map((a, i) => (
-                  <Link key={a.discogsId} href={`/album/${encodeURIComponent(a.discogsId)}`}
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", backgroundColor: C.surfaceRaised, border: `1px solid ${C.border}`, textDecoration: "none" }}>
+                  <div key={a.discogsId}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", backgroundColor: C.surfaceRaised, border: `1px solid ${C.border}` }}>
                     <span style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.subtle, width: 16, flexShrink: 0 }}>{i + 1}</span>
-                    {a.coverUrl ? (
-                      <Image src={a.coverUrl} alt={a.title} width={32} height={32} unoptimized
-                        style={{ width: 32, height: 32, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
-                    ) : (
-                      <div style={{ width: 32, height: 32, backgroundColor: C.bg, borderRadius: 2, flexShrink: 0 }} />
-                    )}
+                    <Link href={`/album/${encodeURIComponent(a.discogsId)}`} style={{ flexShrink: 0 }}>
+                      {a.coverUrl ? (
+                        <Image src={a.coverUrl} alt={a.title} width={32} height={32} unoptimized
+                          style={{ width: 32, height: 32, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: 32, height: 32, backgroundColor: C.bg, borderRadius: 2, flexShrink: 0 }} />
+                      )}
+                    </Link>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</div>
-                      <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted }}>{a.artist}</div>
+                      <Link href={`/album/${encodeURIComponent(a.discogsId)}`} style={{ display: "block", fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "none" }}>{a.title}</Link>
+                      {a.artistMbid ? (
+                        <Link href={`/artist/${a.artistMbid}`} style={{ display: "block", fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted, textDecoration: "none" }}>{a.artist}</Link>
+                      ) : (
+                        <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted }}>{a.artist}</div>
+                      )}
                     </div>
                     <span style={{ fontFamily: "var(--font-nd-mono)", fontSize: 11, fontWeight: 700, color: C.accent, flexShrink: 0 }}>{a.count}</span>
-                  </Link>
+                  </div>
                 ))}
               </div>
             )}

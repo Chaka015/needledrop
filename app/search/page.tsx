@@ -68,6 +68,7 @@ export default async function Search({ searchParams }: Props) {
     discogsId: a.discogsId,
     title: a.title,
     artist: a.artist,
+    artistMbid: a.artistMbid,
     releaseYear: a.releaseYear,
     coverUrl: a.coverUrl,
     label: a.label,

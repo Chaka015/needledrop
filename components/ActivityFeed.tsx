@@ -22,7 +22,7 @@ export type FeedItem =
       id: string;
       timestamp: string;
       user: { username: string; avatarUrl: string | null };
-      album: { title: string; artist: string; coverUrl: string | null; discogsId: string };
+      album: { title: string; artist: string; artistMbid: string | null; coverUrl: string | null; discogsId: string };
       rating: number | null;
       review: string | null;
       format: string | null;
@@ -44,7 +44,7 @@ export type FeedItem =
       id: string;
       timestamp: string;
       user: { username: string; avatarUrl: string | null };
-      album: { title: string; artist: string; coverUrl: string | null; discogsId: string };
+      album: { title: string; artist: string; artistMbid: string | null; coverUrl: string | null; discogsId: string };
     }
   | {
       type: "follow";
@@ -65,7 +65,7 @@ export type FeedItem =
       id: string;
       timestamp: string;
       user: { username: string; avatarUrl: string | null };
-      album: { title: string; artist: string; coverUrl: string | null; discogsId: string };
+      album: { title: string; artist: string; artistMbid: string | null; coverUrl: string | null; discogsId: string };
       logId: string;
     }
   | {
@@ -303,7 +303,11 @@ function FeedCard({
           <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`} style={{ textDecoration: "none" }}>
             <div className="ms-listen-title">{item.album.title}</div>
           </Link>
-          <div className="ms-listen-artist">{item.album.artist}</div>
+          {item.album.artistMbid ? (
+            <Link href={`/artist/${item.album.artistMbid}`} className="ms-listen-artist" style={{ textDecoration: "none" }}>{item.album.artist}</Link>
+          ) : (
+            <div className="ms-listen-artist">{item.album.artist}</div>
+          )}
           <div className="ms-listen-meta">
             {item.rating != null && <StarRating rating={item.rating} />}
             {item.format && (
@@ -342,7 +346,11 @@ function FeedCard({
             {" "}added to collection
           </div>
           <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`} style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{item.album.title}</Link>
-          <div style={{ fontSize: 12, color: C.muted, fontFamily: "var(--font-nd-mono)" }}>{item.album.artist}</div>
+          {item.album.artistMbid ? (
+            <Link href={`/artist/${item.album.artistMbid}`} style={{ display: "block", fontSize: 12, color: C.muted, fontFamily: "var(--font-nd-mono)" }}>{item.album.artist}</Link>
+          ) : (
+            <div style={{ fontSize: 12, color: C.muted, fontFamily: "var(--font-nd-mono)" }}>{item.album.artist}</div>
+          )}
         </div>
         <span className="ms-time">{relTime(item.timestamp)}</span>
       </div>
@@ -394,7 +402,11 @@ function FeedCard({
             {" "}↻ spun a listen
           </div>
           <Link href={`/album/${encodeURIComponent(item.album.discogsId)}`} style={{ fontWeight: 600, fontSize: 14, color: C.text }}>{item.album.title}</Link>
-          <div style={{ fontSize: 12, color: C.muted, fontFamily: "var(--font-nd-mono)" }}>{item.album.artist}</div>
+          {item.album.artistMbid ? (
+            <Link href={`/artist/${item.album.artistMbid}`} style={{ display: "block", fontSize: 12, color: C.muted, fontFamily: "var(--font-nd-mono)" }}>{item.album.artist}</Link>
+          ) : (
+            <div style={{ fontSize: 12, color: C.muted, fontFamily: "var(--font-nd-mono)" }}>{item.album.artist}</div>
+          )}
         </div>
         <span className="ms-time">{relTime(item.timestamp)}</span>
       </div>

@@ -10,6 +10,7 @@ export interface SearchAlbum {
   discogsId: string;
   title: string;
   artist: string;
+  artistMbid: string | null;
   releaseYear: number | null;
   coverUrl: string | null;
   label: string | null;
@@ -202,7 +203,7 @@ export function AlbumRow({ album, onClick, onArtistClick }: {
         </div>
         <div style={{ fontSize: 11, fontFamily: "var(--font-nd-mono)", color: "var(--skin-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           <Link
-            href={`/search?q=${encodeURIComponent(album.artist)}`}
+            href={album.artistMbid ? `/artist/${album.artistMbid}` : `/search?q=${encodeURIComponent(album.artist)}`}
             style={{ color: "inherit", textDecoration: "none" }}
             onClick={(e) => { e.stopPropagation(); onArtistClick?.(); }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "var(--skin-accent)")}

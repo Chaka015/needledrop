@@ -104,18 +104,24 @@ export default async function LogsPage({ params, searchParams }: Props) {
         ) : (
           <div className="space-y-1">
             {logs.map((log) => (
-              <Link key={log.id} href={`/album/${encodeURIComponent(log.album.discogsId)}`}
+              <div key={log.id}
                 className="flex items-center gap-4 p-3 group"
                 style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
-                {log.album.coverUrl ? (
-                  <Image src={log.album.coverUrl} alt={log.album.title} width={40} height={40}
-                    className="object-cover shrink-0" style={{ width: 40, height: 40, borderRadius: 4 }} unoptimized />
-                ) : (
-                  <div className="shrink-0" style={{ width: 40, height: 40, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
-                )}
+                <Link href={`/album/${encodeURIComponent(log.album.discogsId)}`} className="shrink-0">
+                  {log.album.coverUrl ? (
+                    <Image src={log.album.coverUrl} alt={log.album.title} width={40} height={40}
+                      className="object-cover shrink-0" style={{ width: 40, height: 40, borderRadius: 4 }} unoptimized />
+                  ) : (
+                    <div className="shrink-0" style={{ width: 40, height: 40, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
+                  )}
+                </Link>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold truncate" style={{ color: C.text }}>{log.album.title}</div>
-                  <div className="text-xs font-mono truncate" style={{ color: C.muted }}>{log.album.artist}</div>
+                  <Link href={`/album/${encodeURIComponent(log.album.discogsId)}`} className="text-sm font-semibold truncate block hover:underline" style={{ color: C.text }}>{log.album.title}</Link>
+                  {log.album.artistMbid ? (
+                    <Link href={`/artist/${log.album.artistMbid}`} className="text-xs font-mono truncate block hover:underline" style={{ color: C.muted }}>{log.album.artist}</Link>
+                  ) : (
+                    <div className="text-xs font-mono truncate" style={{ color: C.muted }}>{log.album.artist}</div>
+                  )}
                 </div>
                 <div className="text-right shrink-0">
                   {log.rating != null && (
@@ -132,7 +138,7 @@ export default async function LogsPage({ params, searchParams }: Props) {
                     <div className="text-xs font-mono" style={{ color: C.subtle }}>{log.format}</div>
                   ) : null}
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}

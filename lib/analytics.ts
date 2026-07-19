@@ -39,7 +39,7 @@ export interface GenreDetail {
   count: number;
   pct: number;
   topArtists: { artist: string; count: number }[];
-  topAlbums: { title: string; artist: string; coverUrl: string | null; discogsId: string; count: number }[];
+  topAlbums: { title: string; artist: string; artistMbid: string | null; coverUrl: string | null; discogsId: string; count: number }[];
 }
 
 export async function getGenreBreakdown(userId: string, start: Date, end: Date): Promise<GenreDetail[]> {
@@ -80,8 +80,8 @@ export async function getGenreBreakdown(userId: string, start: Date, end: Date):
         ORDER BY count DESC
         LIMIT 5
       `,
-      prisma.$queryRaw<{ title: string; artist: string; coverUrl: string | null; discogsId: string; count: bigint }[]>`
-        SELECT a.title, a.artist, a."coverUrl", a."discogsId", COUNT(*)::bigint as count
+      prisma.$queryRaw<{ title: string; artist: string; artistMbid: string | null; coverUrl: string | null; discogsId: string; count: bigint }[]>`
+        SELECT a.title, a.artist, a."artistMbid", a."coverUrl", a."discogsId", COUNT(*)::bigint as count
         FROM "ListeningLog" ll
         JOIN "Album" a ON a.id = ll."albumId"
         WHERE ll."userId" = ${userId}
@@ -89,7 +89,7 @@ export async function getGenreBreakdown(userId: string, start: Date, end: Date):
           AND ll."playedAt" >= ${start}
           AND ll."playedAt" <= ${end}
           AND (LOWER(array_to_string(a.genres, ',')) LIKE '%' || LOWER(${row.genre}) || '%' OR LOWER(a.genre) = LOWER(${row.genre}))
-        GROUP BY a.id, a.title, a.artist, a."coverUrl", a."discogsId"
+        GROUP BY a.id, a.title, a.artist, a."artistMbid", a."coverUrl", a."discogsId"
         ORDER BY count DESC
         LIMIT 5
       `,
@@ -103,6 +103,7 @@ export async function getGenreBreakdown(userId: string, start: Date, end: Date):
       topAlbums: albums.map((a) => ({
         title: a.title,
         artist: a.artist,
+        artistMbid: a.artistMbid,
         coverUrl: a.coverUrl,
         discogsId: a.discogsId,
         count: Number(a.count),
@@ -169,20 +170,20 @@ export interface DecadeDetail {
   decade: number;
   count: number;
   pct: number;
-  topAlbums: { title: string; artist: string; coverUrl: string | null; discogsId: string; count: number }[];
+  topAlbums: { title: string; artist: string; artistMbid: string | null; coverUrl: string | null; discogsId: string; count: number }[];
 }
 
 export async function getDecadeBreakdown(userId: string, start: Date, end: Date): Promise<DecadeDetail[]> {
   const logs = await prisma.listeningLog.findMany({
     where: { userId, userDeleted: false, playedAt: { gte: start, lte: end } },
     select: {
-      album: { select: { releaseYear: true, title: true, artist: true, coverUrl: true, discogsId: true } },
+      album: { select: { releaseYear: true, title: true, artist: true, artistMbid: true, coverUrl: true, discogsId: true } },
     },
   });
 
   const map: Record<number, {
     count: number;
-    albums: Record<string, { title: string; artist: string; coverUrl: string | null; discogsId: string; count: number }>;
+    albums: Record<string, { title: string; artist: string; artistMbid: string | null; coverUrl: string | null; discogsId: string; count: number }>;
   }> = {};
 
   for (const log of logs) {
@@ -193,7 +194,7 @@ export async function getDecadeBreakdown(userId: string, start: Date, end: Date)
     map[decade].count++;
     const key = log.album.discogsId;
     if (!map[decade].albums[key]) {
-      map[decade].albums[key] = { title: log.album.title, artist: log.album.artist, coverUrl: log.album.coverUrl, discogsId: key, count: 0 };
+      map[decade].albums[key] = { title: log.album.title, artist: log.album.artist, artistMbid: log.album.artistMbid, coverUrl: log.album.coverUrl, discogsId: key, count: 0 };
     }
     map[decade].albums[key].count++;
   }
@@ -265,9 +266,9 @@ export async function getTopArtists(userId: string, start: Date, end: Date, limi
 export async function getTopAlbums(userId: string, start: Date, end: Date, limit = 10) {
   const logs = await prisma.listeningLog.findMany({
     where: { userId, userDeleted: false, playedAt: { gte: start, lte: end } },
-    select: { albumId: true, album: { select: { title: true, artist: true, coverUrl: true, discogsId: true } } },
+    select: { albumId: true, album: { select: { title: true, artist: true, artistMbid: true, coverUrl: true, discogsId: true } } },
   });
-  const map: Record<string, { count: number; title: string; artist: string; coverUrl: string | null; discogsId: string }> = {};
+  const map: Record<string, { count: number; title: string; artist: string; artistMbid: string | null; coverUrl: string | null; discogsId: string }> = {};
   for (const log of logs) {
     if (!map[log.albumId]) map[log.albumId] = { count: 0, ...log.album };
     map[log.albumId].count++;
@@ -313,6 +314,7 @@ export interface CollectionListeningRow {
   discogsId: string;
   title: string;
   artist: string;
+  artistMbid: string | null;
   coverUrl: string | null;
   spinsInRange: number;
   totalSpins: number;
@@ -338,7 +340,7 @@ export async function getCollectionListening(
     where: { userId },
     select: {
       addedAt: true,
-      album: { select: { id: true, discogsId: true, title: true, artist: true, coverUrl: true } },
+      album: { select: { id: true, discogsId: true, title: true, artist: true, artistMbid: true, coverUrl: true } },
     },
   });
 
@@ -368,6 +370,7 @@ export async function getCollectionListening(
       discogsId: c.album.discogsId,
       title: c.album.title,
       artist: c.album.artist,
+      artistMbid: c.album.artistMbid,
       coverUrl: c.album.coverUrl,
       spinsInRange: stats?.spinsInRange ?? 0,
       totalSpins: stats?.totalSpins ?? 0,
@@ -398,10 +401,10 @@ export async function getDailyData(userId: string, year: number, month: number) 
   const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
   const logs = await prisma.listeningLog.findMany({
     where: { userId, userDeleted: false, playedAt: { gte: start, lte: end } },
-    include: { album: { select: { discogsId: true, title: true, artist: true, coverUrl: true } } },
+    include: { album: { select: { discogsId: true, title: true, artist: true, artistMbid: true, coverUrl: true } } },
     orderBy: { playedAt: "asc" },
   });
-  const daily: Record<string, { discogsId: string; title: string; artist: string; coverUrl: string | null; format: string | null; source: string; rating: number | null }[]> = {};
+  const daily: Record<string, { discogsId: string; title: string; artist: string; artistMbid: string | null; coverUrl: string | null; format: string | null; source: string; rating: number | null }[]> = {};
   for (const log of logs) {
     const key = `${log.playedAt.getFullYear()}-${String(log.playedAt.getMonth() + 1).padStart(2, "0")}-${String(log.playedAt.getDate()).padStart(2, "0")}`;
     if (!daily[key]) daily[key] = [];
@@ -409,6 +412,7 @@ export async function getDailyData(userId: string, year: number, month: number) 
       discogsId: log.album.discogsId,
       title: log.album.title,
       artist: log.album.artist,
+      artistMbid: log.album.artistMbid,
       coverUrl: log.album.coverUrl,
       format: log.format,
       source: log.source,

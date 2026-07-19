@@ -21,6 +21,7 @@ export interface DayLog {
   discogsId: string;
   title: string;
   artist: string;
+  artistMbid: string | null;
   coverUrl: string | null;
   format: string | null;
   source: string;
@@ -278,40 +279,46 @@ export default function MonthlyCalendarChart({
             </div>
           ) : (
             activeLogs.map((log, i) => (
-              <Link
+              <div
                 key={i}
-                href={`/album/${encodeURIComponent(log.discogsId)}`}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: 10,
                   padding: "9px 12px",
                   borderBottom: i < activeLogs.length - 1 ? `1px solid ${C.line}` : "none",
-                  textDecoration: "none",
                   transition: "background-color 100ms",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = C.surfaceRaised)}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
               >
-                {log.coverUrl ? (
-                  <Image
-                    src={log.coverUrl}
-                    alt={log.title}
-                    width={36}
-                    height={36}
-                    unoptimized
-                    style={{ width: 36, height: 36, borderRadius: 3, objectFit: "cover", flexShrink: 0 }}
-                  />
-                ) : (
-                  <div style={{ width: 36, height: 36, borderRadius: 3, backgroundColor: C.surfaceRaised, flexShrink: 0 }} />
-                )}
+                <Link href={`/album/${encodeURIComponent(log.discogsId)}`} style={{ flexShrink: 0 }}>
+                  {log.coverUrl ? (
+                    <Image
+                      src={log.coverUrl}
+                      alt={log.title}
+                      width={36}
+                      height={36}
+                      unoptimized
+                      style={{ width: 36, height: 36, borderRadius: 3, objectFit: "cover", flexShrink: 0 }}
+                    />
+                  ) : (
+                    <div style={{ width: 36, height: 36, borderRadius: 3, backgroundColor: C.surfaceRaised, flexShrink: 0 }} />
+                  )}
+                </Link>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <Link href={`/album/${encodeURIComponent(log.discogsId)}`} style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "none" }}>
                     {log.title}
-                  </div>
-                  <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>
-                    {log.artist}
-                  </div>
+                  </Link>
+                  {log.artistMbid ? (
+                    <Link href={`/artist/${log.artistMbid}`} style={{ display: "block", fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1, textDecoration: "none" }}>
+                      {log.artist}
+                    </Link>
+                  ) : (
+                    <div style={{ fontFamily: "var(--font-nd-mono)", fontSize: 10, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 1 }}>
+                      {log.artist}
+                    </div>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
                     <span style={{
                       fontFamily: "var(--font-nd-mono)",
@@ -333,7 +340,7 @@ export default function MonthlyCalendarChart({
                     )}
                   </div>
                 </div>
-              </Link>
+              </div>
             ))
           )}
         </div>

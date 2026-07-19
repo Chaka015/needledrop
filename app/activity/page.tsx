@@ -96,7 +96,7 @@ export default async function ActivityPage() {
         id: l.id,
         timestamp: l.playedAt.toISOString(),
         user: { username: l.user.username, avatarUrl: l.user.avatarUrl },
-        album: { title: l.album.title, artist: l.album.artist, coverUrl: l.album.coverUrl, discogsId: l.album.discogsId },
+        album: { title: l.album.title, artist: l.album.artist, artistMbid: l.album.artistMbid, coverUrl: l.album.coverUrl, discogsId: l.album.discogsId },
         rating: l.rating,
         review: l.review,
         format: l.format,
@@ -110,7 +110,7 @@ export default async function ActivityPage() {
         id: a.id,
         timestamp: a.addedAt.toISOString(),
         user: { username: a.user.username, avatarUrl: a.user.avatarUrl },
-        album: { title: a.album.title, artist: a.album.artist, coverUrl: a.album.coverUrl, discogsId: a.album.discogsId },
+        album: { title: a.album.title, artist: a.album.artist, artistMbid: a.album.artistMbid, coverUrl: a.album.coverUrl, discogsId: a.album.discogsId },
       })),
       ...follows.map((f): FeedItem => ({
         type: "follow",
@@ -131,7 +131,7 @@ export default async function ActivityPage() {
         id: s.id,
         timestamp: s.createdAt.toISOString(),
         user: { username: s.user.username, avatarUrl: s.user.avatarUrl },
-        album: { title: s.log.album.title, artist: s.log.album.artist, coverUrl: s.log.album.coverUrl, discogsId: s.log.album.discogsId },
+        album: { title: s.log.album.title, artist: s.log.album.artist, artistMbid: s.log.album.artistMbid, coverUrl: s.log.album.coverUrl, discogsId: s.log.album.discogsId },
         logId: s.logId,
       })),
       ...joins.map((u): FeedItem => ({
@@ -211,19 +211,25 @@ export default async function ActivityPage() {
               <div className="ms-box">
                 <div className="ms-bar">Hot Right Now</div>
                 {popularAlbums.map((a, i) => (
-                  <Link key={a.id} href={`/album/${encodeURIComponent(a.discogsId)}`} className="ms-rail-row" style={{ textDecoration: "none" }}>
+                  <div key={a.id} className="ms-rail-row">
                     <span className="rk">{String(i + 1).padStart(2, "0")}</span>
-                    {a.coverUrl ? (
-                      <Image src={a.coverUrl} alt={a.title} width={40} height={40}
-                        className="object-cover" style={{ width: 40, height: 40, borderRadius: 4, border: "1.5px solid var(--skin-border)", flexShrink: 0 }} unoptimized />
-                    ) : (
-                      <div style={{ width: 40, height: 40, borderRadius: 4, background: "var(--skin-surface-raised)", flexShrink: 0 }} />
-                    )}
+                    <Link href={`/album/${encodeURIComponent(a.discogsId)}`} style={{ flexShrink: 0 }}>
+                      {a.coverUrl ? (
+                        <Image src={a.coverUrl} alt={a.title} width={40} height={40}
+                          className="object-cover" style={{ width: 40, height: 40, borderRadius: 4, border: "1.5px solid var(--skin-border)" }} unoptimized />
+                      ) : (
+                        <div style={{ width: 40, height: 40, borderRadius: 4, background: "var(--skin-surface-raised)" }} />
+                      )}
+                    </Link>
                     <div>
-                      <div className="nm">{a.title}</div>
-                      <div className="sub">{a.artist}</div>
+                      <Link href={`/album/${encodeURIComponent(a.discogsId)}`} className="nm" style={{ display: "block", textDecoration: "none" }}>{a.title}</Link>
+                      {a.artistMbid ? (
+                        <Link href={`/artist/${a.artistMbid}`} className="sub" style={{ display: "block", textDecoration: "none" }}>{a.artist}</Link>
+                      ) : (
+                        <div className="sub">{a.artist}</div>
+                      )}
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             )}
@@ -233,18 +239,24 @@ export default async function ActivityPage() {
               <div className="ms-box">
                 <div className="ms-bar">On your wantlist</div>
                 {wantlist.map((w) => (
-                  <Link key={w.id} href={`/album/${encodeURIComponent(w.album.discogsId)}`} className="ms-rail-row" style={{ textDecoration: "none" }}>
-                    {w.album.coverUrl ? (
-                      <Image src={w.album.coverUrl} alt={w.album.title} width={40} height={40}
-                        className="object-cover" style={{ width: 40, height: 40, borderRadius: 4, border: "1.5px solid var(--skin-border)", flexShrink: 0 }} unoptimized />
-                    ) : (
-                      <div style={{ width: 40, height: 40, borderRadius: 4, background: "var(--skin-surface-raised)", flexShrink: 0 }} />
-                    )}
+                  <div key={w.id} className="ms-rail-row">
+                    <Link href={`/album/${encodeURIComponent(w.album.discogsId)}`} style={{ flexShrink: 0 }}>
+                      {w.album.coverUrl ? (
+                        <Image src={w.album.coverUrl} alt={w.album.title} width={40} height={40}
+                          className="object-cover" style={{ width: 40, height: 40, borderRadius: 4, border: "1.5px solid var(--skin-border)" }} unoptimized />
+                      ) : (
+                        <div style={{ width: 40, height: 40, borderRadius: 4, background: "var(--skin-surface-raised)" }} />
+                      )}
+                    </Link>
                     <div>
-                      <div className="nm">{w.album.title}</div>
-                      <div className="sub">{w.album.artist}</div>
+                      <Link href={`/album/${encodeURIComponent(w.album.discogsId)}`} className="nm" style={{ display: "block", textDecoration: "none" }}>{w.album.title}</Link>
+                      {w.album.artistMbid ? (
+                        <Link href={`/artist/${w.album.artistMbid}`} className="sub" style={{ display: "block", textDecoration: "none" }}>{w.album.artist}</Link>
+                      ) : (
+                        <div className="sub">{w.album.artist}</div>
+                      )}
                     </div>
-                  </Link>
+                  </div>
                 ))}
                 <div className="ms-pad">
                   <Link href={`/${currentUser.username}/wantlist`} className="ms-btn sm" style={{ display: "block", textAlign: "center", textDecoration: "none", width: "100%" }}>

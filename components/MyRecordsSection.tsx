@@ -20,6 +20,7 @@ interface Album {
   discogsId: string;
   title: string;
   artist: string;
+  artistMbid: string | null;
   releaseYear: number | null;
   coverUrl: string | null;
   label: string | null;

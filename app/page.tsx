@@ -172,24 +172,30 @@ export default async function Home() {
             </h2>
             <div className="space-y-1">
               {popularWithCount.map(({ album, count }, idx) => (
-                <Link key={album.id} href={`/album/${encodeURIComponent(album.discogsId)}`}
+                <div key={album.id}
                   className="hover-surface-raised flex items-center gap-4 p-3"
                   style={{ backgroundColor: C.surface, border: `1px solid ${C.border}` }}>
                   <span className="text-xs font-mono w-5 text-right shrink-0" style={{ color: C.subtle }}>
                     {idx + 1}
                   </span>
-                  {album.coverUrl ? (
-                    <Image src={album.coverUrl} alt={album.title} width={40} height={40}
-                      className="object-cover shrink-0" style={{ width: 40, height: 40, borderRadius: 4 }} unoptimized />
-                  ) : (
-                    <div className="shrink-0" style={{ width: 40, height: 40, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
-                  )}
+                  <Link href={`/album/${encodeURIComponent(album.discogsId)}`} className="shrink-0">
+                    {album.coverUrl ? (
+                      <Image src={album.coverUrl} alt={album.title} width={40} height={40}
+                        className="object-cover shrink-0" style={{ width: 40, height: 40, borderRadius: 4 }} unoptimized />
+                    ) : (
+                      <div className="shrink-0" style={{ width: 40, height: 40, backgroundColor: C.surfaceRaised, borderRadius: 4 }} />
+                    )}
+                  </Link>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold truncate" style={{ color: C.text }}>{album.title}</div>
-                    <div className="text-xs font-mono truncate" style={{ color: C.muted }}>{album.artist}</div>
+                    <Link href={`/album/${encodeURIComponent(album.discogsId)}`} className="text-sm font-semibold truncate block hover:underline" style={{ color: C.text }}>{album.title}</Link>
+                    {album.artistMbid ? (
+                      <Link href={`/artist/${album.artistMbid}`} className="text-xs font-mono truncate block hover:underline" style={{ color: C.muted }}>{album.artist}</Link>
+                    ) : (
+                      <div className="text-xs font-mono truncate" style={{ color: C.muted }}>{album.artist}</div>
+                    )}
                   </div>
                   <span className="text-xs font-mono shrink-0" style={{ color: C.subtle }}>+{count}</span>
-                </Link>
+                </div>
               ))}
             </div>
           </section>

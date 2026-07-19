@@ -56,6 +56,7 @@ export async function GET(req: Request) {
       discogsId: a.discogsId,
       title: a.title,
       artist: a.artist,
+      artistMbid: a.artistMbid,
       releaseYear: a.releaseYear,
       coverUrl: a.coverUrl,
       label: a.label,

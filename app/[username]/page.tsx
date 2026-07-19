@@ -149,7 +149,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
       playedAt: log.playedAt.toISOString(),
       spinCount: log.spins.length,
       userHasSpun: currentUser ? log.spins.some((s) => s.userId === currentUser.id) : false,
-      album: { discogsId: log.album.discogsId, title: log.album.title, artist: log.album.artist, coverUrl: log.album.coverUrl },
+      album: { discogsId: log.album.discogsId, title: log.album.title, artist: log.album.artist, artistMbid: log.album.artistMbid, coverUrl: log.album.coverUrl },
     };
   }
 
@@ -483,6 +483,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     discogsId: c.album.discogsId,
                     title: c.album.title,
                     artist: c.album.artist,
+                    artistMbid: c.album.artistMbid,
                     releaseYear: c.album.releaseYear,
                     coverUrl: c.album.coverUrl,
                     label: c.album.label,
