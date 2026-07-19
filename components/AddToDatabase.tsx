@@ -169,37 +169,32 @@ export default function AddToDatabase({ onClose, initialQuery }: Props) {
     } catch { /* non-fatal */ }
   }
 
-  // For Spotify results: silently query MB by title+artist to pull label, catalog, and genre tags.
-  async function enrichSpotifyFromMB(searchTitle: string, searchArtist: string) {
+  // For Spotify results: silently pull label/catalog number from the Discogs
+  // master's curated main_release (Discogs' notion of "the" representative
+  // pressing), and genre tags from MusicBrainz. Formats aren't inferred here —
+  // a Spotify pick has no reliable physical-release signal, so the format
+  // checkboxes default to "all" instead.
+  async function enrichSpotifyDetails(searchTitle: string, searchArtist: string) {
     setDetailsLoading(true);
     try {
-      const res = await fetch(`/api/musicbrainz?q=${encodeURIComponent(`${searchTitle} ${searchArtist}`)}`);
-      const data = await res.json();
-      const results: (Omit<MBResult, "_source"> & { hasCover: boolean; artistMbid: string | null })[] = data.results ?? [];
+      const [discogsRes, mbRes] = await Promise.all([
+        fetch(`/api/discogs/main-release?q=${encodeURIComponent(`${searchArtist} ${searchTitle}`)}`),
+        fetch(`/api/musicbrainz?q=${encodeURIComponent(`${searchTitle} ${searchArtist}`)}`),
+      ]);
 
-      // Prefer an exact title+artist match; fall back to first result
+      const discogsData = await discogsRes.json();
+      if (discogsData.label) setLabel(discogsData.label);
+      if (discogsData.catalogNumber) setCatalogNumber(discogsData.catalogNumber);
+
+      const mbData = await mbRes.json();
+      const results: (Omit<MBResult, "_source"> & { hasCover: boolean; artistMbid: string | null })[] = mbData.results ?? [];
       const match =
         results.find(
           (r) =>
             r.title.toLowerCase() === searchTitle.toLowerCase() &&
             r.artist.toLowerCase() === searchArtist.toLowerCase()
         ) ?? results[0];
-
-      if (match) {
-        if (match.label) setLabel(match.label);
-        if (match.catalogNumber) setCatalogNumber(match.catalogNumber);
-        // Map formats the same way we do for direct MB selections
-        const knownFormats = (match.formats ?? []).flatMap((f: string) => {
-          const lower = f.toLowerCase();
-          if (lower.includes("vinyl") || lower.includes("12") || lower.includes("7")) return ["Vinyl"];
-          if (lower.includes("cd")) return ["CD"];
-          if (lower.includes("cassette")) return ["Cassette"];
-          if (lower.includes("digital")) return ["Digital"];
-          return [];
-        }).filter((f: string) => FORMAT_OPTIONS.includes(f));
-        if (knownFormats.length > 0) setFormats([...new Set(knownFormats)]);
-        if (match.artistMbid) await fetchAndApplyTags(match.artistMbid);
-      }
+      if (match?.artistMbid) await fetchAndApplyTags(match.artistMbid);
     } catch { /* non-fatal */ } finally {
       setDetailsLoading(false);
     }
@@ -231,11 +226,13 @@ export default function AddToDatabase({ onClose, initialQuery }: Props) {
       // Fetch genre tags from artist in the background
       if (r.artistMbid) fetchAndApplyTags(r.artistMbid);
     } else {
-      // Spotify result — clear derived fields, then enrich silently from MB
+      // Spotify result — no reliable physical-format signal, so default to
+      // every format rather than guessing from one arbitrary MB release.
+      // Label/catalog get filled in from the most common MB match instead.
       setLabel("");
       setCatalogNumber("");
-      setFormats([]);
-      enrichSpotifyFromMB(r.title, r.artist);
+      setFormats([...FORMAT_OPTIONS]);
+      enrichSpotifyDetails(r.title, r.artist);
     }
     setStep("form");
   }
