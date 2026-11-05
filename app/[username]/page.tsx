@@ -224,9 +224,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
               <div className="ms-pad" style={{ paddingBottom: 8 }}>
                 <div className="ms-prof-name">{user.username}</div>
-                <div className="ms-online" style={{ marginTop: 6 }}>
-                  <span className="d" /> ONLINE NOW
-                </div>
                 {user.bio && <div className="ms-mood"><b>"{user.bio}"</b></div>}
               </div>
 

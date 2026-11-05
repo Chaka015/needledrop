@@ -416,9 +416,6 @@ body {
 .ms-modeseg button { flex: 1; padding: 9px; font-size: 12px; font-weight: 700; background: var(--skin-surface); color: var(--skin-muted); font-family: var(--font-nd-mono, ui-monospace, monospace); letter-spacing: .06em; text-transform: uppercase; border: none; cursor: pointer; transition: background 100ms, color 100ms; }
 .ms-modeseg button.on { background: var(--skin-accent); color: var(--skin-accent-ink); }
 
-/* Online status */
-.ms-online { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-nd-mono, ui-monospace, monospace); font-weight: 700; font-size: 11px; color: var(--skin-live); }
-.ms-online .d { width: 8px; height: 8px; border-radius: 50%; background: var(--skin-live); flex-shrink: 0; }
 
 /* ── Album page ─────────────────────────────────────────────── */
 .ms-h1 {
