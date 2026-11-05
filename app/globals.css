@@ -179,6 +179,19 @@ body {
   font-family: var(--font-nd-sans, inherit);
 }
 .ms-nav-search input::placeholder { color: var(--skin-subtle); }
+
+/* Phones: links drop to their own row, the Dig box gives way to the Dig link,
+   so "Log a listen" and the icons always stay on screen */
+@media (max-width: 720px) {
+  .ms-nav-inner { flex-wrap: wrap; padding: 8px 12px; gap: 8px; }
+  .ms-nav-links { order: 3; flex-basis: 100%; overflow-x: auto; scrollbar-width: none; }
+  .ms-nav-links::-webkit-scrollbar { display: none; }
+  .ms-nav-search-wrap { display: none; }
+  .ms-onair-text { max-width: 96px !important; }
+}
+@media (max-width: 480px) {
+  .ms-wordmark { display: none; }
+}
 .ms-icon-btn {
   width: 36px; height: 36px; border: 3px solid var(--skin-border); border-radius: 0;
   background: var(--skin-surface); cursor: pointer; display: grid; place-items: center;

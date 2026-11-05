@@ -107,7 +107,7 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
 
           {/* Search */}
           {username && (
-            <div ref={searchRef} style={{ position: "relative" }}>
+            <div ref={searchRef} className="ms-nav-search-wrap" style={{ position: "relative" }}>
               <form onSubmit={handleSearch} className="ms-nav-search">
                 <span style={{ fontSize: 13, flexShrink: 0 }}>⚲</span>
                 <input
@@ -138,7 +138,7 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
                   style={{ padding: "7px 12px", background: "var(--skin-surface)", border: "2px solid var(--skin-border)", borderRadius: 4, cursor: "pointer", gap: 8 }}
                 >
                   <span className="d" />
-                  <span style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <span className="ms-onair-text" style={{ maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {nowSpinning.artist} — {nowSpinning.title}
                   </span>
                 </button>
