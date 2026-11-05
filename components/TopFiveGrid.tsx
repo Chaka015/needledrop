@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -28,6 +28,12 @@ export default function TopFiveGrid({ items, isOwnProfile }: { items: TopFiveIte
   const [removing, setRemoving] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  // Drag-to-reorder is mouse-only; on touch screens HTML5 drag fights the
+  // horizontal swipe of the phone shelf.
+  const [canDrag, setCanDrag] = useState(false);
+  useEffect(() => {
+    setCanDrag(window.matchMedia("(hover: hover) and (pointer: fine)").matches);
+  }, []);
 
   async function handleUnfeature(id: string) {
     setRemoving(id);
@@ -89,8 +95,8 @@ export default function TopFiveGrid({ items, isOwnProfile }: { items: TopFiveIte
           <div
             className="cell"
             key={item.id}
-            draggable={isOwnProfile}
-            onMouseEnter={() => isOwnProfile && setHoverId(item.id)}
+            draggable={isOwnProfile && canDrag}
+            onMouseEnter={() => isOwnProfile && canDrag && setHoverId(item.id)}
             onMouseLeave={() => setHoverId(null)}
             onDragStart={() => setDragId(item.id)}
             onDragOver={(e) => {
@@ -108,7 +114,7 @@ export default function TopFiveGrid({ items, isOwnProfile }: { items: TopFiveIte
               setDragOverId(null);
             }}
             style={{
-              cursor: isOwnProfile ? "grab" : undefined,
+              cursor: isOwnProfile && canDrag ? "grab" : undefined,
               opacity: dragId === item.id ? 0.4 : 1,
               outline: isDragOver ? `2px solid ${C.accent}` : undefined,
               outlineOffset: isDragOver ? -2 : undefined,
@@ -139,6 +145,21 @@ export default function TopFiveGrid({ items, isOwnProfile }: { items: TopFiveIte
                   ★
                 </button>
               </div>
+            )}
+            {isOwnProfile && (
+              <button
+                onClick={() => handleUnfeature(item.id)}
+                disabled={isRemoving}
+                className="ms-touch-only absolute items-center justify-center text-sm"
+                style={{
+                  top: 4, right: 4, width: 32, height: 32, zIndex: 3,
+                  backgroundColor: C.accent, borderRadius: 4, border: `2px solid ${C.border}`,
+                  color: "var(--skin-accent-ink)", opacity: isRemoving ? 0.4 : 1,
+                }}
+                aria-label={`Remove ${item.album.title} from Top 5`}
+              >
+                ★
+              </button>
             )}
           </div>
         );

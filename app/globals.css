@@ -349,6 +349,15 @@ body {
   color: var(--skin-accent); padding: 10px 14px;
   border-top: 1.5px dashed var(--skin-line); word-break: break-all;
 }
+.ms-idcard-av {
+  width: 100%; aspect-ratio: 1; position: relative;
+  background: var(--skin-surface); border-bottom: 2px solid var(--skin-border);
+}
+/* Two boxes joined edge to edge (Now Spinning + Log, Mixes + Wantlist) */
+.ms-pair { display: grid; grid-template-columns: 1fr; gap: 0; }
+.ms-pair.two { grid-template-columns: 1fr 1fr; }
+.ms-pair.two > .ms-box:first-child { border-right: none; border-radius: 4px 0 0 4px; }
+.ms-pair.two > .ms-box:last-child { border-radius: 0 4px 4px 0; }
 .ms-stats-table { width: 100%; border-collapse: collapse; }
 .ms-stats-table td { padding: 8px 14px; font-size: 13px; border-bottom: 1px solid var(--skin-line); color: var(--skin-text); }
 .ms-stats-table td:first-child { color: var(--skin-muted); }
@@ -514,4 +523,77 @@ body {
   border-radius: 50%; display: grid; place-items: center; flex-shrink: 0;
   font-family: var(--font-nd-serif, Georgia, serif); font-weight: 600;
   background: var(--skin-surface); color: var(--skin-text); border: 1.5px solid var(--skin-border);
+}
+
+/* ── Profile — tablets & phones ─────────────────────────────── */
+/* ≤940px: one column, music first. The two stacks dissolve into the grid
+   (display: contents) so each box can be ordered; the grid's 20px gap
+   spaces them. Unlabelled right-column boxes keep their DOM order at 5. */
+@media (max-width: 940px) {
+  .ms-cols.profile > .ms-stack { display: contents; }
+  .ms-cols.profile > .ms-stack > * { margin-bottom: 0; order: 5; min-width: 0; }
+  .ms-cols.profile > .ms-stack > .o-id     { order: 1; }
+  .ms-cols.profile > .ms-stack > .o-now    { order: 2; }
+  .ms-cols.profile > .ms-stack > .o-top5   { order: 3; }
+  .ms-cols.profile > .ms-stack > .o-recent { order: 4; }
+  .ms-cols.profile > .ms-stack > .o-late   { order: 6; }
+  .ms-cols.profile > .ms-stack > .o-stats  { order: 7; }
+
+  /* Compact identity header: square 72px avatar, name/bio/buttons beside it */
+  .ms-idcard {
+    display: grid; grid-template-columns: 72px minmax(0, 1fr);
+    gap: 14px; padding: 12px; align-items: start;
+  }
+  .ms-idcard-av { width: 72px; height: 72px; border: 2px solid var(--skin-border); }
+  .ms-idcard-av span { font-size: 32px !important; }
+  .ms-idcard-text.ms-pad { padding: 0; }
+  .ms-idcard .ms-prof-name { font-size: 22px; overflow-wrap: anywhere; }
+  .ms-idcard .ms-mood { margin-top: 4px; }
+  .ms-idcard .ms-contact { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0 0; }
+  .ms-idcard .ms-contact > * { flex: 1 1 0; min-width: 0; }
+  .ms-idcard .ms-url { display: none; }
+}
+
+@media (max-width: 720px) {
+  .ms-page.profile { padding: 16px 16px 72px; }
+
+  /* Stat strip → 2×2, dividers draw a single clean cross */
+  .ms-odo-wrap { display: grid; grid-template-columns: 1fr 1fr; }
+  .ms-odo-cell { padding: 12px; border-right: none; min-width: 0; }
+  .ms-odo-cell:nth-child(odd) { border-right: 4px solid var(--skin-border); }
+  .ms-odo-cell:nth-child(-n+2) { border-bottom: 4px solid var(--skin-border); }
+  .ms-odo-cell .k { margin-bottom: 8px; }
+  .ms-odo .d { font-size: 18px; padding: 4px 5px; }
+  .ms-odo .sep { font-size: 18px; }
+
+  /* Joined pairs stack instead of squeezing side by side */
+  .ms-pair.two { grid-template-columns: 1fr; gap: 20px; }
+  .ms-pair.two > .ms-box:first-child { border-right: 4px solid var(--skin-border); }
+  .ms-pair.two > .ms-box:first-child,
+  .ms-pair.two > .ms-box:last-child { border-radius: 0; }
+
+  /* Stats table: drop rows the stat strip already shows */
+  .ms-dup-row { display: none; }
+
+  /* Top 5: a swipeable shelf of fixed 120px tiles */
+  .ms-top8 {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain; scrollbar-width: none;
+  }
+  .ms-top8::-webkit-scrollbar { display: none; }
+  .ms-top8 .cell { flex: 0 0 120px; scroll-snap-align: start; }
+  .ms-top8 .cell:hover { transform: none; }
+
+  /* Tap targets of at least 44px */
+  .ms-contact > *, .ms-cbtn {
+    min-height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .ms-bar .cta a { display: inline-flex; align-items: center; min-height: 44px; margin: -8px 0; padding-left: 12px; }
+  .ms-quicklog input { min-height: 44px; font-size: 16px !important; }
+}
+
+/* Touch screens can't hover, so the owner's Top 5 remove control stays visible */
+.ms-touch-only { display: none !important; }
+@media (hover: none) {
+  .ms-touch-only { display: flex !important; }
 }

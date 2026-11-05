@@ -176,7 +176,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     <div className="min-h-screen" style={{ ...skinVars as React.CSSProperties, backgroundColor: C.bg, color: C.text }}>
       <SkinApplicator vars={skinVars as Record<string, string>} />
 
-      <div className="ms-page">
+      <div className="ms-page profile">
 
         {/* ── Odometer strip ──────────────────────────────── */}
         <div className="ms-odo-wrap" style={{ marginBottom: 20 }}>
@@ -207,10 +207,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           {/* LEFT RAIL */}
           <div className="ms-stack">
 
-            {/* Avatar + identity card */}
-            <div className="ms-box">
+            {/* Avatar + identity card (compact horizontal header on phones) */}
+            <div className="ms-box ms-idcard o-id">
               {/* Avatar */}
-              <div style={{ width: "100%", aspectRatio: "1", background: C.surface, borderBottom: `2px solid ${C.border}`, position: "relative" }}>
+              <div className="ms-idcard-av">
                 {user.avatarUrl ? (
                   <Image src={user.avatarUrl} alt={user.username} fill className="object-cover" unoptimized />
                 ) : (
@@ -222,7 +222,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 )}
               </div>
 
-              <div className="ms-pad" style={{ paddingBottom: 8 }}>
+              <div className="ms-idcard-body">
+              <div className="ms-pad ms-idcard-text" style={{ paddingBottom: 8 }}>
                 <div className="ms-prof-name">{user.username}</div>
                 {user.bio && <div className="ms-mood"><b>"{user.bio}"</b></div>}
               </div>
@@ -241,12 +242,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   </>
                 )}
               </div>
+              </div>
 
               <div className="ms-url">needledrop.fm/{user.username}</div>
             </div>
 
             {/* Stats table */}
-            <div className="ms-box">
+            <div className="ms-box o-stats">
               <div className="ms-bar">{firstName}&apos;s Stats</div>
               <table className="ms-stats-table">
                 <tbody>
@@ -254,11 +256,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     <td>Member since</td>
                     <td>{new Date(user.createdAt).getFullYear()}</td>
                   </tr>
-                  <tr>
+                  <tr className="ms-dup-row">
                     <td>Records</td>
                     <td>{user.collection.length.toLocaleString()}</td>
                   </tr>
-                  <tr>
+                  <tr className="ms-dup-row">
                     <td>Listens</td>
                     <td><Link href={`/${username}/logs`} style={{ color: "var(--skin-accent)" }}>{listensLogged.toLocaleString()}</Link></td>
                   </tr>
@@ -279,7 +281,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </div>
 
             {/* Listening time */}
-            <div className="ms-box">
+            <div className="ms-box o-late">
               <div className="ms-bar">Time with music</div>
               <div className="ms-pad">
                 <FlipCounter totalMs={totalListeningMs} />
@@ -287,7 +289,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </div>
 
             {/* The Setup */}
-            <div className="ms-box">
+            <div className="ms-box o-late">
               <div className="ms-bar">The Setup</div>
               {isOwnProfile ? (
                 <div className="ms-pad"><AudioSetupEditor initial={user.audioSetup} /></div>
@@ -310,9 +312,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
             {/* Now Spinning + Log a Listen side by side */}
             {(nowSpinningAlbum || isOwnProfile) && (
-              <div style={{ display: "grid", gridTemplateColumns: nowSpinningAlbum && isOwnProfile ? "1fr 1fr" : "1fr", gap: 0 }}>
+              <div className={`ms-pair o-now${nowSpinningAlbum && isOwnProfile ? " two" : ""}`}>
                 {nowSpinningAlbum && (
-                  <div className="ms-box" style={{ borderRight: isOwnProfile ? "none" : undefined, borderRadius: isOwnProfile ? "4px 0 0 4px" : undefined }}>
+                  <div className="ms-box">
                     <div className="ms-bar accent">
                       Now Spinning{" "}
                       <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
@@ -343,7 +345,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 )}
 
                 {isOwnProfile && (
-                  <div className="ms-box" style={{ borderRadius: nowSpinningAlbum ? "0 4px 4px 0" : undefined }}>
+                  <div className="ms-box ms-quicklog">
                     <div className="ms-bar accent">+ Log a listen</div>
                     <div className="ms-pad"><QuickLogWidget /></div>
                   </div>
@@ -352,7 +354,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             )}
 
             {/* Featured / Top shelf */}
-            <div className="ms-box">
+            <div className="ms-box o-top5">
               <div className="ms-bar">{firstName}&apos;s Top {featured.length > 0 ? featured.length : ""} Records</div>
               {featured.length > 0 ? (
                 <TopFiveGrid
@@ -378,7 +380,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             </div>
 
             {/* Recent listens */}
-            <div className="ms-box">
+            <div className="ms-box o-recent">
               <div className="ms-bar">Recent Listens <span className="cta"><Link href={`/${username}/logs`} style={{ color: "inherit" }}>see all →</Link></span></div>
               <div style={{ padding: "4px 0" }}>
                 <RecentListens logs={logs} isOwnProfile={isOwnProfile} />
@@ -413,13 +415,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
             {/* Mixes + Wantlist side by side */}
             {(user.mixes.length > 0 || user.wantlist.length > 0) && (
-              <div style={{ display: "grid", gridTemplateColumns: user.mixes.length > 0 && user.wantlist.length > 0 ? "1fr 1fr" : "1fr", gap: 0 }}>
+              <div className={`ms-pair${user.mixes.length > 0 && user.wantlist.length > 0 ? " two" : ""}`}>
                 {/* Mixes */}
                 {user.mixes.length > 0 && (
-                  <div className="ms-box" style={{
-                    borderRight: user.wantlist.length > 0 ? "none" : undefined,
-                    borderRadius: user.wantlist.length > 0 ? "4px 0 0 4px" : undefined,
-                  }}>
+                  <div className="ms-box">
                     <div className="ms-bar">Mixes <span className="cta">{user.mixes.length} total</span></div>
                     <div>
                       {user.mixes.slice(0, 5).map((m) => (
@@ -447,7 +446,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
                 {/* Wantlist */}
                 {user.wantlist.length > 0 && (
-                  <div className="ms-box" style={{ borderRadius: user.mixes.length > 0 ? "0 4px 4px 0" : undefined }}>
+                  <div className="ms-box">
                     <div className="ms-bar">Wantlist <span className="cta"><Link href={`/${username}/wantlist`} style={{ color: "inherit" }}>{user.wantlist.length} records →</Link></span></div>
                     <div className="ms-pad">
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(56px, 1fr))", gap: 6 }}>
