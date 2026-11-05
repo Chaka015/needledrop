@@ -263,7 +263,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   </tr>
                   <tr>
                     <td>Listens</td>
-                    <td><Link href={`/${username}/logs`} style={{ color: "var(--skin-accent)" }}>{user.logs.length.toLocaleString()}</Link></td>
+                    <td><Link href={`/${username}/logs`} style={{ color: "var(--skin-accent)" }}>{listensLogged.toLocaleString()}</Link></td>
                   </tr>
                   <tr>
                     <td>Wantlist</td>
