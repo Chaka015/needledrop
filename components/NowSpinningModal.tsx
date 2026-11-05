@@ -242,24 +242,28 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
     }
   }
 
-  async function handleAddAndSpin(c: ScanCandidate) {
+  // addToCollection=false: log a spin of a record the fan doesn't own (a friend's, the shop's listening station)
+  async function handleScanCandidate(c: ScanCandidate, addToCollection: boolean) {
     if (addingReleaseId) return;
     setAddingReleaseId(c.releaseId);
     try {
-      const res = await fetch("/api/collection/add", {
+      const albumPayload = {
+        // Match albums added via dig (master ID)
+        discogsId: c.masterId ?? c.releaseId,
+        title: c.title,
+        artist: c.artist,
+        releaseYear: c.releaseYear,
+        coverUrl: c.coverUrl,
+        label: c.label,
+        genre: null,
+      };
+      const res = await fetch(addToCollection ? "/api/collection/add" : "/api/albums/upsert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          // Match albums added via dig (master ID); keep the exact pressing on the collection row
-          discogsId: c.masterId ?? c.releaseId,
-          pressingId: c.releaseId,
-          title: c.title,
-          artist: c.artist,
-          releaseYear: c.releaseYear,
-          coverUrl: c.coverUrl,
-          label: c.label,
-          genre: null,
-        }),
+        body: JSON.stringify(
+          // Keep the exact pressing on the collection row
+          addToCollection ? { ...albumPayload, pressingId: c.releaseId } : albumPayload
+        ),
       });
       const data = await res.json();
       if (!res.ok || !data.album) { setScanPhase("error"); return; }
@@ -274,11 +278,13 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
         label: data.album.label ?? null,
         genre: data.album.genre ?? null,
       };
-      setCollection((prev) =>
-        prev.some((item) => item.album.id === album.id)
-          ? prev
-          : [{ id: data.entry?.id ?? album.id, album }, ...prev]
-      );
+      if (addToCollection) {
+        setCollection((prev) =>
+          prev.some((item) => item.album.id === album.id)
+            ? prev
+            : [{ id: data.entry?.id ?? album.id, album }, ...prev]
+        );
+      }
       await handlePhysicalSpin(album);
     } catch {
       setScanPhase("error");
@@ -380,7 +386,7 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
               addingReleaseId={addingReleaseId}
               onDetected={handleBarcode}
               onCancel={closeScanner}
-              onAdd={handleAddAndSpin}
+              onPick={handleScanCandidate}
               onTryAgain={openScanner}
               onDigInstead={digInstead}
             />
@@ -483,13 +489,13 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
 
 // ── Shared sub-components ───────────────────────────────────────────────────
 
-function ScanPanel({ phase, results, addingReleaseId, onDetected, onCancel, onAdd, onTryAgain, onDigInstead }: {
+function ScanPanel({ phase, results, addingReleaseId, onDetected, onCancel, onPick, onTryAgain, onDigInstead }: {
   phase: ScanPhase;
   results: ScanCandidate[];
   addingReleaseId: string | null;
   onDetected: (code: string) => void;
   onCancel: () => void;
-  onAdd: (c: ScanCandidate) => void;
+  onPick: (c: ScanCandidate, addToCollection: boolean) => void;
   onTryAgain: () => void;
   onDigInstead: () => void;
 }) {
@@ -540,9 +546,10 @@ function ScanPanel({ phase, results, addingReleaseId, onDetected, onCancel, onAd
         return (
           <div
             key={c.releaseId}
-            className="flex items-center gap-3 p-2"
+            className="p-2 space-y-2"
             style={{ borderBottom: "1px solid var(--skin-border)" }}
           >
+          <div className="flex items-center gap-3">
             {c.coverUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={c.coverUrl} alt={c.title} className="object-cover shrink-0" style={{ width: 48, height: 48, borderRadius: 4 }} />
@@ -558,15 +565,25 @@ function ScanPanel({ phase, results, addingReleaseId, onDetected, onCancel, onAd
                 {[meta, c.format].filter(Boolean).join(" · ")}
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => onAdd(c)}
-              disabled={addingReleaseId !== null}
-              className="ms-btn fill sm shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ fontSize: 10, padding: "6px 8px", maxWidth: 120, lineHeight: 1.2 }}
-            >
-              {busy ? "Adding..." : "Spin + add to collection"}
-            </button>
+          </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => onPick(c, false)}
+                disabled={addingReleaseId !== null}
+                className="ms-btn sm flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {busy ? "One sec..." : "Log it"}
+              </button>
+              <button
+                type="button"
+                onClick={() => onPick(c, true)}
+                disabled={addingReleaseId !== null}
+                className="ms-btn fill sm flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {busy ? "One sec..." : "Add + log"}
+              </button>
+            </div>
           </div>
         );
       })}
