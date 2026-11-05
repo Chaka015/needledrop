@@ -20,19 +20,22 @@ export default async function ActivityPage() {
   const followingIds = currentUser.following.map((f) => f.followingId);
   const LIMIT = 40;
 
-  // Live listeners
+  // Live listeners — same 60-minute rule as the landing page
+  const sixtyMinutesAgo = new Date(Date.now() - 60 * 60 * 1000);
   const liveListeners = await prisma.user.findMany({
-    where: { nowSpinning: { not: null } },
+    where: { nowSpinning: { not: null }, nowSpinningAt: { gte: sixtyMinutesAgo } },
+    orderBy: { nowSpinningAt: "desc" },
     take: 10,
   });
-  const liveListenersWithAlbum = await Promise.all(
-    liveListeners.map(async (u) => {
-      const album = u.nowSpinning
-        ? await prisma.album.findUnique({ where: { id: u.nowSpinning } })
-        : null;
-      return { user: u, album };
-    })
-  );
+  const liveAlbumIds = liveListeners.map((u) => u.nowSpinning).filter((id): id is string => !!id);
+  const liveAlbums = liveAlbumIds.length > 0
+    ? await prisma.album.findMany({ where: { id: { in: liveAlbumIds } } })
+    : [];
+  const liveAlbumById = new Map(liveAlbums.map((a) => [a.id, a]));
+  const liveListenersWithAlbum = liveListeners.map((u) => ({
+    user: u,
+    album: u.nowSpinning ? liveAlbumById.get(u.nowSpinning) ?? null : null,
+  }));
 
   // Fetch all event types for both friend + global streams
   async function fetchStream(userIds: string[] | null): Promise<FeedItem[]> {
