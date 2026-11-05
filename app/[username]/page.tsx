@@ -107,8 +107,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const now = new Date();
   const sixtyMinutesAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
-  // Server-side: always call Spotify currently-playing before rendering so
-  // every page load (not just every 15 min) reflects the live track.
+  // Server-side: check Spotify currently-playing (skipped when a physical spin
+  // from the last hour wins, cached for 60s) so the profile reflects the live track.
   let nowPlaying: NowPlayingInfo | null = null;
   if (user.spotifyConnected) {
     try { nowPlaying = await refreshNowPlaying(user.id); } catch { /* Spotify unreachable */ }

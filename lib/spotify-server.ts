@@ -57,9 +57,34 @@ export async function refreshNowPlaying(userId: string): Promise<NowPlayingInfo 
       spotifyAccessToken: true,
       spotifyRefreshToken: true,
       spotifyTokenExpiry: true,
+      nowSpinning: true,
+      nowSpinningSource: true,
+      nowSpinningAt: true,
     },
   });
   if (!user?.spotifyConnected || !user.spotifyAccessToken) return null;
+
+  const ageMs = user.nowSpinningAt ? Date.now() - user.nowSpinningAt.getTime() : Infinity;
+
+  // Physical first: a needle dropped in the last hour outranks whatever Spotify
+  // is playing. Return null so the caller falls through to the DB album.
+  if (user.nowSpinningSource === "physical" && ageMs < 60 * 60 * 1000) return null;
+
+  // Cache: a streaming check from under a minute ago is fresh enough.
+  if (user.nowSpinningSource === "streaming" && ageMs < 60 * 1000 && user.nowSpinning) {
+    const cached = await prisma.album.findUnique({ where: { id: user.nowSpinning } });
+    if (cached) {
+      return {
+        albumDbId: cached.id,
+        discogsId: cached.discogsId,
+        title:     cached.title,
+        artist:    cached.artist,
+        coverUrl:  cached.coverUrl,
+      };
+    }
+  }
+
+  console.info(`[spotify] currently-playing check for user ${userId}`);
 
   const token = await getFreshToken(
     userId,
