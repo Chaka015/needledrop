@@ -358,6 +358,16 @@ body {
 .ms-pair.two { grid-template-columns: 1fr 1fr; }
 .ms-pair.two > .ms-box:first-child { border-right: none; border-radius: 4px 0 0 4px; }
 .ms-pair.two > .ms-box:last-child { border-radius: 0 4px 4px 0; }
+a.ms-url {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  text-decoration: none; cursor: pointer; transition: background-color 100ms ease;
+}
+a.ms-url:hover { background-color: var(--skin-surface-raised); }
+.ms-url-text { min-width: 0; }
+.ms-url-cta {
+  flex-shrink: 0; font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--skin-subtle); word-break: normal;
+}
 .ms-stats-table { width: 100%; border-collapse: collapse; }
 .ms-stats-table td { padding: 8px 14px; font-size: 13px; border-bottom: 1px solid var(--skin-line); color: var(--skin-text); }
 .ms-stats-table td:first-child { color: var(--skin-muted); }
@@ -551,7 +561,8 @@ body {
   .ms-idcard .ms-mood { margin-top: 4px; }
   .ms-idcard .ms-contact { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0 0; }
   .ms-idcard .ms-contact > * { flex: 1 1 0; min-width: 0; }
-  .ms-idcard .ms-url { display: none; }
+  /* The profile link spans the card's foot as a full-width share row */
+  .ms-idcard .ms-url { grid-column: 1 / -1; margin: 0 -12px -12px; min-height: 44px; }
 }
 
 @media (max-width: 720px) {

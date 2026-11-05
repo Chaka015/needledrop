@@ -16,6 +16,8 @@ import MixesList from "@/components/MixesList";
 import SkinApplicator from "@/components/SkinApplicator";
 import FlipCounter from "@/components/FlipCounter";
 import QuickLogWidget from "@/components/QuickLogWidget";
+import ProfileShareLink from "@/components/ProfileShareLink";
+import { SITE_HOST, SITE_URL } from "@/lib/site";
 import { getSkin, skinToVars } from "@/lib/skins";
 import { refreshNowPlaying, type NowPlayingInfo } from "@/lib/spotify-server";
 
@@ -286,7 +288,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               </div>
               </div>
 
-              <div className="ms-url">needledrop.fm/{user.username}</div>
+              <ProfileShareLink
+                url={`${SITE_URL}/${user.username}`}
+                label={`${SITE_HOST}/${user.username}`}
+                username={user.username}
+              />
             </div>
 
             {/* Stats table */}
