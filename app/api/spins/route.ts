@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     where: { id: logId },
     include: { album: true },
   });
-  if (!log) return NextResponse.json({ error: "Log not found" }, { status: 404 });
+  if (!log || log.userDeleted) return NextResponse.json({ error: "Log not found" }, { status: 404 });
 
   const existing = await prisma.spin.findUnique({
     where: { userId_logId: { userId: user.id, logId } },

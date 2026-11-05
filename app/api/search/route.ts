@@ -26,7 +26,7 @@ export async function GET(req: Request) {
         ],
       },
       include: {
-        logs: { select: { id: true } },
+        logs: { where: { userDeleted: false }, select: { id: true } },
         collection: { select: { id: true } },
       },
       take: 15,
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
       include: {
         followers: { select: { id: true } },
         collection: { select: { id: true } },
-        logs: { select: { id: true } },
+        logs: { where: { userDeleted: false }, select: { id: true } },
       },
       take: 15,
     }),

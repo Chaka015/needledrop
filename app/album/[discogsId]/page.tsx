@@ -104,7 +104,7 @@ async function fetchDiscogsVersions(discogsId: string): Promise<DiscogsVersion[]
 
 // Reusable include block so we don't repeat it in two places
 const ALBUM_INCLUDES = {
-  logs: { orderBy: { playedAt: "desc" as const }, include: { user: true, spins: true } },
+  logs: { where: { userDeleted: false }, orderBy: { playedAt: "desc" as const }, include: { user: true, spins: true } },
   collection: { include: { user: true } },
   wantlist: { include: { user: true } },
   comments: {

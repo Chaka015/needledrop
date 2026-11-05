@@ -15,7 +15,7 @@ export default async function FollowingPage({ params }: Props) {
     where: { username },
     include: {
       following: {
-        include: { following: { include: { followers: true, collection: { select: { id: true } }, logs: { select: { id: true } } } } },
+        include: { following: { include: { followers: true, collection: { select: { id: true } }, logs: { where: { userDeleted: false }, select: { id: true } } } } },
       },
     },
   });

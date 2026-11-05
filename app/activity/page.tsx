@@ -42,7 +42,7 @@ export default async function ActivityPage() {
 
     const [logs, adds, follows, mixes, spins, joins] = await Promise.all([
       prisma.listeningLog.findMany({
-        where: filter,
+        where: { ...filter, userDeleted: false },
         orderBy: { playedAt: "desc" },
         take: LIMIT,
         include: { user: true, album: true, spins: true },
@@ -69,7 +69,7 @@ export default async function ActivityPage() {
         include: { user: true, _count: { select: { items: true } } },
       }),
       prisma.spin.findMany({
-        where: userIds ? { userId: { in: userIds } } : {},
+        where: { ...(userIds ? { userId: { in: userIds } } : {}), log: { userDeleted: false } },
         orderBy: { createdAt: "desc" },
         take: LIMIT,
         include: {
@@ -149,8 +149,8 @@ export default async function ActivityPage() {
   // Popular this week (top albums by listen count last 7 days)
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const popularAlbums = await prisma.album.findMany({
-    where: { logs: { some: { playedAt: { gte: sevenDaysAgo } } } },
-    include: { _count: { select: { logs: true } } },
+    where: { logs: { some: { playedAt: { gte: sevenDaysAgo }, userDeleted: false } } },
+    include: { _count: { select: { logs: { where: { userDeleted: false } } } } },
     orderBy: { logs: { _count: "desc" } },
     take: 5,
   });

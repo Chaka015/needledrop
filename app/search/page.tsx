@@ -27,7 +27,7 @@ export default async function Search({ searchParams }: Props) {
         include: {
           followers: true,
           collection: { select: { id: true } },
-          logs: { select: { id: true } },
+          logs: { where: { userDeleted: false }, select: { id: true } },
         },
         take: 50,
       })
@@ -43,7 +43,7 @@ export default async function Search({ searchParams }: Props) {
           ],
         },
         include: {
-          logs: { select: { id: true } },
+          logs: { where: { userDeleted: false }, select: { id: true } },
           collection: { select: { id: true } },
         },
         take: 50,
