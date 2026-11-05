@@ -210,10 +210,10 @@ export default function Navbar({ username, avatarUrl, nowSpinning, spotifyConnec
                       <Link href={`/${username}`} style={{ display: "block", color: "inherit" }}>Profile</Link>
                     </DropItem>
                     <DropItem onClick={() => setShowAvatar(false)}>
-                      <Link href="/messages" style={{ display: "block", color: "inherit" }}>Notes</Link>
+                      <Link href="/messages" style={{ display: "block", color: "inherit" }}>Messages</Link>
                     </DropItem>
                     <DropItem onClick={() => setShowAvatar(false)}>
-                      <Link href={`/${username}/analytics`} style={{ display: "block", color: "inherit" }}>Record Room</Link>
+                      <Link href={`/${username}/analytics`} style={{ display: "block", color: "inherit" }}>Analytics</Link>
                     </DropItem>
                     <DropItem onClick={() => setShowAvatar(false)}>
                       <Link href="/settings" style={{ display: "block", color: "inherit" }}>Preferences</Link>
