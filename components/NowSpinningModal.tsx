@@ -151,12 +151,9 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
   const visibleMb = mbExpanded ? mbResults : mbResults.slice(0, 5);
   const visibleFans = fansExpanded ? fans : fans.slice(0, 5);
 
-  async function handlePhysicalSpin(album: Album) {
-    await fetch("/api/now-spinning", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ albumId: album.id, source: "physical" }),
-    });
+  // Opens LogListenModal only. /api/logs/add creates the log and sets Now Spinning on submit,
+  // so closing the form without submitting leaves both untouched.
+  function handlePhysicalSpin(album: Album) {
     setSelectedSource("physical");
     setSelectedAlbum(album);
   }
@@ -196,12 +193,6 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
       genre: null,
     };
 
-    await fetch("/api/now-spinning", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ albumId: dbAlbum.id, source: "streaming" }),
-    });
-
     setSelectedSource("streaming");
     setSelectedAlbum(dbAlbum);
   }
@@ -230,7 +221,7 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
       const res = await fetch(`/api/scan/barcode?code=${encodeURIComponent(code)}`);
       const data = await res.json();
       if (data.owned) {
-        await handlePhysicalSpin(data.owned as Album);
+        handlePhysicalSpin(data.owned as Album);
         return;
       }
       if (!res.ok) { setScanPhase("error"); return; }
@@ -285,7 +276,7 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
             : [{ id: data.entry?.id ?? album.id, album }, ...prev]
         );
       }
-      await handlePhysicalSpin(album);
+      handlePhysicalSpin(album);
     } catch {
       setScanPhase("error");
     } finally {
