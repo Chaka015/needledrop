@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- NeedleDrop app icon: the .ms-logo-mark (disc + tonearm) on the light skin.
+       The "mark" group is reused (scaled into the safe zone) for the
+       maskable and Apple touch icons. -->
+  <rect width="512" height="512" fill="#F4F1EA"/>
+  <rect x="16" y="16" width="480" height="480" fill="none" stroke="#0D0D0D" stroke-width="32"/>
+  <g id="mark">
+    <!-- record -->
+    <circle cx="236" cy="276" r="172" fill="#0D0D0D"/>
+    <circle cx="236" cy="276" r="136" fill="none" stroke="#3A3733" stroke-width="5"/>
+    <circle cx="236" cy="276" r="106" fill="none" stroke="#3A3733" stroke-width="5"/>
+    <circle cx="236" cy="276" r="70" fill="#FFFFFF"/>
+    <circle cx="236" cy="276" r="62" fill="#0D0D0D"/>
+    <circle cx="236" cy="276" r="55" fill="#FF5A1F"/>
+    <circle cx="236" cy="276" r="9" fill="#F4F1EA"/>
+    <!-- tonearm: black outline under an orange arm -->
+    <polyline points="418,96 400,196 334,286" fill="none" stroke="#0D0D0D" stroke-width="34" stroke-linecap="square" stroke-linejoin="miter"/>
+    <polyline points="418,96 400,196 334,286" fill="none" stroke="#FF5A1F" stroke-width="18" stroke-linecap="square" stroke-linejoin="miter"/>
+    <!-- headshell -->
+    <rect x="306" y="276" width="44" height="30" fill="#FF5A1F" stroke="#0D0D0D" stroke-width="8" transform="rotate(-54 328 291)"/>
+    <!-- pivot -->
+    <circle cx="418" cy="96" r="30" fill="#FFFFFF" stroke="#0D0D0D" stroke-width="9"/>
+    <circle cx="418" cy="96" r="9" fill="#0D0D0D"/>
+  </g>
+</svg>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#ff5a1f">
+<title>Offline · NeedleDrop</title>
+<style>
+  :root { --bg: #F4F1EA; --surface: #ffffff; --ink: #0D0D0D; --muted: #4A4742; --subtle: #7A7570; --accent: #ff5a1f; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; min-height: 100dvh; padding: 24px 16px;
+  }
+  .box {
+    width: 100%; max-width: 420px; background: var(--surface);
+    border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink);
+  }
+  .bar {
+    background: var(--ink); color: var(--bg); padding: 8px 14px;
+    font: 700 11px/1.4 "Space Mono", ui-monospace, Menlo, monospace;
+    letter-spacing: .12em; text-transform: uppercase;
+  }
+  .bar span { opacity: .35; font-weight: 400; }
+  .pad { padding: 28px 20px 24px; text-align: center; }
+  .disc {
+    width: 96px; height: 96px; margin: 0 auto 20px; border-radius: 50%;
+    border: 2px solid var(--ink);
+    background: radial-gradient(circle, var(--bg) 0 5%, var(--accent) 6% 30%, var(--ink) 31% 34%, #fff 35% 38%, var(--ink) 39% 100%);
+  }
+  h1 { font-size: 22px; line-height: 1.2; margin: 0 0 8px; }
+  p { margin: 0 0 22px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+  button {
+    min-height: 44px; padding: 10px 22px; cursor: pointer;
+    font: 700 13px/1 "Hanken Grotesk", Arial, sans-serif; letter-spacing: .06em; text-transform: uppercase;
+    background: var(--accent); color: #fff; border: 3px solid var(--ink); border-radius: 0;
+    box-shadow: 3px 3px 0 var(--ink); transition: transform 80ms, box-shadow 80ms;
+  }
+  button:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+  .foot { margin-top: 18px; font: 11px/1.4 "Space Mono", ui-monospace, Menlo, monospace; color: var(--subtle); letter-spacing: .1em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+  <main class="box">
+    <div class="bar"><span>//&nbsp;</span>No signal</div>
+    <div class="pad">
+      <div class="disc" aria-hidden="true"></div>
+      <h1>You're offline.</h1>
+      <p>Your records are still on the shelf. We'll be here when the signal comes back.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+      <div class="foot">NeedleDrop</div>
+    </div>
+  </main>
+</body>
+</html>

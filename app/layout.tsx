@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Newsreader, Hanken_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -6,6 +6,7 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import Navbar from "@/components/Navbar";
 import SpotifyAutoSync from "@/components/SpotifyAutoSync";
+import RegisterSW from "@/components/RegisterSW";
 import { getSkin, skinToVars } from "@/lib/skins";
 
 const newsreader = Newsreader({
@@ -33,6 +34,14 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "NeedleDrop",
   description: "The social network for record collectors",
+  appleWebApp: { capable: true, title: "NeedleDrop", statusBarStyle: "default" },
+  icons: { apple: "/icons/apple-touch-icon.png" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#ff5a1f",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default async function RootLayout({
@@ -109,6 +118,7 @@ export default async function RootLayout({
             spotifyConnected={spotifyConnected}
           />
           <SpotifyAutoSync shouldSync={shouldSpotifySync} spotifyConnected={spotifyConnected} />
+          <RegisterSW />
           {children}
         </body>
       </html>
