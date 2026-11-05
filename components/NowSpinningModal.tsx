@@ -48,6 +48,8 @@ interface MBResult {
 interface NowSpinningModalProps {
   onClose: () => void;
   onSuccess: () => void;
+  /** Open with the barcode scanner already running (used by /scan). */
+  startInScanMode?: boolean;
 }
 
 type Tab = "collection" | "streaming";
@@ -75,7 +77,7 @@ interface SpotifyRecent {
   coverUrl: string | null;
 }
 
-export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModalProps) {
+export default function NowSpinningModal({ onClose, onSuccess, startInScanMode = false }: NowSpinningModalProps) {
   const [tab, setTab] = useState<Tab>("collection");
   const [query, setQuery] = useState("");
   const [collection, setCollection] = useState<CollectionItem[]>([]);
@@ -89,7 +91,7 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
   const [fansExpanded, setFansExpanded] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [selectedSource, setSelectedSource] = useState<"physical" | "streaming">("physical");
-  const [scanning, setScanning] = useState(false);
+  const [scanning, setScanning] = useState(startInScanMode);
   const [scanPhase, setScanPhase] = useState<ScanPhase>("camera");
   const [scanResults, setScanResults] = useState<ScanCandidate[]>([]);
   const [addingReleaseId, setAddingReleaseId] = useState<string | null>(null);
