@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const { discogsId, title, artist, releaseYear, coverUrl, label, genre, condition } =
+  const { discogsId, title, artist, releaseYear, coverUrl, label, genre, condition, pressingId } =
     await req.json();
 
   if (!discogsId || !title || !artist) {
@@ -33,11 +33,24 @@ export async function POST(req: Request) {
   });
 
   if (existing) {
-    return NextResponse.json({ message: "Already in collection", album });
+    // Remember the scanned pressing if we didn't know it yet
+    if (pressingId && !existing.pressingId) {
+      const entry = await prisma.collection.update({
+        where: { id: existing.id },
+        data: { pressingId: String(pressingId) },
+      });
+      return NextResponse.json({ message: "Already in collection", entry, album });
+    }
+    return NextResponse.json({ message: "Already in collection", entry: existing, album });
   }
 
   const entry = await prisma.collection.create({
-    data: { userId: user.id, albumId: album.id, condition: condition ?? null },
+    data: {
+      userId: user.id,
+      albumId: album.id,
+      condition: condition ?? null,
+      pressingId: pressingId ? String(pressingId) : null,
+    },
   });
 
   return NextResponse.json({ entry, album });

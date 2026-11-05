@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import LogListenModal from "./LogListenModal";
+import BarcodeScanner from "./BarcodeScanner";
 import { FanRow, type SearchFan } from "./SearchDropdown";
 
 const C = {
@@ -51,6 +52,21 @@ interface NowSpinningModalProps {
 
 type Tab = "collection" | "streaming";
 
+interface ScanCandidate {
+  releaseId: string;
+  masterId: string | null;
+  title: string;
+  artist: string;
+  releaseYear: number | null;
+  coverUrl: string | null;
+  label: string | null;
+  catalogNumber: string | null;
+  format: string | null;
+}
+
+// camera → looking (hitting Discogs) → results | nomatch | error
+type ScanPhase = "camera" | "looking" | "results" | "nomatch" | "error";
+
 interface SpotifyRecent {
   spotifyAlbumId: string;
   title: string;
@@ -73,6 +89,11 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
   const [fansExpanded, setFansExpanded] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [selectedSource, setSelectedSource] = useState<"physical" | "streaming">("physical");
+  const [scanning, setScanning] = useState(false);
+  const [scanPhase, setScanPhase] = useState<ScanPhase>("camera");
+  const [scanResults, setScanResults] = useState<ScanCandidate[]>([]);
+  const [addingReleaseId, setAddingReleaseId] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fanTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -185,7 +206,89 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
     setSelectedAlbum(dbAlbum);
   }
 
+  function openScanner() {
+    setScanResults([]);
+    setScanPhase("camera");
+    setScanning(true);
+  }
+
+  function closeScanner() {
+    setScanning(false);
+    setScanResults([]);
+    setScanPhase("camera");
+  }
+
+  function digInstead() {
+    closeScanner();
+    // Wait for the input to be interactive again before focusing
+    setTimeout(() => searchInputRef.current?.focus(), 0);
+  }
+
+  async function handleBarcode(code: string) {
+    setScanPhase("looking");
+    try {
+      const res = await fetch(`/api/scan/barcode?code=${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (data.owned) {
+        await handlePhysicalSpin(data.owned as Album);
+        return;
+      }
+      if (!res.ok) { setScanPhase("error"); return; }
+      const candidates: ScanCandidate[] = data.candidates ?? [];
+      setScanResults(candidates);
+      setScanPhase(candidates.length > 0 ? "results" : "nomatch");
+    } catch {
+      setScanPhase("error");
+    }
+  }
+
+  async function handleAddAndSpin(c: ScanCandidate) {
+    if (addingReleaseId) return;
+    setAddingReleaseId(c.releaseId);
+    try {
+      const res = await fetch("/api/collection/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          // Match albums added via dig (master ID); keep the exact pressing on the collection row
+          discogsId: c.masterId ?? c.releaseId,
+          pressingId: c.releaseId,
+          title: c.title,
+          artist: c.artist,
+          releaseYear: c.releaseYear,
+          coverUrl: c.coverUrl,
+          label: c.label,
+          genre: null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.album) { setScanPhase("error"); return; }
+
+      const album: Album = {
+        id: data.album.id,
+        discogsId: data.album.discogsId,
+        title: data.album.title,
+        artist: data.album.artist,
+        coverUrl: data.album.coverUrl ?? null,
+        releaseYear: data.album.releaseYear ?? null,
+        label: data.album.label ?? null,
+        genre: data.album.genre ?? null,
+      };
+      setCollection((prev) =>
+        prev.some((item) => item.album.id === album.id)
+          ? prev
+          : [{ id: data.entry?.id ?? album.id, album }, ...prev]
+      );
+      await handlePhysicalSpin(album);
+    } catch {
+      setScanPhase("error");
+    } finally {
+      setAddingReleaseId(null);
+    }
+  }
+
   function handleTabSwitch(t: Tab) {
+    closeScanner();
     setTab(t);
     setQuery("");
     setMbResults([]);
@@ -241,22 +344,44 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
           ))}
         </div>
 
-        <div className="px-5 pt-4 pb-2">
+        <div className="px-5 pt-4 pb-2 flex gap-2">
           <input
+            ref={searchInputRef}
             type="text"
             value={query}
-            onChange={(e) => { setQuery(e.target.value); setCollectionExpanded(false); }}
+            onChange={(e) => { setQuery(e.target.value); setCollectionExpanded(false); if (scanning) closeScanner(); }}
             placeholder={tab === "collection" ? "Search your collection..." : "Search any album or artist..."}
             autoFocus
-            className="w-full text-sm px-3 py-2 outline-none transition-colors duration-100"
+            className="flex-1 min-w-0 text-sm px-3 py-2 outline-none transition-colors duration-100"
             style={{ backgroundColor: C.surfaceRaised, border: `1px solid ${C.border}`, color: C.text, borderRadius: 0 }}
             onFocus={(e) => (e.currentTarget.style.borderColor = C.accent)}
             onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
           />
+          {tab === "collection" && (
+            <button
+              type="button"
+              onClick={scanning ? closeScanner : openScanner}
+              className={`ms-btn sm${scanning ? "" : " fill"}`}
+              aria-label={scanning ? "Close barcode scanner" : "Scan a barcode"}
+            >
+              {scanning ? "Close" : "Scan"}
+            </button>
+          )}
         </div>
 
-        <div className="px-5 pb-5 space-y-1 max-h-80 overflow-y-auto">
-          {tab === "collection" ? (
+        <div className="px-5 pb-5 space-y-1 max-h-[70vh] overflow-y-auto">
+          {tab === "collection" && scanning ? (
+            <ScanPanel
+              phase={scanPhase}
+              results={scanResults}
+              addingReleaseId={addingReleaseId}
+              onDetected={handleBarcode}
+              onCancel={closeScanner}
+              onAdd={handleAddAndSpin}
+              onTryAgain={openScanner}
+              onDigInstead={digInstead}
+            />
+          ) : tab === "collection" ? (
             <>
               {collectionLoading ? (
                 <p className="text-xs font-mono py-4 text-center" style={{ color: C.subtle }}>Loading collection...</p>
@@ -354,6 +479,101 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
 }
 
 // ── Shared sub-components ───────────────────────────────────────────────────
+
+function ScanPanel({ phase, results, addingReleaseId, onDetected, onCancel, onAdd, onTryAgain, onDigInstead }: {
+  phase: ScanPhase;
+  results: ScanCandidate[];
+  addingReleaseId: string | null;
+  onDetected: (code: string) => void;
+  onCancel: () => void;
+  onAdd: (c: ScanCandidate) => void;
+  onTryAgain: () => void;
+  onDigInstead: () => void;
+}) {
+  if (phase === "camera") {
+    return (
+      <div className="pt-2">
+        <BarcodeScanner onDetected={onDetected} onCancel={onCancel} />
+      </div>
+    );
+  }
+
+  if (phase === "looking") {
+    return (
+      <p className="text-xs font-mono py-6 text-center uppercase tracking-widest" style={{ color: "var(--skin-subtle)" }}>
+        Flipping through the crates...
+      </p>
+    );
+  }
+
+  if (phase === "nomatch" || phase === "error") {
+    return (
+      <div className="py-6 text-center">
+        <p className="text-sm font-medium" style={{ color: "var(--skin-text)" }}>
+          {phase === "nomatch" ? "No match for that barcode" : "Couldn't reach Discogs"}
+        </p>
+        <p className="text-xs font-mono mt-1" style={{ color: "var(--skin-muted)" }}>
+          {phase === "nomatch"
+            ? "Give it another go, or dig for it by name."
+            : "Something went sideways on the lookup. Try again in a sec."}
+        </p>
+        <div className="flex justify-center gap-3 mt-4">
+          <button type="button" onClick={onTryAgain} className="ms-btn fill sm">Try again</button>
+          <button type="button" onClick={onDigInstead} className="ms-btn sm">Dig instead</button>
+        </div>
+      </div>
+    );
+  }
+
+  // results — none of these are in the fan's collection yet
+  return (
+    <>
+      <p className="text-xs font-mono pt-2 pb-1 uppercase tracking-widest" style={{ color: "var(--skin-subtle)" }}>
+        Not in your collection yet
+      </p>
+      {results.map((c) => {
+        const meta = [c.label, c.catalogNumber].filter(Boolean).join(" · ");
+        const busy = addingReleaseId === c.releaseId;
+        return (
+          <div
+            key={c.releaseId}
+            className="flex items-center gap-3 p-2"
+            style={{ borderBottom: "1px solid var(--skin-border)" }}
+          >
+            {c.coverUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={c.coverUrl} alt={c.title} className="object-cover shrink-0" style={{ width: 48, height: 48, borderRadius: 4 }} />
+            ) : (
+              <div className="shrink-0" style={{ width: 48, height: 48, backgroundColor: "var(--skin-surface-raised)", borderRadius: 4 }} />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium truncate" style={{ color: "var(--skin-text)" }}>{c.title}</div>
+              <div className="text-xs truncate" style={{ color: "var(--skin-muted)" }}>
+                {c.artist}{c.releaseYear ? ` · ${c.releaseYear}` : ""}
+              </div>
+              <div className="text-xs font-mono truncate" style={{ color: "var(--skin-subtle)" }}>
+                {[meta, c.format].filter(Boolean).join(" · ")}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onAdd(c)}
+              disabled={addingReleaseId !== null}
+              className="ms-btn fill sm shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ fontSize: 10, padding: "6px 8px", maxWidth: 120, lineHeight: 1.2 }}
+            >
+              {busy ? "Adding..." : "Spin + add to collection"}
+            </button>
+          </div>
+        );
+      })}
+      <div className="flex gap-3 pt-3">
+        <button type="button" onClick={onTryAgain} className="ms-btn sm">Scan again</button>
+        <button type="button" onClick={onDigInstead} className="ms-btn sm">Dig instead</button>
+      </div>
+    </>
+  );
+}
 
 function ArtistLink({ artist }: { artist: string }) {
   return (
