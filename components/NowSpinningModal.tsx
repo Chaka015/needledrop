@@ -344,6 +344,19 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
           ))}
         </div>
 
+        {tab === "collection" && (
+          <div className="px-5 pt-4">
+            <button
+              type="button"
+              onClick={scanning ? closeScanner : openScanner}
+              className={`ms-btn w-full${scanning ? "" : " fill"}`}
+              aria-label={scanning ? "Close barcode scanner" : "Scan a record's barcode"}
+            >
+              {scanning ? "Close scanner" : "Scan record"}
+            </button>
+          </div>
+        )}
+
         <div className="px-5 pt-4 pb-2 flex gap-2">
           <input
             ref={searchInputRef}
@@ -357,16 +370,6 @@ export default function NowSpinningModal({ onClose, onSuccess }: NowSpinningModa
             onFocus={(e) => (e.currentTarget.style.borderColor = C.accent)}
             onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
           />
-          {tab === "collection" && (
-            <button
-              type="button"
-              onClick={scanning ? closeScanner : openScanner}
-              className={`ms-btn sm${scanning ? "" : " fill"}`}
-              aria-label={scanning ? "Close barcode scanner" : "Scan a barcode"}
-            >
-              {scanning ? "Close" : "Scan"}
-            </button>
-          )}
         </div>
 
         <div className="px-5 pb-5 space-y-1 max-h-[70vh] overflow-y-auto">
