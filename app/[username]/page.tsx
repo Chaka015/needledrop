@@ -1,3 +1,5 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -34,11 +36,9 @@ const C = {
 };
 
 
-export default async function ProfilePage({ params }: ProfilePageProps) {
-  const { username } = await params;
-  const { userId: clerkId } = await auth();
-
-  const user = await prisma.user.findUnique({
+// cache(): generateMetadata and the page share one query per request.
+const getProfileUser = cache((username: string) =>
+  prisma.user.findUnique({
     where: { username },
     include: {
       audioSetup: true,
@@ -70,7 +70,49 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         },
       },
     },
-  });
+  })
+);
+
+const getListenCount = cache((userId: string) =>
+  prisma.listeningLog.count({ where: { userId, userDeleted: false } })
+);
+
+const getAlbumById = cache((id: string) => prisma.album.findUnique({ where: { id } }));
+
+export async function generateMetadata({ params }: ProfilePageProps): Promise<Metadata> {
+  const { username } = await params;
+  const user = await getProfileUser(username);
+  if (!user) return { title: "Fan not found" };
+
+  const listens = await getListenCount(user.id);
+  const parts = [
+    `${user.collection.length.toLocaleString()} records`,
+    `${listens.toLocaleString()} listens`,
+  ];
+  const onAir = user.nowSpinning && user.nowSpinningAt && user.nowSpinningAt > new Date(Date.now() - 60 * 60 * 1000);
+  if (onAir) {
+    const album = await getAlbumById(user.nowSpinning!);
+    if (album) parts.push(`Now spinning: ${album.artist} — ${album.title}`);
+  }
+  let description = parts.join(" · ");
+  // Room for the bio? Share previews show ~200 characters.
+  if (user.bio && description.length + user.bio.length + 5 <= 200) {
+    description = `“${user.bio}” · ${description}`;
+  }
+
+  return {
+    title: user.username,
+    description,
+    openGraph: { title: `${user.username} on NeedleDrop`, description, siteName: "NeedleDrop", type: "profile", url: `/${user.username}` },
+    twitter: { card: "summary_large_image", title: `${user.username} on NeedleDrop`, description },
+  };
+}
+
+export default async function ProfilePage({ params }: ProfilePageProps) {
+  const { username } = await params;
+  const { userId: clerkId } = await auth();
+
+  const user = await getProfileUser(username);
 
   if (!user) notFound();
 
@@ -92,7 +134,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   // Stats for odometer — aggregate across ALL logs, not just the 10 fetched for display
   const [totalMsResult, listensLogged] = await Promise.all([
     prisma.listeningLog.aggregate({ where: { userId: user.id, userDeleted: false }, _sum: { durationMs: true } }),
-    prisma.listeningLog.count({ where: { userId: user.id, userDeleted: false } }),
+    getListenCount(user.id),
   ]);
   const recordsOwned = user.collection.length;
   const totalListeningMs = Number(totalMsResult._sum.durationMs ?? BigInt(0));
@@ -127,7 +169,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     };
     nowSpinningIsActive = true;
   } else if (user.nowSpinning) {
-    const dbAlbum = await prisma.album.findUnique({ where: { id: user.nowSpinning } });
+    const dbAlbum = await getAlbumById(user.nowSpinning);
     if (dbAlbum) {
       nowSpinningAlbum = {
         discogsId: dbAlbum.discogsId,

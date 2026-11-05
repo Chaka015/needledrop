@@ -30,6 +30,18 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+// fetchArtist's fetch is memoized per request, so this shares the page's
+// MusicBrainz call rather than adding a second one.
+export async function generateMetadata({ params }: Props) {
+  const { mbid } = await params;
+  const artist = await fetchArtist(mbid);
+  if (!artist) return { title: "Artist" };
+  return {
+    title: artist.name,
+    description: `${artist.name} on NeedleDrop: discography, collectors, shows and news.`,
+  };
+}
+
 export default async function ArtistPage({ params }: Props) {
   const { mbid } = await params;
   const { userId: clerkId } = await auth();

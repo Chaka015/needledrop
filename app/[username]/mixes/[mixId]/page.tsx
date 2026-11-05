@@ -1,3 +1,5 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
@@ -21,11 +23,9 @@ const C = {
   accent: "#E67E22",
 };
 
-export default async function MixPage({ params }: Props) {
-  const { username, mixId } = await params;
-  const { userId: clerkId } = await auth();
-
-  const mix = await prisma.mix.findUnique({
+// cache(): generateMetadata and the page share one query per request.
+const getMix = cache((mixId: string) =>
+  prisma.mix.findUnique({
     where: { id: mixId },
     include: {
       user: { select: { username: true, avatarUrl: true, clerkId: true } },
@@ -34,7 +34,35 @@ export default async function MixPage({ params }: Props) {
         include: { album: true },
       },
     },
-  });
+  })
+);
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { username, mixId } = await params;
+  const mix = await getMix(mixId);
+  if (!mix || mix.user.username !== username) return { title: "Mix not found" };
+  // Private mixes: never leak the title or covers into share previews.
+  // (The opengraph-image route serves the generic site card for them.)
+  if (!mix.isPublic) {
+    return { title: `A mix by ${username}`, robots: { index: false } };
+  }
+
+  const title = `${mix.title} — by ${username}`;
+  const description = mix.description?.trim()
+    || `${mix.items.length} records, picked by ${username}.`;
+  return {
+    title,
+    description,
+    openGraph: { title, description, siteName: "NeedleDrop", type: "website", url: `/${username}/mixes/${mix.id}` },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
+
+export default async function MixPage({ params }: Props) {
+  const { username, mixId } = await params;
+  const { userId: clerkId } = await auth();
+
+  const mix = await getMix(mixId);
 
   if (!mix || mix.user.username !== username) notFound();
 

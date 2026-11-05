@@ -3,6 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+export async function generateMetadata({ params }: Props) {
+  const { username } = await params;
+  return { title: `${username}'s listens` };
+}
+
 interface Props {
   params: Promise<{ username: string }>;
   searchParams: Promise<{ filter?: string }>;

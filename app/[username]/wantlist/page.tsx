@@ -5,6 +5,11 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import WantlistActions from "@/components/WantlistActions";
 
+export async function generateMetadata({ params }: Props) {
+  const { username } = await params;
+  return { title: `${username}'s wantlist` };
+}
+
 interface Props {
   params: Promise<{ username: string }>;
   searchParams: Promise<{ sort?: string }>;

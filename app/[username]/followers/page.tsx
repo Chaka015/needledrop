@@ -3,6 +3,11 @@ import { notFound } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import FollowList from "@/components/FollowList";
 
+export async function generateMetadata({ params }: Props) {
+  const { username } = await params;
+  return { title: `${username}'s fans` };
+}
+
 interface Props {
   params: Promise<{ username: string }>;
 }

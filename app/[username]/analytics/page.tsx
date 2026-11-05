@@ -20,6 +20,11 @@ import {
 } from "@/lib/analytics";
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 
+export async function generateMetadata({ params }: Props) {
+  const { username } = await params;
+  return { title: `${username}'s analytics` };
+}
+
 interface Props {
   params: Promise<{ username: string }>;
   searchParams: Promise<{ range?: string }>;

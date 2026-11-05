@@ -4,6 +4,11 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 
+export async function generateMetadata({ params }: Props) {
+  const { username } = await params;
+  return { title: `${username}'s mixes` };
+}
+
 interface Props {
   params: Promise<{ username: string }>;
 }

@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import Navbar from "@/components/Navbar";
 import SpotifyAutoSync from "@/components/SpotifyAutoSync";
 import RegisterSW from "@/components/RegisterSW";
+import { SITE_URL } from "@/lib/site";
 import { getSkin, skinToVars } from "@/lib/skins";
 
 const newsreader = Newsreader({
@@ -32,8 +33,11 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NeedleDrop",
+  metadataBase: new URL(SITE_URL),
+  title: { default: "NeedleDrop", template: "%s · NeedleDrop" },
   description: "The social network for record collectors",
+  openGraph: { siteName: "NeedleDrop", type: "website" },
+  twitter: { card: "summary_large_image" },
   appleWebApp: { capable: true, title: "NeedleDrop", statusBarStyle: "default" },
   icons: { apple: "/icons/apple-touch-icon.png" },
 };

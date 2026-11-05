@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import Image from "next/image";
@@ -349,6 +350,31 @@ async function deriveSearchQuery(discogsId: string): Promise<string> {
 // Never serve a cached version — album records can be created moments before
 // this page is first requested (race with the create → redirect flow).
 export const dynamic = "force-dynamic";
+
+// Small select-only lookup for the title/description. It deliberately skips
+// the page's self-healing fetches; an unknown album just gets a generic title.
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { discogsId: raw } = await params;
+  let discogsId = raw;
+  try { discogsId = decodeURIComponent(raw); } catch { /* already decoded */ }
+  const album = await prisma.album.findFirst({
+    where: { discogsId: { equals: discogsId, mode: "insensitive" } },
+    select: { title: true, artist: true, releaseYear: true, label: true },
+  }).catch(() => null);
+  if (!album) return { title: "Album" };
+
+  const title = `${album.title} — ${album.artist}`;
+  const facts = [album.releaseYear ? String(album.releaseYear) : null, album.label].filter(Boolean);
+  const description = facts.length > 0
+    ? `${album.title} by ${album.artist} (${facts.join(", ")}). Listens, reviews and collectors on NeedleDrop.`
+    : `${album.title} by ${album.artist}. Listens, reviews and collectors on NeedleDrop.`;
+  return {
+    title,
+    description,
+    openGraph: { title, description, siteName: "NeedleDrop", type: "music.album" },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
 
 export default async function AlbumPage({ params, searchParams }: Props) {
   const { discogsId: rawDiscogsId } = await params;

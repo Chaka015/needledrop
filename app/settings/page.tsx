@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import SettingsClient from "@/components/SettingsClient";
 
+export const metadata = { title: "Preferences" };
+
 export default async function SettingsPage() {
   const { userId: clerkId } = await auth();
   if (!clerkId) redirect("/");

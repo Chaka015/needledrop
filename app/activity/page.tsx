@@ -6,6 +6,8 @@ import Image from "next/image";
 import Link from "next/link";
 import type { FeedItem } from "@/components/ActivityFeed";
 
+export const metadata = { title: "Social" };
+
 export default async function ActivityPage() {
   const { userId: clerkId } = await auth();
   if (!clerkId) redirect("/");

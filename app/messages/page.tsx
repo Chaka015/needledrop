@@ -15,6 +15,8 @@ const C = {
   accent:  "var(--skin-accent)",
 };
 
+export const metadata = { title: "Messages" };
+
 export default async function MessagesPage() {
   const { userId: clerkId } = await auth();
   if (!clerkId) redirect("/");

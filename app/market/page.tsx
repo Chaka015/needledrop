@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export const metadata = { title: "Marketplace — NeedleDrop" };
+export const metadata = { title: "Market" };
 
 const ROADMAP = [
   {

@@ -18,6 +18,11 @@ const C = {
 
 interface Props { params: Promise<{ username: string }> }
 
+export async function generateMetadata({ params }: Props) {
+  const { username } = await params;
+  return { title: `Messages with ${username}` };
+}
+
 export default async function ConversationPage({ params }: Props) {
   const { username } = await params;
   const { userId: clerkId } = await auth();

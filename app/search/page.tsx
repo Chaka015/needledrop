@@ -6,6 +6,8 @@ interface Props {
   searchParams: Promise<{ q?: string; tab?: string }>;
 }
 
+export const metadata = { title: "Dig" };
+
 export default async function Search({ searchParams }: Props) {
   const { q, tab } = await searchParams;
   const { userId: clerkId } = await auth();
